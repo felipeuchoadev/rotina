@@ -1,0 +1,1922 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>DISCIPLINA</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Black+Ops+One&family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#07070a; --surface:#131316; --surface2:#1b1b1f; --surface3:#232328; --border:#2c2c31;
+  --accent:#d81e2c; --accent2:#ff4747; --accent-glow:rgba(216,30,44,.35);
+  --gold:#d4a537; --green:#3ecf8e; --amber:#e8a33d;
+  --text:#ffffff; --text-dim:#b6b6bc; --text-dim2:#6d6d74;
+  --radius:16px; --theme-bg-fx:none;
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+html,body{margin:0;padding:0;background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;height:100%;overflow-x:hidden;}
+#app{max-width:540px;margin:0 auto;min-height:100vh;position:relative;background:
+    radial-gradient(circle at 50% -10%, var(--accent-glow), transparent 45%), var(--bg);}
+.display{font-family:'Black Ops One',sans-serif;letter-spacing:.03em;}
+.display2{font-family:'Oswald',sans-serif;letter-spacing:.02em;}
+.mono{font-family:'JetBrains Mono',monospace;}
+h1,h2,h3,h4,p{color:var(--text);}
+::placeholder{color:var(--text-dim2);}
+
+/* ---------- AUTH ---------- */
+#authScreen{min-height:100vh;display:flex;flex-direction:column;justify-content:center;padding:28px 22px;position:relative;overflow:hidden;}
+#authScreen::before{content:'';position:absolute;inset:0;background:
+  repeating-linear-gradient(135deg, rgba(216,30,44,.05) 0 2px, transparent 2px 40px);pointer-events:none;}
+.auth-badge{width:64px;height:64px;border-radius:14px;background:linear-gradient(135deg,var(--accent),#5c0b10);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;box-shadow:0 0 30px var(--accent-glow);}
+.auth-title{font-family:'Black Ops One';font-size:30px;text-align:center;margin:0 0 4px;}
+.auth-sub{text-align:center;color:var(--text-dim);font-size:12.5px;margin:0 0 28px;letter-spacing:.06em;text-transform:uppercase;}
+.auth-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:22px;position:relative;z-index:1;}
+.auth-tabs{display:flex;gap:6px;margin-bottom:18px;background:var(--surface2);padding:4px;border-radius:10px;}
+.auth-tab{flex:1;text-align:center;padding:9px;border-radius:7px;font-size:12.5px;font-weight:700;cursor:pointer;color:var(--text-dim);letter-spacing:.03em;}
+.auth-tab.active{background:var(--accent);color:#fff;}
+.avatar-picker{display:flex;flex-direction:column;align-items:center;gap:8px;margin-bottom:16px;}
+.avatar-circle{width:78px;height:78px;border-radius:50%;background:var(--surface2);border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;font-size:28px;overflow:hidden;cursor:pointer;position:relative;}
+.avatar-circle img{width:100%;height:100%;object-fit:cover;}
+.avatar-hint{font-size:10.5px;color:var(--text-dim2);}
+.pw-meter{height:5px;border-radius:4px;background:var(--surface3);margin-top:6px;overflow:hidden;}
+.pw-meter-fill{height:100%;width:0%;background:var(--accent2);transition:.2s;}
+.pw-rules{font-size:10.5px;color:var(--text-dim2);margin-top:5px;line-height:1.5;}
+.pw-rules .ok{color:var(--green);}
+.google-btn{display:flex;align-items:center;justify-content:center;gap:8px;background:var(--surface3);border:1px solid var(--border);color:var(--text-dim);padding:11px;border-radius:9px;font-size:12.5px;font-weight:600;margin-top:12px;cursor:pointer;opacity:.75;}
+.auth-note{font-size:10.5px;color:var(--text-dim2);text-align:center;margin-top:10px;line-height:1.5;}
+.auth-error{background:rgba(216,30,44,.14);border:1px solid var(--accent);color:#ff9d9d;font-size:12px;padding:9px 11px;border-radius:8px;margin-bottom:12px;display:none;}
+
+/* ---------- SHARED UI ---------- */
+input[type=text],input[type=url],input[type=password],input[type=number],input[type=date],select,textarea{
+  width:100%;background:var(--surface2);border:1px solid var(--border);color:var(--text);
+  border-radius:9px;padding:10px 12px;font-family:'Inter';font-size:13.5px;outline:none;transition:.15s;}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-glow);}
+textarea{resize:vertical;min-height:44px;}
+label.field-label{font-size:10.5px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.09em;display:block;margin:0 0 5px;font-weight:700;}
+.btn{border:none;border-radius:10px;padding:11px 16px;font-family:'Inter';font-weight:700;font-size:13px;cursor:pointer;transition:.15s;display:inline-flex;align-items:center;gap:6px;justify-content:center;letter-spacing:.02em;}
+.btn-primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff;box-shadow:0 4px 16px var(--accent-glow);}
+.btn-primary:active{transform:scale(.97);}
+.btn-primary:disabled{opacity:.4;box-shadow:none;}
+.btn-ghost{background:var(--surface2);color:var(--text);border:1px solid var(--border);}
+.btn-ghost:active{transform:scale(.97);}
+.btn-sm{padding:7px 12px;font-size:11.5px;}
+.btn-block{width:100%;}
+.btn-danger{background:transparent;color:#ff8080;border:1px solid rgba(255,80,80,.3);}
+.row{display:flex;gap:10px;}
+.row>*{flex:1;}
+
+header.topbar{position:sticky;top:0;z-index:20;padding:12px 16px;background:linear-gradient(180deg, rgba(7,7,10,.97), rgba(7,7,10,.86));backdrop-filter:blur(8px);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;}
+.topbar-left{display:flex;align-items:center;gap:10px;}
+.topbar-avatar{width:38px;height:38px;border-radius:10px;background:var(--surface2);border:1px solid var(--border);object-fit:cover;overflow:hidden;display:flex;align-items:center;justify-content:center;font-size:16px;cursor:pointer;}
+.topbar-avatar img{width:100%;height:100%;object-fit:cover;}
+.topbar-name{font-family:'Black Ops One';font-size:14.5px;letter-spacing:.02em;}
+.topbar-clock{font-size:9.5px;color:var(--text-dim);letter-spacing:.05em;margin-top:1px;}
+.topbar-fire{display:none;align-items:center;gap:5px;background:var(--surface2);border:1px solid var(--border);padding:6px 10px;border-radius:20px;font-size:12px;color:var(--gold);font-weight:700;}
+.topbar-fire.on{display:flex;}
+
+main{padding:16px 16px 104px;}
+section.view{display:none;animation:fadein .25s ease;}
+section.view.active{display:block;}
+@keyframes fadein{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+h2.section-title{font-family:'Black Ops One';font-size:22px;font-weight:400;margin:2px 0 4px;letter-spacing:.02em;}
+p.section-sub{color:var(--text-dim);font-size:12.5px;margin:0 0 16px;line-height:1.55;}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;margin-bottom:14px;}
+.card.clickable{cursor:pointer;transition:.15s;}
+.card.clickable:active{transform:scale(.985);border-color:var(--accent);}
+.card-title{font-family:'Oswald';font-size:12.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--text-dim);margin:0 0 12px;display:flex;align-items:center;justify-content:space-between;font-weight:600;}
+
+/* bottom nav */
+nav.bottom{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:540px;background:rgba(11,11,13,.98);backdrop-filter:blur(10px);border-top:1px solid var(--border);display:flex;z-index:30;padding:7px 2px calc(7px + env(safe-area-inset-bottom));}
+nav.bottom button{flex:1;background:none;border:none;color:var(--text-dim2);display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 1px;cursor:pointer;font-size:9.3px;font-family:'Inter';font-weight:700;letter-spacing:.01em;border-radius:10px;transition:.15s;}
+nav.bottom button svg{width:21px;height:21px;stroke:var(--text-dim2);fill:none;stroke-width:1.7;transition:.15s;}
+nav.bottom button.active{color:var(--accent2);}
+nav.bottom button.active svg{stroke:var(--accent2);filter:drop-shadow(0 0 6px var(--accent-glow));}
+
+/* patente */
+.patente-box{display:flex;align-items:center;gap:14px;}
+.patente-badge{width:56px;height:56px;border-radius:12px;background:linear-gradient(135deg,var(--surface3),var(--surface2));border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.chevrons-mini{display:flex;flex-direction:column;gap:2.5px;}
+.chevron-mini{width:22px;height:6px;clip-path:polygon(0 0,50% 45%,100% 0,100% 45%,50% 100%,0 45%);background:var(--border);}
+.chevron-mini.on{background:linear-gradient(90deg,var(--gold),#f4d97a);}
+.patente-info .patente-name{font-family:'Black Ops One';font-size:16px;font-weight:400;}
+.patente-info .patente-days{font-size:11.5px;color:var(--text-dim);margin-top:3px;}
+.xp-track{height:8px;background:var(--surface2);border-radius:6px;overflow:hidden;margin-top:10px;}
+.xp-fill{height:100%;background:linear-gradient(90deg,var(--gold),#f4d97a);border-radius:6px;transition:.4s;}
+.xp-label{display:flex;justify-content:space-between;font-size:10px;color:var(--text-dim2);margin-top:4px;}
+
+.stat-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+.stat-box{background:var(--surface2);border:1px solid var(--border);border-radius:11px;padding:13px 6px;text-align:center;cursor:pointer;transition:.15s;}
+.stat-box:active{transform:scale(.95);border-color:var(--accent);}
+.stat-box .num{font-family:'Black Ops One';font-size:21px;color:var(--accent2);font-weight:400;}
+.stat-box .lbl{font-size:9px;color:var(--text-dim);text-transform:uppercase;letter-spacing:.05em;margin-top:3px;}
+
+.empty-state{text-align:center;padding:30px 10px;color:var(--text-dim);}
+.empty-state svg{width:38px;height:38px;stroke:var(--text-dim2);margin-bottom:10px;}
+.empty-state p{font-size:12px;line-height:1.5;}
+
+/* modal / drawer */
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,.72);backdrop-filter:blur(3px);z-index:90;display:none;align-items:flex-end;justify-content:center;}
+.overlay.show{display:flex;}
+.sheet{background:var(--surface);border:1px solid var(--border);border-bottom:none;border-radius:20px 20px 0 0;width:100%;max-width:540px;max-height:88vh;overflow-y:auto;padding:18px 18px calc(18px + env(safe-area-inset-bottom));animation:slideup .22s ease;}
+@keyframes slideup{from{transform:translateY(30px);opacity:0;}to{transform:translateY(0);opacity:1;}}
+.sheet-handle{width:38px;height:4px;background:var(--border);border-radius:3px;margin:0 auto 14px;}
+.sheet-title{font-family:'Black Ops One';font-size:19px;margin:0 0 4px;font-weight:400;}
+.sheet-close{position:absolute;top:14px;right:16px;background:var(--surface2);border:1px solid var(--border);width:30px;height:30px;border-radius:50%;color:var(--text-dim);font-size:15px;cursor:pointer;}
+
+.option-chip{display:inline-flex;align-items:center;padding:9px 14px;background:var(--surface2);border:1px solid var(--border);border-radius:20px;font-size:12.5px;font-weight:600;cursor:pointer;margin:0 6px 8px 0;transition:.15s;}
+.option-chip.selected{background:var(--accent);border-color:var(--accent);color:#fff;}
+
+/* treinos */
+.week-card{border:1px solid var(--border);border-radius:var(--radius);margin-bottom:14px;overflow:hidden;background:var(--surface);position:relative;}
+.week-head{padding:14px 16px;display:flex;justify-content:space-between;align-items:center;cursor:pointer;}
+.week-head h3{font-family:'Black Ops One';font-size:15px;margin:0;font-weight:400;letter-spacing:.02em;}
+.week-status{font-size:9.5px;padding:4px 10px;border-radius:20px;font-weight:700;text-transform:uppercase;letter-spacing:.04em;}
+.week-status.unlocked{background:rgba(62,207,142,.15);color:var(--green);}
+.week-status.locked{background:rgba(154,154,159,.15);color:var(--text-dim);}
+.week-status.done{background:rgba(212,165,55,.15);color:var(--gold);}
+.days-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;padding:0 12px 14px;}
+.day-btn{aspect-ratio:1;border-radius:9px;background:var(--surface2);border:1px solid var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:9.5px;font-weight:700;color:var(--text-dim);cursor:pointer;gap:3px;position:relative;}
+.day-btn.feito{background:rgba(62,207,142,.15);border-color:var(--green);color:var(--green);}
+.day-btn .dtag{font-size:8px;opacity:.8;}
+.locked-overlay{position:absolute;inset:0;background:rgba(5,5,6,.86);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;cursor:pointer;z-index:2;}
+.locked-overlay svg{width:26px;height:26px;stroke:var(--text-dim);}
+.locked-overlay .unlock-txt{font-size:10.5px;color:var(--text-dim);text-align:center;padding:0 20px;font-weight:600;}
+.taunt-box{background:rgba(216,30,44,.14);border:1px solid var(--accent);border-radius:12px;padding:16px;text-align:center;margin:10px 0;}
+.taunt-box p{font-family:'Oswald';font-size:14.5px;font-weight:600;margin:0;line-height:1.5;color:#ffb3b3;}
+
+.foto-thumb{width:48px;height:48px;border-radius:9px;object-fit:cover;border:1px solid var(--border);}
+.warn-banner{background:rgba(212,165,55,.12);border:1px solid rgba(212,165,55,.4);color:var(--gold);font-size:11.5px;padding:9px 11px;border-radius:9px;margin-top:8px;line-height:1.45;}
+input[type=file]{display:none;}
+
+/* estudos agenda */
+.agenda-day-card{background:var(--surface);border:1px solid var(--border);border-radius:13px;padding:13px;margin-bottom:10px;}
+.agenda-day-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:9px;}
+.agenda-day-name{font-family:'Oswald';font-weight:700;font-size:13px;letter-spacing:.04em;}
+.agenda-day-name .full{color:var(--text-dim2);font-weight:400;font-size:10.5px;margin-left:5px;}
+.add-chip-btn{width:26px;height:26px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);color:var(--accent2);font-size:15px;display:flex;align-items:center;justify-content:center;cursor:pointer;}
+.subject-chip{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:9px;margin-bottom:6px;cursor:pointer;}
+.subject-chip:active{border-color:var(--accent);}
+.subject-chip .sname{font-size:12.5px;font-weight:600;}
+.subject-chip .sxp{font-size:10px;color:var(--text-dim2);font-family:'JetBrains Mono';}
+.mini-track{height:4px;background:var(--surface3);border-radius:4px;width:64px;overflow:hidden;margin-top:4px;}
+.mini-fill{height:100%;background:var(--accent2);}
+
+.topic-row{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid var(--border);}
+.topic-row:last-child{border-bottom:none;}
+.topic-check{width:22px;height:22px;border-radius:6px;border:2px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;color:transparent;}
+.topic-check.done{background:var(--green);border-color:var(--green);color:#07070a;}
+.topic-name{flex:1;font-size:13px;}
+.topic-name.done{text-decoration:line-through;color:var(--text-dim2);}
+.topic-del{color:var(--text-dim2);font-size:15px;cursor:pointer;padding:2px 6px;}
+
+.timer-display{text-align:center;padding:20px 0 10px;}
+.timer-num{font-family:'JetBrains Mono';font-size:48px;font-weight:700;color:var(--text);}
+.timer-num.running{color:var(--accent2);text-shadow:0 0 20px var(--accent-glow);}
+.timer-controls{display:flex;gap:10px;margin-top:16px;}
+.taunt-pause{background:rgba(216,30,44,.15);border:1px solid var(--accent);border-radius:12px;padding:14px;text-align:center;margin-top:14px;display:none;}
+.taunt-pause.show{display:block;}
+.taunt-pause p{font-family:'Oswald';font-size:13px;font-weight:600;color:#ffb3b3;margin:0;line-height:1.5;}
+
+.report-bar-row{margin-bottom:11px;}
+.report-bar-top{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px;}
+.report-bar-track{height:8px;background:var(--surface2);border-radius:6px;overflow:hidden;}
+.report-bar-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--accent2));border-radius:6px;}
+.tabs{display:flex;gap:8px;margin-bottom:14px;}
+.tab-btn{flex:1;padding:9px;border-radius:9px;background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);font-size:12px;font-weight:700;cursor:pointer;}
+.tab-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+.critique-box{background:var(--surface2);border-left:3px solid var(--accent);border-radius:0 10px 10px 0;padding:12px 14px;font-size:12.5px;line-height:1.55;color:var(--text-dim);margin-bottom:14px;}
+.critique-box b{color:var(--text);}
+
+/* alimentação */
+.link-add{color:var(--accent2);font-size:12px;font-weight:700;cursor:pointer;}
+.meal-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);}
+.meal-row:last-child{border-bottom:none;}
+.meal-time{font-family:'JetBrains Mono';font-size:12px;color:var(--text-dim);width:44px;}
+.meal-desc{flex:1;font-size:12.5px;}
+.meal-qtd{font-size:11px;color:var(--text-dim2);}
+.sparkline{display:flex;align-items:flex-end;gap:4px;height:60px;margin-top:8px;}
+.spark-bar{flex:1;background:linear-gradient(180deg,var(--accent2),var(--accent));border-radius:3px 3px 0 0;min-height:4px;}
+
+/* batalha */
+.leader-row{display:flex;align-items:center;gap:11px;padding:11px 0;border-bottom:1px solid var(--border);cursor:pointer;}
+.leader-row:last-child{border-bottom:none;}
+.leader-pos{font-family:'Black Ops One';font-size:15px;color:var(--text-dim);width:22px;font-weight:400;}
+.leader-pos.gold{color:var(--gold);}
+.leader-avatar{width:36px;height:36px;border-radius:9px;background:var(--surface2);border:1px solid var(--border);object-fit:cover;display:flex;align-items:center;justify-content:center;font-size:15px;overflow:hidden;}
+.leader-avatar img{width:100%;height:100%;object-fit:cover;}
+.leader-mid{flex:1;}
+.leader-name{font-weight:700;font-size:13px;}
+.leader-patente{font-size:10px;color:var(--gold);margin-top:1px;}
+.leader-streak{font-family:'JetBrains Mono';font-size:12.5px;color:var(--accent2);}
+.me-tag{font-size:8.5px;background:var(--accent);color:#fff;padding:2px 6px;border-radius:5px;margin-left:6px;vertical-align:middle;}
+.friend-input-row{display:flex;gap:8px;margin-bottom:12px;}
+
+.feed-post{background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:10px;}
+.feed-post-top{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.feed-post-name{font-size:12px;font-weight:700;}
+.feed-post-time{font-size:10px;color:var(--text-dim2);}
+.feed-post-txt{font-size:12.5px;line-height:1.5;margin-bottom:8px;}
+.feed-post img.evid{width:100%;border-radius:9px;margin-bottom:8px;max-height:220px;object-fit:cover;}
+.feed-actions{display:flex;gap:14px;}
+.feed-action{display:flex;align-items:center;gap:5px;font-size:11.5px;color:var(--text-dim);cursor:pointer;}
+.feed-action.liked{color:var(--accent2);}
+.feed-action svg{width:15px;height:15px;stroke:currentColor;fill:none;}
+.comment-box{margin-top:8px;display:flex;gap:6px;}
+.comment-list{margin-top:8px;}
+.comment-item{font-size:11.5px;color:var(--text-dim);margin-bottom:4px;}
+.comment-item b{color:var(--text);}
+
+/* perfil */
+.perfil-tabs{display:flex;gap:6px;margin-bottom:16px;overflow-x:auto;padding-bottom:2px;}
+.perfil-tab{flex-shrink:0;padding:8px 14px;border-radius:20px;background:var(--surface2);border:1px solid var(--border);color:var(--text-dim);font-size:11.5px;font-weight:700;cursor:pointer;}
+.perfil-tab.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+.big-avatar{width:80px;height:80px;border-radius:16px;background:var(--surface2);border:1px solid var(--border);margin:0 auto 14px;display:flex;align-items:center;justify-content:center;font-size:30px;overflow:hidden;cursor:pointer;position:relative;}
+.big-avatar img{width:100%;height:100%;object-fit:cover;}
+.edit-lock-note{background:rgba(212,165,55,.1);border:1px solid rgba(212,165,55,.35);color:var(--gold);font-size:11px;padding:9px 11px;border-radius:9px;margin-bottom:12px;line-height:1.5;}
+.toggle-row{display:flex;justify-content:space-between;align-items:center;padding:11px 0;border-bottom:1px solid var(--border);}
+.toggle-row:last-child{border-bottom:none;}
+.toggle-label{font-size:13px;font-weight:600;}
+.toggle-desc{font-size:11px;color:var(--text-dim2);margin-top:2px;}
+.switch{width:42px;height:24px;border-radius:14px;background:var(--surface3);position:relative;cursor:pointer;flex-shrink:0;transition:.2s;border:1px solid var(--border);}
+.switch.on{background:var(--accent);}
+.switch::after{content:'';position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:.2s;}
+.switch.on::after{transform:translateX(18px);}
+
+.theme-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.theme-opt{border-radius:12px;padding:12px;border:2px solid var(--border);cursor:pointer;position:relative;overflow:hidden;}
+.theme-opt.active{border-color:#fff;}
+.theme-opt .theme-swatch{height:34px;border-radius:8px;margin-bottom:8px;}
+.theme-opt .theme-name{font-size:11.5px;font-weight:700;}
+.theme-opt .theme-tag{font-size:9px;color:var(--text-dim2);}
+
+.rank-ladder-item{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--border);}
+.rank-ladder-item:last-child{border-bottom:none;}
+.rank-ladder-item.current{background:rgba(216,30,44,.08);margin:0 -16px;padding:11px 16px;border-radius:8px;}
+.rank-ladder-badge{width:34px;height:34px;border-radius:8px;background:var(--surface2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+.rank-ladder-info{flex:1;}
+.rank-ladder-name{font-size:13px;font-weight:700;}
+.rank-ladder-xp{font-size:10.5px;color:var(--text-dim2);}
+.rule-block{margin-bottom:14px;}
+.rule-block h4{font-family:'Oswald';font-size:12.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--accent2);margin:0 0 8px;}
+.rule-block li{font-size:12px;color:var(--text-dim);line-height:1.6;}
+
+.toast{position:fixed;bottom:96px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--surface2);border:1px solid var(--accent);color:var(--text);padding:11px 18px;border-radius:10px;font-size:12.5px;opacity:0;transition:.25s;z-index:200;max-width:88%;text-align:center;box-shadow:0 6px 20px rgba(0,0,0,.5);}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.hidden{display:none !important;}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- ============ AUTH ============ -->
+<div id="authScreen">
+  <div class="auth-badge">
+    <svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="1.8"><path d="M12 2l8 4v6c0 5-3.4 8.6-8 10-4.6-1.4-8-5-8-10V6l8-4z"/><path d="M9 12l2 2 4-4"/></svg>
+  </div>
+  <h1 class="auth-title">DISCIPLINA</h1>
+  <p class="auth-sub">Rotina · Treino · Estudo — nível ESA</p>
+
+  <div class="auth-card">
+    <div class="auth-tabs">
+      <div class="auth-tab active" id="tabCadastro">Criar conta</div>
+      <div class="auth-tab" id="tabLogin">Entrar</div>
+    </div>
+
+    <div class="auth-error" id="authError"></div>
+
+    <!-- CADASTRO -->
+    <div id="formCadastro">
+      <div class="avatar-picker">
+        <div class="avatar-circle" id="avatarPickerCircle">📷</div>
+        <input type="file" id="avatarPickerInput" accept="image/*">
+        <div class="avatar-hint">Foto de perfil (opcional agora)</div>
+      </div>
+      <label class="field-label">Nome de guerra (como quer ser chamado)</label>
+      <input type="text" id="cadNome" placeholder="Ex: Flip">
+      <div style="height:10px"></div>
+      <label class="field-label">Usuário (único, sem espaço)</label>
+      <input type="text" id="cadUsuario" placeholder="ex: flip_esa">
+      <div style="height:10px"></div>
+      <label class="field-label">Senha (mínimo 8 caracteres)</label>
+      <input type="password" id="cadSenha" placeholder="••••••••">
+      <div class="pw-meter"><div class="pw-meter-fill" id="pwMeterFill"></div></div>
+      <div class="pw-rules" id="pwRules">Precisa de 8+ caracteres, pelo menos 1 letra e 1 número.</div>
+      <div style="height:10px"></div>
+      <label class="field-label">Confirmar senha</label>
+      <input type="password" id="cadSenha2" placeholder="••••••••">
+      <div style="height:16px"></div>
+      <button class="btn btn-primary btn-block" id="btnCadastrar">Alistar-se</button>
+      <div class="google-btn" id="btnGoogleFake">
+        <svg width="15" height="15" viewBox="0 0 24 24"><path fill="#8a8a90" d="M21.35 11.1H12v2.9h5.35c-.23 1.5-1.65 4.4-5.35 4.4-3.22 0-5.85-2.67-5.85-5.95S8.78 6.5 12 6.5c1.83 0 3.06.78 3.76 1.45l2.56-2.47C16.7 3.9 14.55 3 12 3 6.98 3 2.9 7.03 2.9 12s4.08 9 9.1 9c5.25 0 8.74-3.7 8.74-8.9 0-.6-.06-1.06-.16-1.5z"/></svg>
+        Entrar com Google — em breve
+      </div>
+      <div class="auth-note">Login com Google exige um servidor registrado (OAuth). Deixamos o botão pronto pra quando o app for pra produção. Por enquanto, sua senha é protegida com hash SHA-256 salva só neste navegador.</div>
+    </div>
+
+    <!-- LOGIN -->
+    <div id="formLogin" style="display:none;">
+      <label class="field-label">Usuário</label>
+      <input type="text" id="logUsuario" placeholder="seu usuário">
+      <div style="height:10px"></div>
+      <label class="field-label">Senha</label>
+      <input type="password" id="logSenha" placeholder="••••••••">
+      <div style="height:16px"></div>
+      <button class="btn btn-primary btn-block" id="btnEntrar">Entrar</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ APP ============ -->
+<div id="mainApp" class="hidden">
+
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="topbar-avatar" id="headerAvatar">🪖</div>
+      <div>
+        <div class="topbar-name" id="headerName">USUÁRIO</div>
+        <div class="topbar-clock" id="headerClock">--:--:-- · Brasília</div>
+      </div>
+    </div>
+    <div class="topbar-fire" id="topbarFire">🔥 <span id="topStreak">0</span></div>
+  </header>
+
+  <main>
+
+    <!-- INÍCIO -->
+    <section class="view" id="view-inicio">
+      <h2 class="section-title">Início</h2>
+      <p class="section-sub" id="dataHojeTxt">carregando data...</p>
+
+      <div class="card clickable" id="cardPatente">
+        <div class="card-title">Patente atual <span style="color:var(--accent2);">toque para ver detalhes ▸</span></div>
+        <div class="patente-box">
+          <div class="patente-badge"><div class="chevrons-mini" id="chevronsMini"></div></div>
+          <div class="patente-info">
+            <div class="patente-name" id="patenteName">Recruta</div>
+            <div class="patente-days" id="patenteDays">0 XP acumulado</div>
+          </div>
+        </div>
+        <div class="xp-track"><div class="xp-fill" id="xpFill" style="width:0%"></div></div>
+        <div class="xp-label"><span id="xpAtual">0 XP</span><span id="xpProxima">próxima: —</span></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Essa semana</div>
+        <div class="stat-grid">
+          <div class="stat-box" id="statBoxTreinos"><div class="num" id="statTreinos">0</div><div class="lbl">treinos feitos</div></div>
+          <div class="stat-box" id="statBoxHoras"><div class="num" id="statHoras">0h</div><div class="lbl">estudadas</div></div>
+          <div class="stat-box" id="statBoxStreak"><div class="num" id="statStreak">0</div><div class="lbl">dias perfeitos</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Relatório crítico da semana</div>
+        <div id="criticaSemanaBox"></div>
+      </div>
+    </section>
+
+    <!-- TREINOS -->
+    <section class="view" id="view-treinos">
+      <h2 class="section-title">Treinos</h2>
+      <p class="section-sub">Cada semana libera na data certa. Sem atalho.</p>
+      <div id="treinosContainer"></div>
+    </section>
+
+    <!-- ALIMENTAÇÃO -->
+    <section class="view" id="view-alimentacao">
+      <h2 class="section-title">Alimentação</h2>
+      <p class="section-sub">Registre o que come. Sem disciplina na comida não tem preparo completo.</p>
+
+      <div class="card">
+        <div class="card-title">Peso e medidas <span class="link-add" id="btnAddMedida">+ registrar</span></div>
+        <div id="medidasResumo"></div>
+        <div class="sparkline" id="pesoSpark"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Refeições de hoje <span class="link-add" id="btnAddRefeicao">+ adicionar</span></div>
+        <div id="refeicoesHoje"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Marmita da semana</div>
+        <textarea id="marmitaPlano" placeholder="Planeje aqui sua marmita da semana: proteína, carbo, legumes, quantidade..."></textarea>
+      </div>
+    </section>
+
+    <!-- ESTUDOS -->
+    <section class="view" id="view-estudos">
+      <h2 class="section-title">Estudos</h2>
+      <p class="section-sub">Agenda semanal e relatórios de desempenho.</p>
+
+      <div class="tabs">
+        <button class="tab-btn active" data-etab="agenda">Agenda</button>
+        <button class="tab-btn" data-etab="relatorio">Relatórios</button>
+      </div>
+
+      <div id="etab-agenda">
+        <div id="agendaSemanaContainer"></div>
+      </div>
+
+      <div id="etab-relatorio" style="display:none;">
+        <div class="tabs">
+          <button class="tab-btn active" data-rtab="semana">Semanal</button>
+          <button class="tab-btn" data-rtab="mes">Mensal</button>
+        </div>
+        <div class="card" id="criticaEstudoCard">
+          <div class="card-title">Análise crítica</div>
+          <div id="criticaEstudoBox"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Horas por matéria</div>
+          <div id="reportBars"></div>
+        </div>
+        <div class="card">
+          <div class="card-title">Resumo</div>
+          <div class="stat-grid">
+            <div class="stat-box"><div class="num" id="repHoras">0h</div><div class="lbl">total</div></div>
+            <div class="stat-box"><div class="num" id="repSessoes">0</div><div class="lbl">sessões</div></div>
+            <div class="stat-box"><div class="num" id="repTreinos">0</div><div class="lbl">treinos</div></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Simulados</div>
+          <div class="stat-grid">
+            <div class="stat-box"><div class="num" id="repQuestoes">0</div><div class="lbl">questões</div></div>
+            <div class="stat-box"><div class="num" id="repAcertos">0</div><div class="lbl">acertos</div></div>
+            <div class="stat-box"><div class="num" id="repErros">0</div><div class="lbl">erros</div></div>
+          </div>
+          <div id="simuladosList" style="margin-top:12px;"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- BATALHA -->
+    <section class="view" id="view-batalha">
+      <h2 class="section-title">Batalha</h2>
+      <p class="section-sub">Ranking de disciplina. Seus dados ficam visíveis pra quem você adicionar.</p>
+
+      <div class="card">
+        <div class="card-title">Adicionar amigo</div>
+        <div class="friend-input-row">
+          <input type="text" id="inpAmigo" placeholder="usuário do amigo">
+          <button class="btn btn-primary btn-sm" id="btnAddAmigo">Add</button>
+        </div>
+        <div id="amigosChips" style="display:flex;gap:6px;flex-wrap:wrap;"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Ranking</div>
+        <div id="leaderboard"></div>
+      </div>
+    </section>
+
+    <!-- PERFIL -->
+    <section class="view" id="view-perfil">
+      <h2 class="section-title">Perfil</h2>
+      <div class="perfil-tabs">
+        <div class="perfil-tab active" data-ptab="conta">Minha conta</div>
+        <div class="perfil-tab" data-ptab="config">Configurações</div>
+        <div class="perfil-tab" data-ptab="temas">Temas</div>
+        <div class="perfil-tab" data-ptab="dados">Dados</div>
+      </div>
+
+      <div id="ptab-conta">
+        <div class="card">
+          <div class="edit-lock-note" id="editLockNote"></div>
+          <div class="big-avatar" id="perfilBigAvatar">🪖</div>
+          <input type="file" id="perfilAvatarInput" accept="image/*" style="display:none;">
+          <label class="field-label">Nome de guerra</label>
+          <input type="text" id="perfilNome">
+          <div style="height:10px"></div>
+          <label class="field-label">Usuário</label>
+          <input type="text" id="perfilUsuario">
+          <div style="height:14px"></div>
+          <button class="btn btn-primary btn-block" id="btnSalvarPerfil">Salvar alterações</button>
+        </div>
+      </div>
+
+      <div id="ptab-config" style="display:none;">
+        <div class="card">
+          <div class="card-title">Edição</div>
+          <div class="toggle-row">
+            <div><div class="toggle-label">Modo edição</div><div class="toggle-desc">Libera editar nome, foto, usuário e planos</div></div>
+            <div class="switch" id="switchEdit"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Lembretes</div>
+          <div class="toggle-row">
+            <div><div class="toggle-label">Notificações no app</div><div class="toggle-desc">Avisa sua rotina do dia enquanto o app está aberto</div></div>
+            <div class="switch" id="switchNotif"></div>
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Sobre a patente</div>
+          <button class="btn btn-ghost btn-block" id="btnVerPatenteConfig">Ver regras completas de patente</button>
+        </div>
+      </div>
+
+      <div id="ptab-temas" style="display:none;">
+        <div class="card">
+          <div class="card-title">Temas</div>
+          <div class="theme-grid" id="themeGrid"></div>
+        </div>
+      </div>
+
+      <div id="ptab-dados" style="display:none;">
+        <div class="card">
+          <div class="card-title">Conta</div>
+          <button class="btn btn-ghost btn-block" id="btnSair">Sair da conta</button>
+        </div>
+        <div class="card">
+          <div class="card-title">Zona de risco</div>
+          <button class="btn btn-danger btn-block" id="btnReset">Apagar todos os dados deste app</button>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <nav class="bottom">
+    <button data-view="inicio" class="active">
+      <svg viewBox="0 0 24 24"><path d="M12 2l8 4v6c0 5-3.4 8.6-8 10-4.6-1.4-8-5-8-10V6l8-4z"/><path d="M9 12l2 2 4-4"/></svg>
+      Início
+    </button>
+    <button data-view="treinos">
+      <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><circle cx="12" cy="12" r="4.5"/><circle cx="12" cy="12" r="1"/></svg>
+      Treinos
+    </button>
+    <button data-view="alimentacao">
+      <svg viewBox="0 0 24 24"><path d="M6 2v8a2 2 0 002 2v10M6 2v20M10 2v8M18 2c-2 0-3 3-3 6s1 4 3 4v10"/></svg>
+      Comida
+    </button>
+    <button data-view="estudos">
+      <svg viewBox="0 0 24 24"><path d="M4 19.5V5a2 2 0 012-2h14v16H6a2 2 0 00-2 2.5z"/><path d="M4 19.5A2 2 0 006 21h14M8 7h8M8 10.5h8"/></svg>
+      Estudos
+    </button>
+    <button data-view="batalha">
+      <svg viewBox="0 0 24 24"><path d="M6.5 3l4 4M17.5 3l-4 4M3 6.5l4-4M21 6.5l-4-4M4 20l6-6M20 20l-6-6M9 9l6 6"/></svg>
+      Batalha
+    </button>
+    <button data-view="perfil">
+      <svg viewBox="0 0 24 24"><path d="M12 2L4 5v6c0 5 3.4 8.5 8 10 4.6-1.5 8-5 8-10V5l-8-3z"/><circle cx="12" cy="10" r="2.6"/><path d="M8 16.5c.7-1.8 2.2-2.8 4-2.8s3.3 1 4 2.8"/></svg>
+      Perfil
+    </button>
+  </nav>
+</div>
+
+<div class="overlay" id="overlay"><div class="sheet" id="sheet"></div></div>
+<div class="toast" id="toast"></div>
+</div>
+
+<script>
+/* ============================================================
+   HELPERS: storage / util
+============================================================ */
+async function sGet(key, shared=false){
+  try{ const r = await window.storage.get(key, shared); return r ? JSON.parse(r.value) : null; }
+  catch(e){ return null; }
+}
+async function sSet(key, value, shared=false){
+  try{ await window.storage.set(key, JSON.stringify(value), shared); return true; }
+  catch(e){ console.error('storage error', e); return false; }
+}
+async function sDel(key, shared=false){ try{ await window.storage.delete(key, shared); }catch(e){} }
+
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('show');
+  clearTimeout(window._toastTimer);
+  window._toastTimer = setTimeout(()=>t.classList.remove('show'), 2800);
+}
+function uid(){ return Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-4); }
+function todayStr(){ return new Date().toISOString().slice(0,10); }
+function weekKeyOf(d=new Date()){ const dt=new Date(d); const day=(dt.getDay()+6)%7; dt.setDate(dt.getDate()-day); return dt.toISOString().slice(0,10); }
+function monthKeyOf(d=new Date()){ return d.toISOString().slice(0,7); }
+function fmtTime(sec){ const h=String(Math.floor(sec/3600)).padStart(2,'0'); const m=String(Math.floor((sec%3600)/60)).padStart(2,'0'); const s=String(Math.floor(sec%60)).padStart(2,'0'); return `${h}:${m}:${s}`; }
+function escapeHtml(s){ const d=document.createElement('div'); d.textContent = s==null?'':String(s); return d.innerHTML; }
+function daysBetween(d1,d2){ return Math.floor((d2-d1)/86400000); }
+
+async function hashPassword(pw){
+  const enc = new TextEncoder().encode('disciplina_salt_'+pw);
+  const buf = await crypto.subtle.digest('SHA-256', enc);
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+function resizeImage(file, maxSize=360){
+  return new Promise((resolve,reject)=>{
+    const reader = new FileReader();
+    reader.onload = (e)=>{
+      const img = new Image();
+      img.onload = ()=>{
+        let w=img.width, h=img.height;
+        if(w>h){ if(w>maxSize){h=Math.round(h*maxSize/w); w=maxSize;} }
+        else{ if(h>maxSize){w=Math.round(w*maxSize/h); h=maxSize;} }
+        const canvas = document.createElement('canvas');
+        canvas.width=w; canvas.height=h;
+        canvas.getContext('2d').drawImage(img,0,0,w,h);
+        resolve(canvas.toDataURL('image/jpeg',0.82));
+      };
+      img.onerror = reject;
+      img.src = e.target.result;
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
+/* ============================================================
+   CONSTANTS
+============================================================ */
+const DIAS_SEMANA = ['Segunda','Terça','Quarta','Quinta','Sexta','Sábado','Domingo'];
+const DIAS_ABREV = ['SEG','TER','QUA','QUI','SEX','SÁB','DOM'];
+
+const MATERIAS_FIXAS = ['Português','Matemática','Geografia','História','Inglês','Redação','Simulado'];
+
+const THEMES = [
+  {id:'red', nome:'RED', tag:'Padrão tático', accent:'#d81e2c', accent2:'#ff4747', bg:'#07070a', surface:'#131316'},
+  {id:'aco', nome:'AÇO', tag:'Fardado', accent:'#5b6b78', accent2:'#8fa3b3', bg:'#0a0d0f', surface:'#151a1d'},
+  {id:'selva', nome:'SELVA', tag:'Camuflado', accent:'#3f6b34', accent2:'#7ea855', bg:'#080a07', surface:'#12160f'},
+  {id:'gelo', nome:'GELO', tag:'Operação Ártica', accent:'#2166b0', accent2:'#5fa8e8', bg:'#060a10', surface:'#0f1620'},
+  {id:'ouro', nome:'OURO', tag:'Alta patente', accent:'#a9791f', accent2:'#e8c257', bg:'#0a0906', surface:'#171307'},
+  {id:'rosa', nome:'ROSA CHOQUE', tag:'Modo livre', accent:'#d81e7a', accent2:'#ff5fb0', bg:'#0a070a', surface:'#170f16'},
+];
+
+// XP / patentes: 3º Sargento é o topo, o mais difícil de manter
+const RANKS = [
+  {id:'recruta', name:'Recruta', min:0, max:120, badge:'🪖'},
+  {id:'soldado', name:'Soldado', min:120, max:320, badge:'🎖️'},
+  {id:'cabo', name:'Cabo', min:320, max:600, badge:'⭐'},
+  {id:'3sgt', name:'3º Sargento', min:600, max:99999, badge:'🏅'},
+];
+const XP_DIA_PERFEITO = 45;
+const XP_DIA_PARCIAL = 8;
+const XP_PUNICAO_FALTA = -70;
+
+const TAUNTS_LOCKED = [
+  'Recruta, você ainda não terminou a semana atual. Termina primeiro, depois pensa em avançar.',
+  'Achou que ia pular etapa? Aqui não. Cumpra a semana de hoje.',
+  'Disciplina não é sobre vontade, é sobre constância. Volta pro seu dia de hoje.',
+  'Essa semana só abre quando o tempo dela chegar. Faça o que tem que fazer agora.',
+  'Ansiedade de recruta querendo pular treino. Foco no que está na sua frente.',
+];
+const TAUNTS_PAUSE = [
+  'Enquanto você tá aí parado, seu concorrente já terminou o simulado de hoje.',
+  'Pausa é onde a preparação morre. Volta.',
+  'Ninguém que passou na ESA ficou pausando o cronômetro. Decide.',
+  'Seu adversário na fila da vaga não pausou. Por que você pausou?',
+  'A vaga não espera quem hesita. Retoma agora.',
+];
+
+/* ============================================================
+   STATE
+============================================================ */
+let state = {
+  conta:null, // {nome, usuario, senhaHash, foto, criadoEm}
+  session:false,
+  config:{editMode:false, notif:false, tema:'red'},
+  treinoInicio:null,
+  treinoPlano:null,
+  agenda:null, // {Segunda:[{id,materia}], ...}
+  materiasConteudo:{}, // {materiaNome: [{id,nome,feito}]}
+  estudoLogs:[],
+  simulados:[],
+  alimentacaoLogs:[],
+  medidas:[],
+  marmitaPlano:'',
+  amigos:[],
+  xpTotal:0,
+  diasStatus:{}, // {dataISO: 'perfeito'|'parcial'|'falta'}
+  timer:{running:false,startedAt:null,elapsed:0,materia:'',dia:''},
+};
+
+function defaultTreinoPlano(){
+  const semanas = [];
+  for(let s=1;s<=8;s++){
+    const dias = DIAS_SEMANA.map((nomeDia,i)=>{
+      let desc='', tipo='Descanso';
+      if(s===1){
+        if(i%2===0){ tipo='Corrida leve'; desc='100m correndo leve + 100m andando, repetir 6x'; }
+        else { tipo='Descanso ativo'; desc='Alongamento 15min + mobilidade'; }
+      } else {
+        tipo = i%2===0 ? 'Corrida' : 'Descanso ativo';
+        desc = i%2===0 ? 'A definir — edite este dia com a distância da semana '+s : 'Alongamento + mobilidade';
+      }
+      return { id:uid(), tipo, desc, video:'', feito:false, fotoData:null, dataFeito:null };
+    });
+    semanas.push({ id:uid(), semana:s, dias });
+  }
+  return semanas;
+}
+function defaultAgenda(){
+  const a = {};
+  DIAS_SEMANA.forEach(d=>a[d]=[]);
+  return a;
+}
+
+/* ============================================================
+   LOAD / SAVE
+============================================================ */
+async function loadAll(){
+  const conta = await sGet('conta');
+  const config = await sGet('config');
+  const treinoInicio = await sGet('treinoInicio');
+  const treinoPlano = await sGet('treinoPlano');
+  const agenda = await sGet('agenda');
+  const materiasConteudo = await sGet('materiasConteudo');
+  const estudoLogs = await sGet('estudoLogs');
+  const simulados = await sGet('simulados');
+  const alimentacaoLogs = await sGet('alimentacaoLogs');
+  const medidas = await sGet('medidas');
+  const marmitaPlano = await sGet('marmitaPlano');
+  const amigos = await sGet('amigos');
+  const xpTotal = await sGet('xpTotal');
+  const diasStatus = await sGet('diasStatus');
+
+  state.conta = conta;
+  state.config = config || {editMode:false, notif:false, tema:'red'};
+  state.treinoInicio = treinoInicio;
+  state.treinoPlano = treinoPlano || null;
+  state.agenda = agenda || defaultAgenda();
+  state.materiasConteudo = materiasConteudo || {};
+  state.estudoLogs = estudoLogs || [];
+  state.simulados = simulados || [];
+  state.alimentacaoLogs = alimentacaoLogs || [];
+  state.medidas = medidas || [];
+  state.marmitaPlano = marmitaPlano || '';
+  state.amigos = amigos || [];
+  state.xpTotal = xpTotal || 0;
+  state.diasStatus = diasStatus || {};
+
+  applyTheme(state.config.tema);
+}
+async function saveTreinoPlano(){ await sSet('treinoPlano', state.treinoPlano); }
+async function saveAgenda(){ await sSet('agenda', state.agenda); }
+async function saveMaterias(){ await sSet('materiasConteudo', state.materiasConteudo); }
+
+function applyTheme(themeId){
+  const t = THEMES.find(x=>x.id===themeId) || THEMES[0];
+  document.documentElement.style.setProperty('--accent', t.accent);
+  document.documentElement.style.setProperty('--accent2', t.accent2);
+  document.documentElement.style.setProperty('--accent-glow', t.accent+'55');
+  document.documentElement.style.setProperty('--bg', t.bg);
+  document.documentElement.style.setProperty('--surface', t.surface);
+}
+
+/* ============================================================
+   AUTH
+============================================================ */
+document.getElementById('tabCadastro').addEventListener('click', ()=>{
+  document.getElementById('tabCadastro').classList.add('active');
+  document.getElementById('tabLogin').classList.remove('active');
+  document.getElementById('formCadastro').style.display='';
+  document.getElementById('formLogin').style.display='none';
+  hideAuthError();
+});
+document.getElementById('tabLogin').addEventListener('click', ()=>{
+  document.getElementById('tabLogin').classList.add('active');
+  document.getElementById('tabCadastro').classList.remove('active');
+  document.getElementById('formLogin').style.display='';
+  document.getElementById('formCadastro').style.display='none';
+  hideAuthError();
+});
+function showAuthError(msg){ const e=document.getElementById('authError'); e.textContent=msg; e.style.display='block'; }
+function hideAuthError(){ document.getElementById('authError').style.display='none'; }
+
+let novaFotoData = null;
+document.getElementById('avatarPickerCircle').addEventListener('click', ()=>document.getElementById('avatarPickerInput').click());
+document.getElementById('avatarPickerInput').addEventListener('change', async (e)=>{
+  const f = e.target.files[0]; if(!f) return;
+  novaFotoData = await resizeImage(f, 300);
+  document.getElementById('avatarPickerCircle').innerHTML = `<img src="${novaFotoData}">`;
+});
+
+function passwordStrength(pw){
+  let score = 0;
+  if(pw.length>=8) score+=40;
+  if(/[0-9]/.test(pw)) score+=20;
+  if(/[a-z]/.test(pw)) score+=15;
+  if(/[A-Z]/.test(pw)) score+=15;
+  if(/[^a-zA-Z0-9]/.test(pw)) score+=10;
+  return Math.min(100,score);
+}
+document.getElementById('cadSenha').addEventListener('input', (e)=>{
+  const pw = e.target.value;
+  const score = passwordStrength(pw);
+  const fill = document.getElementById('pwMeterFill');
+  fill.style.width = score+'%';
+  fill.style.background = score<40 ? '#ff4747' : score<75 ? '#e8a33d' : '#3ecf8e';
+  const rules = document.getElementById('pwRules');
+  const okLen = pw.length>=8, okNum = /[0-9]/.test(pw), okLetra = /[a-zA-Z]/.test(pw);
+  rules.innerHTML = `<span class="${okLen?'ok':''}">${okLen?'✓':'○'} 8+ caracteres</span> · <span class="${okNum?'ok':''}">${okNum?'✓':'○'} 1 número</span> · <span class="${okLetra?'ok':''}">${okLetra?'✓':'○'} 1 letra</span>`;
+});
+
+document.getElementById('btnGoogleFake').addEventListener('click', ()=>{
+  toast('Login com Google só funciona com um servidor OAuth configurado. Por enquanto, use usuário e senha.');
+});
+
+document.getElementById('btnCadastrar').addEventListener('click', async ()=>{
+  hideAuthError();
+  const nome = document.getElementById('cadNome').value.trim();
+  const usuario = document.getElementById('cadUsuario').value.trim().toLowerCase().replace(/\s+/g,'_');
+  const senha = document.getElementById('cadSenha').value;
+  const senha2 = document.getElementById('cadSenha2').value;
+
+  if(!nome){ showAuthError('Escreva seu nome de guerra.'); return; }
+  if(!usuario || usuario.length<3){ showAuthError('Escolha um usuário com pelo menos 3 caracteres.'); return; }
+  if(senha.length<8 || !/[0-9]/.test(senha) || !/[a-zA-Z]/.test(senha)){ showAuthError('Senha fraca: mínimo 8 caracteres, com letra e número.'); return; }
+  if(senha!==senha2){ showAuthError('As senhas não coincidem.'); return; }
+
+  const existente = await sGet('batalha:'+usuario, true);
+  if(existente){ showAuthError('Esse usuário já existe. Escolha outro ou faça login.'); return; }
+
+  const senhaHash = await hashPassword(senha);
+  const conta = { nome, usuario, senhaHash, foto: novaFotoData, criadoEm: todayStr() };
+  await sSet('conta', conta);
+  await sSet('sessionActive', true);
+  await sSet('treinoInicio', todayStr());
+  state.conta = conta;
+  state.treinoInicio = todayStr();
+
+  await sSet('batalha:'+usuario, { nome, foto: novaFotoData, xp:0, streak:0, atualizadoEm: todayStr() }, true);
+
+  toast('Alistamento concluído. Bem-vindo(a), '+nome+'.');
+  await enterApp();
+});
+
+document.getElementById('btnEntrar').addEventListener('click', async ()=>{
+  hideAuthError();
+  const usuario = document.getElementById('logUsuario').value.trim().toLowerCase().replace(/\s+/g,'_');
+  const senha = document.getElementById('logSenha').value;
+  const conta = await sGet('conta');
+  if(!conta || conta.usuario!==usuario){ showAuthError('Usuário ou senha incorretos.'); return; }
+  const hash = await hashPassword(senha);
+  if(hash!==conta.senhaHash){ showAuthError('Usuário ou senha incorretos.'); return; }
+  state.conta = conta;
+  await sSet('sessionActive', true);
+  toast('De volta, '+conta.nome+'.');
+  await enterApp();
+});
+
+async function enterApp(){
+  await loadAll();
+  if(!state.treinoPlano){ state.treinoPlano = defaultTreinoPlano(); await saveTreinoPlano(); }
+  await checarPunicaoOntem();
+  document.getElementById('authScreen').classList.add('hidden');
+  document.getElementById('mainApp').classList.remove('hidden');
+  renderHeader();
+  switchView('inicio');
+  startClock();
+}
+
+/* ============================================================
+   HEADER / CLOCK
+============================================================ */
+function renderHeader(){
+  document.getElementById('headerName').textContent = (state.conta.nome||'').toUpperCase();
+  const av = document.getElementById('headerAvatar');
+  av.innerHTML = state.conta.foto ? `<img src="${state.conta.foto}">` : '🪖';
+}
+function startClock(){
+  function tick(){
+    const now = new Date();
+    const brasilia = new Intl.DateTimeFormat('pt-BR',{timeZone:'America/Sao_Paulo',hour:'2-digit',minute:'2-digit',second:'2-digit'}).format(now);
+    document.getElementById('headerClock').textContent = brasilia + ' · Brasília';
+    const dataHoje = new Intl.DateTimeFormat('pt-BR',{timeZone:'America/Sao_Paulo',weekday:'long',day:'2-digit',month:'long'}).format(now);
+    const el = document.getElementById('dataHojeTxt');
+    if(el) el.textContent = 'Hoje é ' + dataHoje + '. Sem desculpa.';
+  }
+  tick();
+  if(window._clockInterval) clearInterval(window._clockInterval);
+  window._clockInterval = setInterval(tick, 1000);
+}
+
+/* ============================================================
+   NAV
+============================================================ */
+function switchView(name){
+  document.querySelectorAll('section.view').forEach(s=>s.classList.remove('active'));
+  document.getElementById('view-'+name).classList.add('active');
+  document.querySelectorAll('nav.bottom button').forEach(b=>b.classList.toggle('active', b.dataset.view===name));
+  if(name==='inicio') renderInicio();
+  if(name==='treinos') renderTreinos();
+  if(name==='alimentacao') renderAlimentacao();
+  if(name==='estudos') renderEstudos();
+  if(name==='batalha') renderBatalha();
+  if(name==='perfil') renderPerfil();
+}
+document.querySelectorAll('nav.bottom button').forEach(b=>b.addEventListener('click', ()=>switchView(b.dataset.view)));
+
+/* ============================================================
+   MODAL / SHEET
+============================================================ */
+function openSheet(html){
+  document.getElementById('sheet').innerHTML = `<div class="sheet-handle"></div><button class="sheet-close" onclick="closeSheet()">✕</button>${html}`;
+  document.getElementById('overlay').classList.add('show');
+}
+function closeSheet(){ document.getElementById('overlay').classList.remove('show'); }
+document.getElementById('overlay').addEventListener('click', (e)=>{ if(e.target.id==='overlay') closeSheet(); });
+
+/* ============================================================
+   XP / PATENTE
+============================================================ */
+function getPatente(xp){
+  let cur = RANKS[0];
+  for(const r of RANKS){ if(xp>=r.min) cur=r; }
+  return cur;
+}
+async function registrarDia(status){
+  // status: 'perfeito' | 'parcial'
+  const hoje = todayStr();
+  if(state.diasStatus[hoje]===status) return;
+  state.diasStatus[hoje] = status;
+  if(status==='perfeito') state.xpTotal += XP_DIA_PERFEITO;
+  else state.xpTotal += XP_DIA_PARCIAL;
+  if(state.xpTotal<0) state.xpTotal=0;
+  await sSet('diasStatus', state.diasStatus);
+  await sSet('xpTotal', state.xpTotal);
+  await publicarBatalha();
+}
+function calcFireStreak(){
+  let streak=0; let d=new Date();
+  while(true){
+    const ds = d.toISOString().slice(0,10);
+    if(state.diasStatus[ds]==='perfeito'){ streak++; d.setDate(d.getDate()-1); }
+    else if(ds===todayStr()){ d.setDate(d.getDate()-1); continue; } // hoje ainda em curso, não quebra
+    else break;
+  }
+  return streak;
+}
+function checarDiaCompleto(){
+  // dia é "perfeito" se: todos treinos do dia da semana atual feitos (se houver) + pelo menos 1 sessão de estudo agendada concluída
+  const hoje = new Date();
+  const diaSemana = DIAS_SEMANA[(hoje.getDay()+6)%7];
+  const semanaAtual = getSemanaAtualIndex();
+  let treinoOk = true;
+  if(semanaAtual && state.treinoPlano[semanaAtual-1]){
+    const diaTreino = state.treinoPlano[semanaAtual-1].dias[(hoje.getDay()+6)%7];
+    if(diaTreino && diaTreino.tipo!=='Descanso' && diaTreino.tipo!=='Descanso ativo'){
+      treinoOk = !!diaTreino.feito;
+    }
+  }
+  const materiasHoje = (state.agenda[diaSemana]||[]);
+  let estudoOk = true;
+  if(materiasHoje.length>0){
+    const feitas = state.estudoLogs.filter(l=>l.data===todayStr());
+    estudoOk = materiasHoje.every(m=>feitas.some(f=>f.materia===m.materia));
+  }
+  if(treinoOk && estudoOk && (materiasHoje.length>0)){
+    registrarDia('perfeito');
+  } else if(treinoOk===false || state.estudoLogs.some(l=>l.data===todayStr())){
+    registrarDia('parcial');
+  }
+}
+function getSemanaAtualIndex(){
+  if(!state.treinoInicio) return 1;
+  const inicio = new Date(state.treinoInicio+'T00:00:00');
+  const diff = daysBetween(inicio, new Date());
+  return Math.max(1, Math.floor(diff/7)+1);
+}
+
+async function publicarBatalha(){
+  if(!state.conta) return;
+  const patente = getPatente(state.xpTotal);
+  await sSet('batalha:'+state.conta.usuario, {
+    nome: state.conta.nome, foto: state.conta.foto,
+    xp: state.xpTotal, streak: calcFireStreak(), patente: patente.name,
+    atualizadoEm: todayStr(),
+  }, true);
+}
+
+function renderPatenteSheet(){
+  const xp = state.xpTotal;
+  const cur = getPatente(xp);
+  let html = `<h3 class="sheet-title">Escalada de patente</h3>
+    <p style="font-size:12px;color:var(--text-dim);margin:0 0 16px;line-height:1.5;">O 3º Sargento é o topo — igual na vida real, é o mais difícil de alcançar e o mais fácil de perder. Qualquer dia sem registrar nada tira XP.</p>`;
+  html += `<div class="rule-block">`;
+  RANKS.forEach(r=>{
+    const isCur = r.id===cur.id;
+    html += `<div class="rank-ladder-item ${isCur?'current':''}">
+      <div class="rank-ladder-badge">${r.badge}</div>
+      <div class="rank-ladder-info">
+        <div class="rank-ladder-name">${r.name}${isCur?' — você está aqui':''}</div>
+        <div class="rank-ladder-xp">${r.min} — ${r.max===99999?'∞':r.max} XP</div>
+      </div>
+    </div>`;
+  });
+  html += `</div>`;
+  html += `<div class="rule-block"><h4>Como ganhar XP</h4><ul>
+    <li>Dia 100% cumprido (treino do dia + todas as matérias da agenda estudadas) = +${XP_DIA_PERFEITO} XP e mantém o foguinho 🔥</li>
+    <li>Dia parcialmente cumprido = +${XP_DIA_PARCIAL} XP, mas o foguinho zera na hora</li>
+  </ul></div>`;
+  html += `<div class="rule-block"><h4>Punições</h4><ul>
+    <li>Dia sem nenhum registro = ${XP_PUNICAO_FALTA} XP e pode te rebaixar de patente</li>
+    <li>Semana travada não pode ser adiantada — tentar entrar antes da hora não rende XP</li>
+  </ul></div>`;
+  html += `<div class="rule-block"><h4>Promoção</h4><ul>
+    <li>Patente sobe automaticamente ao bater o XP mínimo da próxima</li>
+    <li>3º Sargento exige constância real: um deslize grande já derruba pra Cabo</li>
+  </ul></div>`;
+  openSheet(html);
+}
+document.getElementById('cardPatente').addEventListener('click', renderPatenteSheet);
+document.getElementById('btnVerPatenteConfig').addEventListener('click', renderPatenteSheet);
+
+/* ============================================================
+   PUNIÇÃO DIÁRIA (checagem ao abrir o app)
+============================================================ */
+async function checarPunicaoOntem(){
+  if(!state.conta) return;
+  const ontem = new Date(); ontem.setDate(ontem.getDate()-1);
+  const ontemStr = ontem.toISOString().slice(0,10);
+  const jaChecado = await sGet('ultimaChecagem');
+  if(jaChecado===ontemStr) return;
+  if(!state.diasStatus[ontemStr]){
+    state.xpTotal = Math.max(0, state.xpTotal + XP_PUNICAO_FALTA);
+    state.diasStatus[ontemStr] = 'falta';
+    await sSet('xpTotal', state.xpTotal);
+    await sSet('diasStatus', state.diasStatus);
+    toast('Você não registrou nada ontem. -70 XP aplicado. Sem desculpa hoje.');
+  }
+  await sSet('ultimaChecagem', ontemStr);
+}
+
+/* ============================================================
+   INÍCIO
+============================================================ */
+function renderInicio(){
+  const xp = state.xpTotal;
+  const patente = getPatente(xp);
+  document.getElementById('patenteName').textContent = patente.name;
+  document.getElementById('patenteDays').textContent = xp+' XP acumulado';
+  document.getElementById('xpAtual').textContent = xp+' XP';
+  const prox = RANKS[RANKS.findIndex(r=>r.id===patente.id)+1];
+  document.getElementById('xpProxima').textContent = prox ? `próxima: ${prox.name} (${prox.min} XP)` : 'patente máxima atingida';
+  const pct = patente.max===99999 ? 100 : Math.min(100, Math.round(((xp-patente.min)/(patente.max-patente.min))*100));
+  document.getElementById('xpFill').style.width = pct+'%';
+
+  const chevBox = document.getElementById('chevronsMini');
+  chevBox.innerHTML='';
+  const idx = RANKS.findIndex(r=>r.id===patente.id);
+  for(let i=0;i<4;i++){
+    const c = document.createElement('div');
+    c.className = 'chevron-mini' + (i<=idx?' on':'');
+    chevBox.appendChild(c);
+  }
+
+  const streak = calcFireStreak();
+  const fireEl = document.getElementById('topbarFire');
+  document.getElementById('topStreak').textContent = streak;
+  fireEl.classList.toggle('on', streak>0);
+
+  const wk = weekKeyOf();
+  const treinosSemana = state.treinoPlano.flatMap(s=>s.dias).filter(d=>d.feito && d.dataFeito && weekKeyOf(new Date(d.dataFeito))===wk);
+  const segsSemana = state.estudoLogs.filter(l=>weekKeyOf(new Date(l.data))===wk);
+  const minSemana = segsSemana.reduce((a,b)=>a+b.duracao,0);
+  const statStreak = Object.entries(state.diasStatus).filter(([d,s])=>weekKeyOf(new Date(d))===wk && s==='perfeito').length;
+  document.getElementById('statTreinos').textContent = treinosSemana.length;
+  document.getElementById('statHoras').textContent = (minSemana/60).toFixed(1)+'h';
+  document.getElementById('statStreak').textContent = statStreak;
+
+  document.getElementById('statBoxTreinos').onclick = ()=>{
+    let html = `<h3 class="sheet-title">Treinos feitos — essa semana</h3>`;
+    if(treinosSemana.length===0){ html += `<div class="empty-state"><p>Nenhum treino concluído essa semana ainda.</p></div>`; }
+    else{
+      html += treinosSemana.map(d=>`<div class="topic-row"><div class="topic-name">${escapeHtml(d.tipo)} — ${escapeHtml(d.dataFeito)}</div></div>`).join('');
+    }
+    openSheet(html);
+  };
+  document.getElementById('statBoxHoras').onclick = ()=>{
+    let html = `<h3 class="sheet-title">Horas estudadas — essa semana</h3>`;
+    if(segsSemana.length===0){ html += `<div class="empty-state"><p>Nenhuma sessão de estudo registrada essa semana.</p></div>`; }
+    else{
+      html += segsSemana.map(l=>`<div class="topic-row"><div class="topic-name">${escapeHtml(l.materia)} — ${escapeHtml(l.data)}</div><div class="mono" style="color:var(--text-dim);font-size:11.5px;">${l.duracao} min</div></div>`).join('');
+    }
+    openSheet(html);
+  };
+  document.getElementById('statBoxStreak').onclick = ()=>{
+    let html = `<h3 class="sheet-title">Dias dessa semana</h3>`;
+    const wkStart = new Date(wk+'T00:00:00');
+    html += `<div>`;
+    for(let i=0;i<7;i++){
+      const d = new Date(wkStart); d.setDate(d.getDate()+i);
+      const ds = d.toISOString().slice(0,10);
+      const st = state.diasStatus[ds];
+      const label = st==='perfeito' ? '✅ Perfeito' : st==='parcial' ? '🟡 Parcial' : st==='falta' ? '❌ Falta' : (ds>todayStr() ? '· Ainda não chegou' : '❌ Sem registro');
+      html += `<div class="topic-row"><div class="topic-name">${DIAS_SEMANA[i]} — ${ds}</div><div style="font-size:11.5px;">${label}</div></div>`;
+    }
+    html += `</div>`;
+    openSheet(html);
+  };
+
+  renderCriticaSemana(minSemana, treinosSemana.length, statStreak);
+}
+
+function renderCriticaSemana(minSemana, treinosCount, diasPerfeitos){
+  const horas = minSemana/60;
+  let msgs = [];
+  if(horas < 5) msgs.push(`<b>Estudo insuficiente:</b> ${horas.toFixed(1)}h essa semana. Pra ESA, isso é fraco. Meta mínima séria é 10h+/semana.`);
+  else if(horas < 10) msgs.push(`<b>Estudo mediano:</b> ${horas.toFixed(1)}h essa semana. Dá pra melhorar, mas não é vergonhoso.`);
+  else msgs.push(`<b>Estudo consistente:</b> ${horas.toFixed(1)}h essa semana. Continua assim.`);
+
+  if(treinosCount===0) msgs.push(`<b>Zero treino registrado.</b> Preparo físico também é eliminatório no TAF. Não deixa pra depois.`);
+  else if(treinosCount<3) msgs.push(`<b>Treino abaixo do ideal:</b> só ${treinosCount} sessão(ões) essa semana.`);
+  else msgs.push(`<b>Treino em dia:</b> ${treinosCount} sessões registradas.`);
+
+  if(diasPerfeitos===0) msgs.push(`<b>Nenhum dia perfeito ainda.</b> Foguinho zerado. Comece hoje.`);
+  else msgs.push(`<b>${diasPerfeitos} dia(s) perfeito(s)</b> essa semana. É isso que constrói patente de verdade.`);
+
+  document.getElementById('criticaSemanaBox').innerHTML = msgs.map(m=>`<div class="critique-box">${m}</div>`).join('');
+}
+
+/* ============================================================
+   TREINOS
+============================================================ */
+function renderTreinos(){
+  const box = document.getElementById('treinosContainer');
+  box.innerHTML = '';
+  const semanaAtual = getSemanaAtualIndex();
+
+  state.treinoPlano.forEach((semana, sIdx)=>{
+    const unlocked = semana.semana <= semanaAtual;
+    const isCurrentWeek = semana.semana === semanaAtual;
+    const wCard = document.createElement('div');
+    wCard.className = 'week-card';
+
+    const statusLabel = !unlocked ? 'locked' : (isCurrentWeek ? 'unlocked' : 'done');
+    const statusTxt = !unlocked ? 'TRANCADA' : (isCurrentWeek ? 'ATUAL' : 'CONCLUÍDA');
+
+    wCard.innerHTML = `
+      <div class="week-head">
+        <h3>Semana ${semana.semana}</h3>
+        <span class="week-status ${statusLabel}">${statusTxt}</span>
+      </div>
+      <div class="days-grid" id="days-${semana.id}"></div>
+    `;
+    box.appendChild(wCard);
+
+    const grid = wCard.querySelector('#days-'+semana.id);
+    semana.dias.forEach((dia, dIdx)=>{
+      const btn = document.createElement('div');
+      btn.className = 'day-btn' + (dia.feito ? ' feito' : '');
+      btn.innerHTML = `<div class="dtag">${DIAS_ABREV[dIdx]}</div><div>${dia.feito?'✓':(dIdx+1)}</div>`;
+      btn.addEventListener('click', ()=>{
+        if(unlocked) openTreinoDia(semana, dia, dIdx);
+        else showTaunt();
+      });
+      grid.appendChild(btn);
+    });
+
+    if(!unlocked){
+      const lockDiv = document.createElement('div');
+      lockDiv.className = 'locked-overlay';
+      const diasFaltam = (semana.semana-1)*7 - daysBetween(new Date(state.treinoInicio+'T00:00:00'), new Date());
+      lockDiv.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke-width="1.8"><rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg>
+        <div class="unlock-txt">Libera em ${Math.max(1,diasFaltam)} dia(s)<br><span style="color:var(--accent2);font-size:9.5px;">toque para editar o conteúdo</span></div>`;
+      lockDiv.addEventListener('click', (e)=>{ e.stopPropagation(); openEditLockedWeek(semana); });
+      wCard.style.position='relative';
+      wCard.appendChild(lockDiv);
+    }
+  });
+}
+
+function showTaunt(){
+  const msg = TAUNTS_LOCKED[Math.floor(Math.random()*TAUNTS_LOCKED.length)];
+  openSheet(`<h3 class="sheet-title">🔒 Ainda não, recruta.</h3><div class="taunt-box"><p>${msg}</p></div>`);
+}
+
+function openEditLockedWeek(semana){
+  let html = `<h3 class="sheet-title">Editar semana ${semana.semana} (trancada)</h3>
+    <p style="font-size:12px;color:var(--text-dim);margin:0 0 14px;">Você pode detalhar o treino agora, mas só vai poder marcar como feito e enviar foto quando a semana abrir de verdade.</p>`;
+  semana.dias.forEach((dia,dIdx)=>{
+    html += `<div class="card" style="margin-bottom:10px;">
+      <label class="field-label">${DIAS_SEMANA[dIdx]}</label>
+      <input type="text" data-field="tipo" data-day="${dIdx}" value="${escapeHtml(dia.tipo)}" placeholder="Tipo (ex: Corrida)" style="margin-bottom:8px;">
+      <textarea data-field="desc" data-day="${dIdx}" placeholder="Descrição do treino">${escapeHtml(dia.desc)}</textarea>
+      <input type="url" data-field="video" data-day="${dIdx}" value="${escapeHtml(dia.video)}" placeholder="Link do vídeo" style="margin-top:8px;">
+    </div>`;
+  });
+  openSheet(html);
+  document.querySelectorAll('#sheet [data-field]').forEach(el=>{
+    el.addEventListener('input', async ()=>{
+      const dIdx = +el.dataset.day;
+      semana.dias[dIdx][el.dataset.field] = el.value;
+      await saveTreinoPlano();
+    });
+  });
+}
+
+function openTreinoDia(semana, dia, dIdx){
+  let html = `<h3 class="sheet-title">${DIAS_SEMANA[dIdx]} — Semana ${semana.semana}</h3>`;
+  html += `<label class="field-label">Tipo de treino</label>
+    <input type="text" id="tdTipo" value="${escapeHtml(dia.tipo)}" style="margin-bottom:10px;">
+    <label class="field-label">Descrição / como fazer</label>
+    <textarea id="tdDesc" style="margin-bottom:10px;">${escapeHtml(dia.desc)}</textarea>
+    <label class="field-label">Vídeo de referência (link)</label>
+    <input type="url" id="tdVideo" value="${escapeHtml(dia.video)}" placeholder="https://..." style="margin-bottom:12px;">`;
+
+  if(dia.video){
+    html += `<a href="${dia.video}" target="_blank" class="btn btn-ghost btn-block" style="margin-bottom:12px;text-decoration:none;">▶ Abrir vídeo do exercício</a>`;
+  }
+
+  if(dia.fotoData){
+    html += `<img src="${dia.fotoData}" style="width:100%;border-radius:12px;margin-bottom:10px;">`;
+  }
+
+  html += `<div class="row">
+      <button class="btn btn-ghost btn-block" id="tdBtnFoto">${dia.feito ? '📷 Trocar foto / refazer' : '📷 Marcar feito com foto'}</button>
+    </div>
+    <input type="file" id="tdFileInput" accept="image/*" capture="environment">
+    <div id="tdWarn"></div>`;
+
+  if(dia.feito){
+    html += `<button class="btn btn-danger btn-block" id="tdBtnDesfazer" style="margin-top:10px;">Desmarcar conclusão</button>`;
+  }
+
+  openSheet(html);
+
+  document.getElementById('tdTipo').addEventListener('input', async (e)=>{ dia.tipo=e.target.value; await saveTreinoPlano(); });
+  document.getElementById('tdDesc').addEventListener('input', async (e)=>{ dia.desc=e.target.value; await saveTreinoPlano(); });
+  document.getElementById('tdVideo').addEventListener('input', async (e)=>{ dia.video=e.target.value; await saveTreinoPlano(); });
+
+  document.getElementById('tdBtnFoto').addEventListener('click', ()=>document.getElementById('tdFileInput').click());
+  document.getElementById('tdFileInput').addEventListener('change', async (e)=>{
+    const file = e.target.files[0]; if(!file) return;
+    const agoraMs = Date.now();
+    const fotoMs = file.lastModified || agoraMs;
+    const diffMin = (agoraMs - fotoMs) / 60000;
+    const dataUrl = await resizeImage(file, 700);
+    dia.fotoData = dataUrl;
+    dia.feito = true;
+    dia.dataFeito = todayStr();
+    await saveTreinoPlano();
+    renderTreinos(); renderInicio();
+    checarDiaCompleto();
+    postarFeed('treino', `Concluiu o treino de ${dia.tipo} — ${DIAS_SEMANA[dIdx]}`, dataUrl);
+    if(diffMin>15){
+      document.getElementById('tdWarn').innerHTML = `<div class="warn-banner">⚠ Essa foto parece ter sido tirada há um tempo. Tente sempre tirar na hora — é isso que valida o treino.</div>`;
+      toast('Foto salva, mas com aviso de validação.');
+    } else {
+      toast('Treino confirmado! 🔥');
+    }
+    openTreinoDia(semana, dia, dIdx);
+  });
+
+  const btnDesfazer = document.getElementById('tdBtnDesfazer');
+  if(btnDesfazer){
+    btnDesfazer.addEventListener('click', async ()=>{
+      dia.feito=false; dia.fotoData=null; dia.dataFeito=null;
+      await saveTreinoPlano();
+      renderTreinos(); renderInicio(); closeSheet();
+    });
+  }
+}
+
+/* ============================================================
+   ALIMENTAÇÃO
+============================================================ */
+function renderAlimentacao(){
+  const box = document.getElementById('refeicoesHoje');
+  const hoje = state.alimentacaoLogs.filter(l=>l.data===todayStr());
+  box.innerHTML = hoje.length===0
+    ? `<div class="empty-state"><p>Nenhuma refeição registrada hoje.</p></div>`
+    : hoje.map(r=>`<div class="meal-row"><div class="meal-time mono">${r.horario}</div><div class="meal-desc">${escapeHtml(r.desc)}<div class="meal-qtd">${escapeHtml(r.qtd||'')}</div></div></div>`).join('');
+
+  const medBox = document.getElementById('medidasResumo');
+  if(state.medidas.length===0){
+    medBox.innerHTML = `<div class="empty-state"><p>Nenhum registro de peso/medidas ainda.</p></div>`;
+  } else {
+    const ultimo = state.medidas[state.medidas.length-1];
+    const primeiro = state.medidas[0];
+    const diff = (ultimo.peso - primeiro.peso).toFixed(1);
+    medBox.innerHTML = `<div class="critique-box"><b>Peso atual:</b> ${ultimo.peso}kg (${ultimo.data}). Variação desde o primeiro registro: ${diff>0?'+':''}${diff}kg.</div>`;
+  }
+  const spark = document.getElementById('pesoSpark');
+  spark.innerHTML = '';
+  const pesos = state.medidas.slice(-10).map(m=>m.peso);
+  if(pesos.length>0){
+    const max = Math.max(...pesos), min = Math.min(...pesos);
+    pesos.forEach(p=>{
+      const h = max===min ? 50 : 10 + ((p-min)/(max-min))*50;
+      const bar = document.createElement('div');
+      bar.className='spark-bar'; bar.style.height=h+'px';
+      spark.appendChild(bar);
+    });
+  }
+
+  document.getElementById('marmitaPlano').value = state.marmitaPlano;
+}
+document.getElementById('marmitaPlano').addEventListener('input', async (e)=>{
+  state.marmitaPlano = e.target.value;
+  await sSet('marmitaPlano', state.marmitaPlano);
+});
+document.getElementById('btnAddRefeicao').addEventListener('click', ()=>{
+  const html = `<h3 class="sheet-title">Adicionar refeição</h3>
+    <label class="field-label">Horário</label>
+    <input type="text" id="refHorario" placeholder="ex: 12:30" style="margin-bottom:10px;">
+    <label class="field-label">O que comeu</label>
+    <textarea id="refDesc" placeholder="ex: Arroz, frango grelhado, feijão, salada" style="margin-bottom:10px;"></textarea>
+    <label class="field-label">Quantidade</label>
+    <input type="text" id="refQtd" placeholder="ex: 150g de frango, 4 col. de arroz" style="margin-bottom:14px;">
+    <button class="btn btn-primary btn-block" id="btnSalvarRefeicao">Salvar</button>`;
+  openSheet(html);
+  document.getElementById('btnSalvarRefeicao').addEventListener('click', async ()=>{
+    const horario = document.getElementById('refHorario').value.trim();
+    const desc = document.getElementById('refDesc').value.trim();
+    const qtd = document.getElementById('refQtd').value.trim();
+    if(!desc){ toast('Descreva o que comeu.'); return; }
+    state.alimentacaoLogs.push({ id:uid(), data:todayStr(), horario: horario||'--:--', desc, qtd });
+    await sSet('alimentacaoLogs', state.alimentacaoLogs);
+    closeSheet(); renderAlimentacao(); toast('Refeição registrada.');
+  });
+});
+document.getElementById('btnAddMedida').addEventListener('click', ()=>{
+  const html = `<h3 class="sheet-title">Registrar peso e medidas</h3>
+    <label class="field-label">Peso (kg)</label>
+    <input type="number" id="medPeso" step="0.1" style="margin-bottom:10px;">
+    <label class="field-label">Cintura (cm) — opcional</label>
+    <input type="number" id="medCintura" step="0.1" style="margin-bottom:14px;">
+    <button class="btn btn-primary btn-block" id="btnSalvarMedida">Salvar</button>`;
+  openSheet(html);
+  document.getElementById('btnSalvarMedida').addEventListener('click', async ()=>{
+    const peso = parseFloat(document.getElementById('medPeso').value);
+    const cintura = parseFloat(document.getElementById('medCintura').value);
+    if(!peso){ toast('Informe o peso.'); return; }
+    state.medidas.push({ id:uid(), data:todayStr(), peso, cintura: cintura||null });
+    await sSet('medidas', state.medidas);
+    closeSheet(); renderAlimentacao(); toast('Medida registrada.');
+  });
+});
+
+/* ============================================================
+   ESTUDOS — agenda
+============================================================ */
+document.querySelectorAll('[data-etab]').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('[data-etab]').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    ['agenda','relatorio'].forEach(t=>{ document.getElementById('etab-'+t).style.display = (t===btn.dataset.etab) ? '' : 'none'; });
+    if(btn.dataset.etab==='relatorio') renderRelatorio();
+  });
+});
+
+function renderEstudos(){ renderAgendaSemana(); }
+
+function materiaXP(materia){
+  const conteudo = state.materiasConteudo[materia] || [];
+  if(conteudo.length===0) return {pct:0, feitos:0, total:0};
+  const feitos = conteudo.filter(c=>c.feito).length;
+  return { pct: Math.round((feitos/conteudo.length)*100), feitos, total: conteudo.length };
+}
+
+function renderAgendaSemana(){
+  const box = document.getElementById('agendaSemanaContainer');
+  box.innerHTML = '';
+  DIAS_SEMANA.forEach(dia=>{
+    const card = document.createElement('div');
+    card.className = 'agenda-day-card';
+    const abrev = DIAS_ABREV[DIAS_SEMANA.indexOf(dia)];
+    card.innerHTML = `<div class="agenda-day-top">
+        <div class="agenda-day-name">${abrev}<span class="full">${dia}</span></div>
+        <div class="add-chip-btn" data-adddia="${dia}">+</div>
+      </div>
+      <div id="chips-${dia}"></div>`;
+    box.appendChild(card);
+    const chipsBox = card.querySelector('#chips-'+dia);
+    (state.agenda[dia]||[]).forEach(entry=>{
+      const xp = materiaXP(entry.materia);
+      const chip = document.createElement('div');
+      chip.className = 'subject-chip';
+      chip.innerHTML = `<div>
+          <div class="sname">${escapeHtml(entry.materia)}</div>
+          ${entry.materia!=='Simulado' ? `<div class="mini-track"><div class="mini-fill" style="width:${xp.pct}%"></div></div>` : ''}
+        </div>
+        <div class="sxp">${entry.materia==='Simulado' ? '▸' : xp.feitos+'/'+xp.total}</div>`;
+      chip.addEventListener('click', ()=>openMateriaDetail(dia, entry));
+      chipsBox.appendChild(chip);
+    });
+    if((state.agenda[dia]||[]).length===0){
+      chipsBox.innerHTML = `<div style="font-size:11.5px;color:var(--text-dim2);">Nenhuma matéria — toque em + pra adicionar</div>`;
+    }
+  });
+  document.querySelectorAll('[data-adddia]').forEach(btn=>{
+    btn.addEventListener('click', ()=>openAddMateriaSheet(btn.dataset.adddia));
+  });
+}
+
+function openAddMateriaSheet(dia){
+  let html = `<h3 class="sheet-title">Adicionar matéria — ${dia}</h3>
+    <p style="font-size:12px;color:var(--text-dim);margin:0 0 14px;">Toque em quantas quiser. Dá pra repetir matéria em vários dias.</p>
+    <div id="materiaChipsPick">`;
+  MATERIAS_FIXAS.forEach(m=>{ html += `<span class="option-chip" data-materia="${m}">${m}</span>`; });
+  html += `</div>
+    <div class="row" style="margin-top:14px;">
+      <input type="text" id="materiaCustomInput" placeholder="Personalizado...">
+      <button class="btn btn-primary btn-sm" id="btnAddCustomMateria">+</button>
+    </div>`;
+  openSheet(html);
+  document.querySelectorAll('#materiaChipsPick [data-materia]').forEach(chip=>{
+    chip.addEventListener('click', async ()=>{
+      const materia = chip.dataset.materia;
+      state.agenda[dia] = state.agenda[dia]||[];
+      state.agenda[dia].push({ id:uid(), materia });
+      await saveAgenda();
+      closeSheet(); renderAgendaSemana();
+      toast(materia+' adicionado(a) na '+dia+'.');
+    });
+  });
+  document.getElementById('btnAddCustomMateria').addEventListener('click', async ()=>{
+    const v = document.getElementById('materiaCustomInput').value.trim();
+    if(!v) return;
+    state.agenda[dia] = state.agenda[dia]||[];
+    state.agenda[dia].push({ id:uid(), materia:v });
+    await saveAgenda();
+    closeSheet(); renderAgendaSemana();
+  });
+}
+
+function openMateriaDetail(dia, entry){
+  if(entry.materia==='Simulado'){ openSimuladoForm(dia, entry); return; }
+  const conteudo = state.materiasConteudo[entry.materia] || [];
+  const xp = materiaXP(entry.materia);
+  let html = `<h3 class="sheet-title">${escapeHtml(entry.materia)} — ${dia}</h3>`;
+  html += `<div class="xp-track"><div class="xp-fill" style="width:${xp.pct}%"></div></div>
+    <div class="xp-label"><span>${xp.feitos}/${xp.total} concluídos</span><span>${xp.pct}%</span></div>`;
+
+  const sessoesMateria = state.estudoLogs.filter(l=>l.materia===entry.materia);
+  const totalMin = sessoesMateria.reduce((a,b)=>a+b.duracao,0);
+  const mediaPorTopico = xp.feitos>0 ? Math.round(totalMin/xp.feitos) : null;
+  const restante = xp.total-xp.feitos;
+  const estimativa = mediaPorTopico && restante>0 ? Math.round((mediaPorTopico*restante)/60*10)/10 : null;
+  html += `<div class="critique-box" style="margin-top:12px;">
+      <b>Tempo total investido:</b> ${(totalMin/60).toFixed(1)}h.
+      ${estimativa ? ` No seu ritmo atual, faltam ~${estimativa}h pra terminar o conteúdo desta matéria.` : ' Ainda sem dados suficientes pra estimar prazo.'}
+    </div>`;
+
+  html += `<button class="btn btn-primary btn-block" id="btnIrCronometro" style="margin:12px 0 16px;">▶ Iniciar sessão de estudo</button>`;
+
+  html += `<div class="card-title">Conteúdo</div><div id="topicList">`;
+  conteudo.forEach(t=>{
+    html += `<div class="topic-row">
+      <div class="topic-check ${t.feito?'done':''}" data-topicid="${t.id}">✓</div>
+      <div class="topic-name ${t.feito?'done':''}">${escapeHtml(t.nome)}</div>
+      <div class="topic-del" data-deltopic="${t.id}">✕</div>
+    </div>`;
+  });
+  html += `</div>
+    <div class="row" style="margin-top:10px;">
+      <input type="text" id="novoTopicoInput" placeholder="Novo conteúdo/assunto">
+      <button class="btn btn-ghost btn-sm" id="btnAddTopico">+</button>
+    </div>`;
+
+  openSheet(html);
+
+  document.getElementById('btnIrCronometro').addEventListener('click', ()=>{ closeSheet(); openCronometro(dia, entry.materia); });
+
+  document.querySelectorAll('#topicList [data-topicid]').forEach(el=>{
+    el.addEventListener('click', async ()=>{
+      const t = conteudo.find(c=>c.id===el.dataset.topicid);
+      t.feito = !t.feito;
+      await saveMaterias();
+      openMateriaDetail(dia, entry);
+      renderAgendaSemana();
+    });
+  });
+  document.querySelectorAll('#topicList [data-deltopic]').forEach(el=>{
+    el.addEventListener('click', async (e)=>{
+      e.stopPropagation();
+      state.materiasConteudo[entry.materia] = conteudo.filter(c=>c.id!==el.dataset.deltopic);
+      await saveMaterias();
+      openMateriaDetail(dia, entry);
+      renderAgendaSemana();
+    });
+  });
+  document.getElementById('btnAddTopico').addEventListener('click', async ()=>{
+    const v = document.getElementById('novoTopicoInput').value.trim();
+    if(!v) return;
+    state.materiasConteudo[entry.materia] = state.materiasConteudo[entry.materia] || [];
+    state.materiasConteudo[entry.materia].push({ id:uid(), nome:v, feito:false });
+    await saveMaterias();
+    openMateriaDetail(dia, entry);
+    renderAgendaSemana();
+  });
+}
+
+function openSimuladoForm(dia, entry){
+  let html = `<h3 class="sheet-title">Simulado — ${dia}</h3>
+    <label class="field-label">Total de questões</label>
+    <input type="number" id="simTotal" style="margin-bottom:10px;">
+    <label class="field-label">Acertos</label>
+    <input type="number" id="simAcertos" style="margin-bottom:10px;">
+    <label class="field-label">Erros</label>
+    <input type="number" id="simErros" style="margin-bottom:10px;">
+    <label class="field-label">Foto ou print do resultado (opcional)</label>
+    <button class="btn btn-ghost btn-block" id="btnSimFoto" style="margin-bottom:10px;">📷 Anexar foto</button>
+    <input type="file" id="simFileInput" accept="image/*">
+    <div id="simFotoPreview"></div>
+    <button class="btn btn-primary btn-block" id="btnSalvarSimulado" style="margin-top:14px;">Salvar simulado</button>`;
+  openSheet(html);
+  let fotoData = null;
+  document.getElementById('btnSimFoto').addEventListener('click', ()=>document.getElementById('simFileInput').click());
+  document.getElementById('simFileInput').addEventListener('change', async (e)=>{
+    const f = e.target.files[0]; if(!f) return;
+    fotoData = await resizeImage(f, 700);
+    document.getElementById('simFotoPreview').innerHTML = `<img src="${fotoData}" style="width:100%;border-radius:10px;margin-top:8px;">`;
+  });
+  document.getElementById('btnSalvarSimulado').addEventListener('click', async ()=>{
+    const total = parseInt(document.getElementById('simTotal').value)||0;
+    const acertos = parseInt(document.getElementById('simAcertos').value)||0;
+    const erros = parseInt(document.getElementById('simErros').value)||0;
+    if(total===0){ toast('Informe o total de questões.'); return; }
+    state.simulados.push({ id:uid(), data:todayStr(), dia, total, acertos, erros, fotoData });
+    await sSet('simulados', state.simulados);
+    state.estudoLogs.push({ id:uid(), data:todayStr(), materia:'Simulado', duracao: Math.max(15, total) });
+    await sSet('estudoLogs', state.estudoLogs);
+    closeSheet();
+    checarDiaCompleto();
+    postarFeed('simulado', `Fez um simulado: ${acertos}/${total} acertos`, fotoData);
+    toast('Simulado registrado.');
+    renderAgendaSemana();
+  });
+}
+
+/* ---------- cronômetro (acessado via matéria) ---------- */
+let timerInterval = null;
+function openCronometro(dia, materia){
+  state.timer = { running:false, startedAt:null, elapsed:0, materia, dia };
+  const html = `<h3 class="sheet-title">${escapeHtml(materia)} — cronômetro</h3>
+    <div class="timer-display"><div class="timer-num mono" id="timerNum">00:00:00</div></div>
+    <div class="timer-controls">
+      <button class="btn btn-ghost" id="btnPause" style="flex:1">Pausar</button>
+      <button class="btn btn-primary" id="btnStartFinish" style="flex:2">Iniciar</button>
+    </div>
+    <div class="taunt-pause" id="taunPauseBox"><p id="taunPauseTxt"></p></div>`;
+  openSheet(html);
+  updateTimerDisplay();
+
+  document.getElementById('btnStartFinish').addEventListener('click', async ()=>{
+    const btn = document.getElementById('btnStartFinish');
+    if(!state.timer.running && state.timer.elapsed===0){
+      state.timer.running = true; state.timer.startedAt = Date.now();
+      btn.textContent = 'Finalizar';
+      document.getElementById('btnPause').textContent='Pausar';
+      document.getElementById('taunPauseBox').classList.remove('show');
+      timerInterval = setInterval(updateTimerDisplay, 1000);
+    } else {
+      let totalSecs = state.timer.elapsed;
+      if(state.timer.running && state.timer.startedAt) totalSecs += Math.floor((Date.now()-state.timer.startedAt)/1000);
+      clearInterval(timerInterval);
+      const durMin = Math.max(1, Math.round(totalSecs/60));
+      state.estudoLogs.push({ id:uid(), data:todayStr(), materia: state.timer.materia, duracao: durMin });
+      await sSet('estudoLogs', state.estudoLogs);
+      toast(`Sessão salva: ${state.timer.materia} — ${durMin} min`);
+      postarFeed('estudo', `Estudou ${state.timer.materia} por ${durMin} min`, null);
+      checarDiaCompleto();
+      closeSheet();
+      renderAgendaSemana(); renderInicio();
+    }
+  });
+  document.getElementById('btnPause').addEventListener('click', ()=>{
+    const btn = document.getElementById('btnPause');
+    if(!state.timer.running && state.timer.elapsed===0) return;
+    if(state.timer.running){
+      state.timer.elapsed += Math.floor((Date.now()-state.timer.startedAt)/1000);
+      state.timer.running = false; state.timer.startedAt = null;
+      clearInterval(timerInterval);
+      btn.textContent = 'Retomar';
+      const t = document.getElementById('taunPauseTxt');
+      if(t){ t.textContent = TAUNTS_PAUSE[Math.floor(Math.random()*TAUNTS_PAUSE.length)]; document.getElementById('taunPauseBox').classList.add('show'); }
+    } else {
+      state.timer.running = true; state.timer.startedAt = Date.now();
+      timerInterval = setInterval(updateTimerDisplay, 1000);
+      btn.textContent = 'Pausar';
+      document.getElementById('taunPauseBox').classList.remove('show');
+    }
+    updateTimerDisplay();
+  });
+}
+function updateTimerDisplay(){
+  const el = document.getElementById('timerNum');
+  if(!el) return;
+  let secs = state.timer.elapsed;
+  if(state.timer.running && state.timer.startedAt) secs += Math.floor((Date.now()-state.timer.startedAt)/1000);
+  el.textContent = fmtTime(secs);
+  el.classList.toggle('running', state.timer.running);
+}
+
+/* ---------- relatórios ---------- */
+let reportRange = 'semana';
+document.querySelectorAll('[data-rtab]').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('[data-rtab]').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    reportRange = btn.dataset.rtab;
+    renderRelatorio();
+  });
+});
+function renderRelatorio(){
+  const now = new Date();
+  let logs, treinos, simsPeriodo;
+  if(reportRange==='semana'){
+    const wk = weekKeyOf();
+    logs = state.estudoLogs.filter(l=>weekKeyOf(new Date(l.data))===wk);
+    treinos = state.treinoPlano.flatMap(s=>s.dias).filter(d=>d.feito && d.dataFeito && weekKeyOf(new Date(d.dataFeito))===wk);
+    simsPeriodo = state.simulados.filter(s=>weekKeyOf(new Date(s.data))===wk);
+  } else {
+    const mk = monthKeyOf(now);
+    logs = state.estudoLogs.filter(l=>l.data.slice(0,7)===mk);
+    treinos = state.treinoPlano.flatMap(s=>s.dias).filter(d=>d.feito && d.dataFeito && d.dataFeito.slice(0,7)===mk);
+    simsPeriodo = state.simulados.filter(s=>s.data.slice(0,7)===mk);
+  }
+  const porMateria = {};
+  logs.forEach(l=>{ porMateria[l.materia] = (porMateria[l.materia]||0)+l.duracao; });
+  const maxVal = Math.max(1, ...Object.values(porMateria));
+  const bars = document.getElementById('reportBars');
+  const entries = Object.entries(porMateria).sort((a,b)=>b[1]-a[1]);
+  bars.innerHTML = entries.length===0 ? `<div class="empty-state"><p>Nenhum estudo registrado nesse período.</p></div>`
+    : entries.map(([mat,min])=>`<div class="report-bar-row"><div class="report-bar-top"><span>${escapeHtml(mat)}</span><span class="mono">${(min/60).toFixed(1)}h</span></div><div class="report-bar-track"><div class="report-bar-fill" style="width:${(min/maxVal*100).toFixed(0)}%"></div></div></div>`).join('');
+
+  const totalMin = logs.reduce((a,b)=>a+b.duracao,0);
+  document.getElementById('repHoras').textContent = (totalMin/60).toFixed(1)+'h';
+  document.getElementById('repSessoes').textContent = logs.length;
+  document.getElementById('repTreinos').textContent = treinos.length;
+
+  const totalQ = simsPeriodo.reduce((a,b)=>a+b.total,0);
+  const totalAc = simsPeriodo.reduce((a,b)=>a+b.acertos,0);
+  const totalEr = simsPeriodo.reduce((a,b)=>a+b.erros,0);
+  document.getElementById('repQuestoes').textContent = totalQ;
+  document.getElementById('repAcertos').textContent = totalAc;
+  document.getElementById('repErros').textContent = totalEr;
+  document.getElementById('simuladosList').innerHTML = simsPeriodo.length===0 ? `<div class="empty-state" style="padding:14px;"><p>Nenhum simulado nesse período.</p></div>`
+    : simsPeriodo.map(s=>`<div class="topic-row"><div class="topic-name">${s.data} — ${s.acertos}/${s.total} acertos</div></div>`).join('');
+
+  const horas = totalMin/60;
+  const percAcerto = totalQ>0 ? Math.round((totalAc/totalQ)*100) : null;
+  let crit = [];
+  crit.push(horas<8 ? `<b>Volume de estudo baixo:</b> ${horas.toFixed(1)}h no período. Isso não sustenta uma aprovação na ESA.` : `<b>Volume de estudo adequado:</b> ${horas.toFixed(1)}h no período.`);
+  if(percAcerto!==null){
+    crit.push(percAcerto<60 ? `<b>Aproveitamento crítico:</b> ${percAcerto}% de acerto em simulados. Precisa revisar conteúdo, não só treinar questão.` : `<b>Aproveitamento sólido:</b> ${percAcerto}% de acerto em simulados.`);
+  } else {
+    crit.push(`<b>Sem simulados registrados</b> nesse período — sem simulado você não sabe se está pronto de verdade.`);
+  }
+  document.getElementById('criticaEstudoBox').innerHTML = crit.map(c=>`<div class="critique-box">${c}</div>`).join('');
+}
+
+/* ============================================================
+   BATALHA
+============================================================ */
+document.getElementById('btnAddAmigo').addEventListener('click', async ()=>{
+  const inp = document.getElementById('inpAmigo');
+  const v = inp.value.trim().toLowerCase().replace(/\s+/g,'_');
+  if(!v) return;
+  if(v===state.conta.usuario){ toast('Esse é você.'); return; }
+  const existe = await sGet('batalha:'+v, true);
+  if(!existe){ toast('Usuário não encontrado.'); return; }
+  if(!state.amigos.includes(v)) state.amigos.push(v);
+  await sSet('amigos', state.amigos);
+  inp.value=''; renderBatalha();
+});
+
+async function renderBatalha(){
+  await publicarBatalha();
+  const chips = document.getElementById('amigosChips');
+  chips.innerHTML = state.amigos.map(a=>`<span style="background:var(--surface2);border:1px solid var(--border);padding:5px 10px;border-radius:14px;font-size:11.5px;">${escapeHtml(a)}</span>`).join('') || '<span style="color:var(--text-dim);font-size:12px;">Nenhum amigo adicionado ainda.</span>';
+
+  const board = document.getElementById('leaderboard');
+  board.innerHTML = `<div class="empty-state"><p>Carregando ranking...</p></div>`;
+  const usuarios = [...new Set([state.conta.usuario, ...state.amigos])];
+  const results = [];
+  for(const u of usuarios){
+    const data = await sGet('batalha:'+u, true);
+    results.push({ username:u, nome:data?.nome||u, foto:data?.foto||null, xp:data?.xp??0, streak:data?.streak??0, patente:data?.patente||'Recruta' });
+  }
+  results.sort((a,b)=>b.xp-a.xp);
+  board.innerHTML = results.map((r,i)=>`
+    <div class="leader-row" data-username="${r.username}">
+      <div class="leader-pos ${i===0?'gold':''}">${i+1}</div>
+      <div class="leader-avatar">${r.foto?`<img src="${r.foto}">`:'🪖'}</div>
+      <div class="leader-mid">
+        <div class="leader-name">${escapeHtml(r.nome)}${r.username===state.conta.usuario?'<span class="me-tag">VOCÊ</span>':''}</div>
+        <div class="leader-patente">${escapeHtml(r.patente)} · ${r.xp} XP</div>
+      </div>
+      <div class="leader-streak">🔥 ${r.streak}</div>
+    </div>`).join('') || `<div class="empty-state"><p>Adicione amigos pra começar a batalha.</p></div>`;
+
+  document.querySelectorAll('.leader-row').forEach(row=>{
+    row.addEventListener('click', ()=>openPerfilPublico(row.dataset.username));
+  });
+}
+
+async function postarFeed(tipo, texto, foto){
+  if(!state.conta) return;
+  const feed = (await sGet('feed:'+state.conta.usuario, true)) || [];
+  feed.unshift({ id:uid(), tipo, texto, foto, data: new Date().toISOString(), likes:[], comentarios:[] });
+  await sSet('feed:'+state.conta.usuario, feed.slice(0,40), true);
+}
+
+async function openPerfilPublico(username){
+  const dados = await sGet('batalha:'+username, true);
+  const feed = (await sGet('feed:'+username, true)) || [];
+  let html = `<div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+      <div class="leader-avatar" style="width:52px;height:52px;">${dados?.foto?`<img src="${dados.foto}">`:'🪖'}</div>
+      <div><div style="font-family:'Black Ops One';font-size:16px;">${escapeHtml(dados?.nome||username)}</div>
+      <div style="font-size:11.5px;color:var(--gold);">${escapeHtml(dados?.patente||'Recruta')} · ${dados?.xp||0} XP · 🔥 ${dados?.streak||0}</div></div>
+    </div>`;
+  html += `<div class="card-title">Registros recentes</div>`;
+  if(feed.length===0){
+    html += `<div class="empty-state"><p>Nenhum registro público ainda.</p></div>`;
+  } else {
+    feed.slice(0,15).forEach(post=>{
+      const liked = post.likes.includes(state.conta.usuario);
+      html += `<div class="feed-post" data-postid="${post.id}">
+        <div class="feed-post-top"><div class="feed-post-name">${escapeHtml(dados?.nome||username)}</div><div class="feed-post-time">${new Date(post.data).toLocaleDateString('pt-BR')}</div></div>
+        <div class="feed-post-txt">${escapeHtml(post.texto)}</div>
+        ${post.foto ? `<img class="evid" src="${post.foto}">` : ''}
+        <div class="feed-actions">
+          <div class="feed-action ${liked?'liked':''}" data-like="${post.id}"><svg viewBox="0 0 24 24"><path d="M20.8 4.6a5.5 5.5 0 00-7.8 0L12 5.6l-1-1a5.5 5.5 0 00-7.8 7.8l1 1L12 21l7.8-7.6 1-1a5.5 5.5 0 000-7.8z"/></svg> ${post.likes.length}</div>
+          <div class="feed-action" data-comment="${post.id}"><svg viewBox="0 0 24 24"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg> ${post.comentarios.length}</div>
+        </div>
+        <div class="comment-list">${post.comentarios.map(c=>`<div class="comment-item"><b>${escapeHtml(c.user)}:</b> ${escapeHtml(c.texto)}</div>`).join('')}</div>
+        <div class="comment-box hidden" id="cbox-${post.id}"><input type="text" placeholder="Comentar..." id="cinput-${post.id}"><button class="btn btn-primary btn-sm" data-sendcomment="${post.id}">➤</button></div>
+      </div>`;
+    });
+  }
+  openSheet(html);
+
+  document.querySelectorAll('[data-like]').forEach(el=>{
+    el.addEventListener('click', async ()=>{
+      const postId = el.dataset.like;
+      const feedAtual = (await sGet('feed:'+username, true)) || [];
+      const post = feedAtual.find(p=>p.id===postId);
+      if(!post) return;
+      const idx = post.likes.indexOf(state.conta.usuario);
+      if(idx>=0) post.likes.splice(idx,1); else post.likes.push(state.conta.usuario);
+      await sSet('feed:'+username, feedAtual, true);
+      openPerfilPublico(username);
+    });
+  });
+  document.querySelectorAll('[data-comment]').forEach(el=>{
+    el.addEventListener('click', ()=>{
+      document.getElementById('cbox-'+el.dataset.comment).classList.toggle('hidden');
+    });
+  });
+  document.querySelectorAll('[data-sendcomment]').forEach(el=>{
+    el.addEventListener('click', async ()=>{
+      const postId = el.dataset.sendcomment;
+      const inp = document.getElementById('cinput-'+postId);
+      const txt = inp.value.trim();
+      if(!txt) return;
+      const feedAtual = (await sGet('feed:'+username, true)) || [];
+      const post = feedAtual.find(p=>p.id===postId);
+      post.comentarios.push({ user: state.conta.nome, texto: txt, data: new Date().toISOString() });
+      await sSet('feed:'+username, feedAtual, true);
+      openPerfilPublico(username);
+    });
+  });
+}
+
+/* ============================================================
+   PERFIL
+============================================================ */
+document.querySelectorAll('.perfil-tab').forEach(tab=>{
+  tab.addEventListener('click', ()=>{
+    document.querySelectorAll('.perfil-tab').forEach(t=>t.classList.remove('active'));
+    tab.classList.add('active');
+    ['conta','config','temas','dados'].forEach(t=>{
+      document.getElementById('ptab-'+t).style.display = (t===tab.dataset.ptab) ? '' : 'none';
+    });
+  });
+});
+
+function renderPerfil(){
+  document.getElementById('perfilNome').value = state.conta.nome;
+  document.getElementById('perfilUsuario').value = state.conta.usuario;
+  const av = document.getElementById('perfilBigAvatar');
+  av.innerHTML = state.conta.foto ? `<img src="${state.conta.foto}">` : '🪖';
+
+  const editOn = state.config.editMode;
+  document.getElementById('editLockNote').textContent = editOn
+    ? 'Modo edição ATIVO — você pode alterar seus dados agora.'
+    : 'Edição bloqueada. Vá em Configurações → Modo edição pra liberar alterações.';
+  document.getElementById('perfilNome').disabled = !editOn;
+  document.getElementById('perfilUsuario').disabled = !editOn;
+  av.style.pointerEvents = editOn ? 'auto' : 'none';
+  av.style.opacity = editOn ? '1' : '.6';
+
+  document.getElementById('switchEdit').classList.toggle('on', state.config.editMode);
+  document.getElementById('switchNotif').classList.toggle('on', state.config.notif);
+
+  const themeGrid = document.getElementById('themeGrid');
+  themeGrid.innerHTML = '';
+  THEMES.forEach(t=>{
+    const opt = document.createElement('div');
+    opt.className = 'theme-opt' + (state.config.tema===t.id ? ' active':'');
+    opt.innerHTML = `<div class="theme-swatch" style="background:linear-gradient(135deg,${t.accent},${t.accent2})"></div>
+      <div class="theme-name">${t.nome}</div><div class="theme-tag">${t.tag}</div>`;
+    opt.addEventListener('click', async ()=>{
+      state.config.tema = t.id;
+      applyTheme(t.id);
+      await sSet('config', state.config);
+      renderPerfil();
+    });
+    themeGrid.appendChild(opt);
+  });
+}
+
+document.getElementById('perfilBigAvatar').addEventListener('click', ()=>{
+  if(!state.config.editMode) return;
+  document.getElementById('perfilAvatarInput').click();
+});
+document.getElementById('perfilAvatarInput').addEventListener('change', async (e)=>{
+  const f = e.target.files[0]; if(!f) return;
+  const dataUrl = await resizeImage(f, 300);
+  state.conta.foto = dataUrl;
+  await sSet('conta', state.conta);
+  renderPerfil(); renderHeader();
+  await publicarBatalha();
+});
+document.getElementById('btnSalvarPerfil').addEventListener('click', async ()=>{
+  if(!state.config.editMode){ toast('Ative o modo edição em Configurações.'); return; }
+  const novoNome = document.getElementById('perfilNome').value.trim();
+  const novoUsuario = document.getElementById('perfilUsuario').value.trim().toLowerCase().replace(/\s+/g,'_');
+  if(!novoNome || !novoUsuario){ toast('Preencha nome e usuário.'); return; }
+  state.conta.nome = novoNome; state.conta.usuario = novoUsuario;
+  await sSet('conta', state.conta);
+  renderHeader();
+  await publicarBatalha();
+  toast('Perfil atualizado.');
+});
+
+document.getElementById('switchEdit').addEventListener('click', async ()=>{
+  state.config.editMode = !state.config.editMode;
+  await sSet('config', state.config);
+  renderPerfil();
+});
+document.getElementById('switchNotif').addEventListener('click', async ()=>{
+  if(!state.config.notif){
+    if(!('Notification' in window)){ toast('Seu navegador não suporta notificações.'); return; }
+    const perm = await Notification.requestPermission();
+    if(perm!=='granted'){ toast('Permissão negada.'); return; }
+    startNotifWatcher();
+    toast('Lembretes ativados enquanto o app estiver aberto.');
+  }
+  state.config.notif = !state.config.notif;
+  await sSet('config', state.config);
+  renderPerfil();
+});
+function startNotifWatcher(){
+  if(window._notifWatcher) return;
+  window._notifWatcherFired = {};
+  window._notifWatcher = setInterval(()=>{
+    if(!state.config.notif) return;
+    const now = new Date();
+    const hh = now.getHours(), mm = now.getMinutes();
+    const key = todayStr()+'-'+hh;
+    if((hh===8||hh===19) && mm===0 && !window._notifWatcherFired[key]){
+      window._notifWatcherFired[key] = true;
+      const dia = DIAS_SEMANA[(now.getDay()+6)%7];
+      const materias = (state.agenda[dia]||[]).map(m=>m.materia).join(', ') || 'sua rotina';
+      new Notification('DISCIPLINA', { body: `Hoje é dia de: ${materias}. Não vacile.` });
+    }
+  }, 20000);
+}
+
+document.getElementById('btnSair').addEventListener('click', async ()=>{
+  await sSet('sessionActive', false);
+  location.reload();
+});
+document.getElementById('btnReset').addEventListener('click', async ()=>{
+  if(!confirm('Isso vai apagar TODOS os seus dados deste app neste navegador, incluindo conta. Continuar?')) return;
+  const keys = ['conta','config','sessionActive','treinoInicio','treinoPlano','agenda','materiasConteudo','estudoLogs','simulados','alimentacaoLogs','medidas','marmitaPlano','amigos','xpTotal','diasStatus','ultimaChecagem'];
+  for(const k of keys){ await sDel(k); }
+  if(state.conta) await sDel('batalha:'+state.conta.usuario, true);
+  location.reload();
+});
+
+/* ============================================================
+   INIT
+============================================================ */
+(async function init(){
+  const conta = await sGet('conta');
+  const sessionActive = await sGet('sessionActive');
+  if(conta){
+    document.getElementById('tabLogin').click();
+  }
+  await loadAll();
+  if(state.conta && sessionActive){
+    if(!state.treinoPlano){ state.treinoPlano = defaultTreinoPlano(); await saveTreinoPlano(); }
+    await checarPunicaoOntem();
+    document.getElementById('authScreen').classList.add('hidden');
+    document.getElementById('mainApp').classList.remove('hidden');
+    renderHeader();
+    switchView('inicio');
+    startClock();
+    if(state.config.notif) startNotifWatcher();
+  } else {
+    state.conta = null;
+  }
+})();
+</script>
+</body>
+</html>
