@@ -1,0 +1,251 @@
+// DISCIPLINA — modelo de dados (Postgres via Prisma)
+// Adaptado de docs/schema.sql para backend próprio: auth e autorização ficam
+// na aplicação (JWT + checagem de dono), sem RLS do Supabase.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Usuario {
+  id         String   @id @default(uuid())
+  email      String   @unique
+  senhaHash  String
+  username   String   @unique
+  nomeGuerra String
+  fotoUrl    String?
+  idade      Int?
+  pesoKg     Float?
+  alturaCm   Int?
+  metaAgua   Int      @default(2500) // ml/dia (peso*35)
+  tema       String   @default("red")
+  xpBonus    Int      @default(0)
+  criadoEm   DateTime @default(now())
+
+  treinoTemplate  TreinoTemplate[]
+  treinoSemanas   TreinoSemana[]
+  treinoExecucoes TreinoExecucao[]
+  materias        Materia[]
+  estudoAgenda    EstudoAgenda[]
+  estudoSessoes   EstudoSessao[]
+  simulados       Simulado[]
+  alimentacao     AlimentacaoItem[]
+  aguas           Agua[]
+  medidas         Medida[]
+  rotina          RotinaItem[]
+  posts           FeedPost[]
+  likes           FeedLike[]
+  comentarios     FeedComment[]
+  amizades        Amizade[]         @relation("dono")
+  amigosDe        Amizade[]         @relation("amigo")
+
+  @@map("usuarios")
+}
+
+model TreinoTemplate {
+  id         Int     @id @default(autoincrement())
+  usuario    Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  usuarioId  String
+  diaSemana  Int // 0 = segunda ... 6 = domingo
+  nome       String
+  descricao  String?
+  ordem      Int     @default(0)
+
+  @@index([usuarioId, diaSemana])
+  @@map("treino_template")
+}
+
+model TreinoSemana {
+  id         Int      @id @default(autoincrement())
+  usuario    Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  usuarioId  String
+  indice     Int
+  inicioData DateTime // data (00:00) de início da semana
+
+  @@unique([usuarioId, indice])
+  @@map("treino_semanas")
+}
+
+model TreinoExecucao {
+  id            Int      @id @default(autoincrement())
+  usuario       Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  usuarioId     String
+  data          DateTime // dia (00:00)
+  diaSemana     Int
+  concluido     Boolean  @default(false)
+  midiaUrl      String?
+  midiaTipo     String? // 'foto' | 'video'
+  duracaoSeg    Int      @default(0)
+  pausadoSeg    Int      @default(0)
+  criadoEm      DateTime @default(now())
+
+  @@index([usuarioId, data])
+  @@map("treino_execucoes")
+}
+
+model Materia {
+  id        Int        @id @default(autoincrement())
+  usuario   Usuario    @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  usuarioId String
+  nome      String
+  conteudos Conteudo[]
+  agenda    EstudoAgenda[]
+  sessoes   EstudoSessao[]
+
+  @@unique([usuarioId, nome])
+  @@map("materias")
+}
+
+model Conteudo {
+  id        Int     @id @default(autoincrement())
+  materia   Materia @relation(fields: [materiaId], references: [id], onDelete: Cascade)
+  materiaId Int
+  nome      String
+  concluido Boolean @default(false)
+  ordem     Int     @default(0)
+
+  @@index([materiaId])
+  @@map("conteudos")
+}
+
+model EstudoAgenda {
+  id        Int     @id @default(autoincrement())
+  usuario   Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  usuarioId String
+  diaSemana Int
+  materia   Materia @relation(fields: [materiaId], references: [id], onDelete: Cascade)
+  materiaId Int
+
+  @@map("estudo_agenda")
+}
+
+model EstudoSessao {
+  id         Int      @id @default(autoincrement())
+  usuario    Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  usuarioId  String
+  materia    Materia? @relation(fields: [materiaId], references: [id], onDelete: SetNull)
+  materiaId  Int?
+  data       DateTime
+  duracaoSeg Int
+  pausadoSeg Int      @default(0)
+  conteudos  Int      @default(0) // qtd de conteúdos concluídos na sessão
+  criadoEm   DateTime @default(now())
+
+  @@index([usuarioId, data])
+  @@map("estudo_sessoes")
+}
+
+model Simulado {
+  id        Int      @id @default(autoincrement())
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  usuarioId String
+  data      DateTime
+  total     Int
+  acertos   Int
+  erros     Int
+  midiaUrl  String?
+
+  @@map("simulados")
+}
+
+model AlimentacaoItem {
+  id              Int       @id @default(autoincrement())
+  usuario         Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  usuarioId       String
+  diaSemana       Int
+  nome            String
+  tipo            String    @default("neutro") // 'bom' | 'neutro' | 'ruim'
+  descricao       String?
+  ordem           Int       @default(0)
+  ultimaConclusao DateTime?
+
+  @@index([usuarioId, diaSemana])
+  @@map("alimentacao_itens")
+}
+
+model Agua {
+  id        Int      @id @default(autoincrement())
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  usuarioId String
+  data      DateTime
+  ml        Int      @default(0)
+
+  @@unique([usuarioId, data])
+  @@map("agua")
+}
+
+model Medida {
+  id        Int      @id @default(autoincrement())
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  usuarioId String
+  data      DateTime
+  pesoKg    Float
+  criadoEm  DateTime @default(now())
+
+  @@map("medidas")
+}
+
+model RotinaItem {
+  id              Int       @id @default(autoincrement())
+  usuario         Usuario   @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  usuarioId       String
+  titulo          String
+  horario         String // "HH:MM"
+  ultimaConclusao DateTime?
+
+  @@map("rotina_itens")
+}
+
+model FeedPost {
+  id         Int           @id @default(autoincrement())
+  usuario    Usuario       @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  usuarioId  String
+  tipo       String        @default("manual") // 'treino'|'estudo'|'simulado'|'manual'
+  texto      String?
+  midiaUrl   String?
+  midiaTipo  String?
+  criadoEm   DateTime      @default(now())
+  likes      FeedLike[]
+  comentarios FeedComment[]
+
+  @@index([criadoEm])
+  @@map("feed_posts")
+}
+
+model FeedLike {
+  post      FeedPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId    Int
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  usuarioId String
+
+  @@id([postId, usuarioId])
+  @@map("feed_likes")
+}
+
+model FeedComment {
+  id        Int      @id @default(autoincrement())
+  post      FeedPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  postId    Int
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  usuarioId String
+  texto     String
+  criadoEm  DateTime @default(now())
+
+  @@map("feed_comments")
+}
+
+model Amizade {
+  id        Int      @id @default(autoincrement())
+  usuario   Usuario  @relation("dono", fields: [usuarioId], references: [id], onDelete: Cascade)
+  usuarioId String
+  amigo     Usuario  @relation("amigo", fields: [amigoId], references: [id], onDelete: Cascade)
+  amigoId   String
+  criadoEm  DateTime @default(now())
+
+  @@unique([usuarioId, amigoId])
+  @@map("amizades")
+}

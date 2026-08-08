@@ -30,6 +30,16 @@ PWA: `app/manifest.json` + `app/service-worker.js` + `icon-192/512.png` já
 existem; instalação/autoupdate só valem servido de um host HTTPS real.
 Pra testar local: `.claude/serve.ps1` sobe em `http://localhost:8123`.
 
+## Backend (self-hosted em VM Ubuntu)
+
+`server/` — API **Node + Express + Socket.io + PostgreSQL (Prisma)**, decisão do
+Felipe por backend próprio numa VM. Cobre auth (e-mail+senha, JWT), perfil,
+treinos, estudos, alimentação, rotina, batalha (ranking + feed em tempo real) e
+upload de mídia com compressão. Guia de deploy completo em
+`docs/08-BACKEND-DEPLOY.md`; infraestrutura da VM em `docs/07-INFRA-VM-UBUNTU.md`.
+Falta conectar o frontend (`app/`) à API (trocar a camada `Store`/auth por
+`fetch` + Socket.io) — feito quando a VM/URL estiver de pé.
+
 ## Contexto rápido do dono do projeto
 
 Felipe Sousa Uchoa, estudante de Engenharia de Software, se preparando pro
