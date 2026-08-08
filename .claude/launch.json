@@ -1,0 +1,12 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "disciplina",
+      "runtimeExecutable": "powershell",
+      "runtimeArgs": ["-NoProfile", "-ExecutionPolicy", "Bypass", "-File", ".claude/serve.ps1", "-Port", "8123"],
+      "port": 8123,
+      "url": "http://localhost:8123/"
+    }
+  ]
+}

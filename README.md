@@ -17,13 +17,18 @@ Leia nesta ordem:
 
 ## Arquivo do app
 
-`app/disciplina-v2-current.html` — versão atual, funcional, rodando sem
-backend (usa `window.storage` do Claude.ai, então **só funciona dentro do
-Claude.ai**, não é ainda um HTML standalone pra hospedar em qualquer lugar).
-Isso é importante: ao continuar no Claude Code, uma das primeiras decisões é
-se vale reescrever a camada de armazenamento pra algo que funcione fora do
-Claude.ai desde já (localStorage temporário, por exemplo) enquanto o Supabase
-não está plugado, ou se pula direto pra integração com Supabase.
+`app/disciplina-v3.html` — **versão atual (v3), standalone**. Roda em qualquer
+navegador/celular usando `localStorage` (camada `Store` isolada, pronta pra
+virar Supabase). Cobre o grosso do feedback do Felipe. Ver
+`docs/04-CHANGELOG.md` (o que foi feito) e `docs/05-PROXIMOS-PASSOS.md`
+(o que falta e depende das contas Supabase/R2/host).
+
+`app/disciplina-v2-current.html` — versão anterior (só rodava dentro do
+Claude.ai via `window.storage`). Mantida como referência histórica.
+
+PWA: `app/manifest.json` + `app/service-worker.js` + `icon-192/512.png` já
+existem; instalação/autoupdate só valem servido de um host HTTPS real.
+Pra testar local: `.claude/serve.ps1` sobe em `http://localhost:8123`.
 
 ## Contexto rápido do dono do projeto
 

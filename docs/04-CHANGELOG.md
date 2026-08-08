@@ -28,16 +28,47 @@
 - Fonte trocada de Oswald pra "Black Ops One" nos títulos — **decisão revertida
   no feedback seguinte** (Felipe preferiu Oswald).
 
-## v3 (planejada — ainda não iniciada)
-Ver `02-PENDENCIAS-PROXIMA-SESSAO.md` pra lista completa. Resumo das mudanças
-estruturais mais importantes:
-- Cadastro em duas etapas (conta primeiro, dados pessoais depois).
-- Modelo de "template semanal" pra Treinos e Estudos (em vez de conteúdo
-  duplicado por semana).
-- Cronômetro full-screen dedicado (correção do bug de "finalizar" não
-  funcionar).
-- Comprovação por foto/vídeo direto da câmera (sem link de vídeo manual).
-- Aba Rotina (esquecida na v2).
-- 20 temas com gradiente de fundo completo.
-- Início de migração de arquitetura: Supabase (auth + banco + realtime) +
-  Cloudflare R2 (mídia) + PWA real.
+## v3 (ENTREGUE — `app/disciplina-v3.html`, iteração 1, standalone localStorage)
+Reescrita completa. Roda em **qualquer navegador/celular** (saiu do
+`window.storage` do Claude.ai pra `localStorage`, via camada `Store` isolada
+pronta pra virar Supabase). Testado no navegador (login, cadastro 2 etapas,
+cronômetro completo, telas).
+
+Implementado:
+- **Login/cadastro**: e-mail + senha, hash **PBKDF2 + salt (100k iterações)**,
+  cadastro em **2 etapas** (conta → dados pessoais), **sem botão Google**,
+  **e-mail e username únicos** (validado na criação e na edição do perfil).
+- **Patentes**: Recruta → Soldado → Cabo → 3º Sargento, **XP antihumano**
+  (8k / 40k / 150k), **insígnias SVG próprias** (divisas em "V" + estrela,
+  estilo graduação de praça BR — arte original, não brasão oficial). Selo
+  aparece no Início, Perfil e **entre o nº e a foto** no ranking da Batalha.
+- **Visual**: fonte **Oswald**, texto branco, tamanhos maiores, **relógio de
+  Brasília** grande no canto sup. direito (só horário). Cabeçalho nome+foto
+  **só no Início**; demais telas com topo neutro. Foto com `object-fit:cover`
+  (recorte corrigido). Idade/peso/altura empilhados no Início.
+- **Treinos**: template semanal Seg–Dom, semanas travam por tempo real com
+  esculacho, edição só no **Modo de Edição** (lápis), "+semana" só em edição,
+  **cronômetro full-screen dedicado (bug do "finalizar" corrigido)** com tempo
+  ativo + pausado separados, **comprovação foto/vídeo** (botão único → câmera
+  no modo certo) obrigatória antes de concluir, textarea auto-crescente,
+  relatório de horas por exercício.
+- **Estudos**: matérias com conteúdos, dia da semana mostra o **próximo
+  conteúdo pendente**, cronômetro full-screen com esculacho ESA, marca
+  conteúdos ao finalizar, **relatório sempre visível** (barras semana/mês/ano).
+- **Alimentação** (nome corrigido): refeições da semana com ✅, **análise
+  heurística**, **meta de água = peso×35ml**, peso & evolução mais abaixo,
+  relatórios. Bug "Cintura/opcional" eliminado (altura obrigatória no cadastro).
+- **Rotina** (aba nova): hábitos com horário + ✅ + notificação no horário.
+- **Batalha**: ranking com insígnia, **compositor de post** (foto+legenda),
+  feed com curtir. Publicação automática do dia a partir do Início.
+- **Perfil**: Minha conta (idade/peso/altura editáveis, troca de foto com
+  lápis, username único revalidado), Config (modo edição, notificações,
+  **Modo Try Hard**), **20 temas** com gradiente de fundo completo.
+- **PWA**: `manifest.json` + `service-worker.js` (skipWaiting/clients.claim,
+  network-first no HTML) + ícones 192/512. Instalação/autoupdate só valem
+  servido de um host HTTPS real.
+
+Pendente (precisa das contas do Felipe — ver `05-PROXIMOS-PASSOS.md`):
+- Supabase (auth/DB/realtime multi-dispositivo) e Cloudflare R2 (vídeo pesado).
+- Compressão de vídeo real (hoje só foto é comprimida; vídeo grande só persiste
+  com R2).
