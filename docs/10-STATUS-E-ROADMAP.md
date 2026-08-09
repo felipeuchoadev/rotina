@@ -45,6 +45,23 @@
 - **Treinos — arte das semanas (ONDA 2 — no ar)**: semana **concluída** ganha selo ✅ (fundo hachurado verde) e é clicável → sheet "Semana N — progresso" listando os 7 dias (feito/não, data, miniatura da prova). Semana **atual** mostra fita dos 7 dias (✓ nos treinados, destaque no dia de hoje) e também abre o progresso. Semana **travada** ganha correntes em X (SVG de elos metálicos, straps diagonais) + cadeado grande; ao tocar, a semana **treme** e o esculacho aparece por ~5s (toast com duração). `toast(msg, ms)` agora aceita duração.
 - **Aniversários & datas importantes (ONDA 1 — no ar)**: seção no Início substituindo "publicação automática". Calendário GRANDE navegável (‹ › mês/ano, com virada de ano) e bolinha nos dias marcados; lista "Próximas datas" com contagem regressiva (HOJE/amanhã/em N dias) e idade que a pessoa fará. Adicionar/editar/excluir data (nome, tipo aniversário/evento, data, repete-todo-ano, avisos por marco). Banner de parabéns no próprio aniversário do usuário. Persistência: state `datas` por usuário. Notificações programadas via **backend** (`server/src/lib/agenda.js`): varre `datas` de todos os usuários 1x/dia (≥9h Brasília, dedupe no `Kv agenda:lastRun`) e dispara Web Push nos marcos 1 mês / 1 semana / 1 dia / no dia. Modelo `Kv` adicionado ao Prisma (não-destrutivo). Testado ao vivo (add/persist/editar/excluir/navegação); push real depende do device aceitar permissão.
 
+## REBRAND REDZONE + megaleva (ondas A–E) — no ar
+- **REDZONE**: app renomeado (title/manifest/SW/notify), logo nova (`redzone-logo.png`) no login (maior) e no topo do Início; ícones PWA regerados. Avatares padrão por gênero (`avatar-fem/masc.png`).
+- **Visual**: relógio+data em todas as abas (tema-adaptável); nav com letras/ícones brancos; ícone de Estudos refeito; calendários menores e temáticos; esculacho da semana travada branco; textos limpos.
+- **Início clicável**: idade→dias pro aniversário; kg→relatório de peso; patente/XP→histórico de pontos.
+- **ENTER global** confirma/envia em sheets/formulários.
+- **Conta**: gênero no cadastro/perfil; trocar e-mail; trocar senha; **excluir conta de verdade** (senha→delete cascade); **esqueci senha por e-mail** (backend `/esqueci`+`/resetar`, link `#reset=`, `lib/mail.js` via SMTP — **PENDENTE: credencial SMTP no `.env` pra enviar de verdade**; hoje loga no servidor). Notificações mostram nome de guerra + foto (default por gênero).
+- **Try Hard 2.0**: som WebAudio editável (alarme/sirene/apito/sino), vibração, intervalo, **trégua após N seg no app**, submenu de opções; frases com cobrança absurda e "porrada e pancadaria".
+- **Rotina**: reverter padrão. **Feed**: ↻ + puxar-pra-baixo com "nada novo". **Buscar pessoas**: tela dedicada (Instagram-like). **Permissões**: pede notificação ao entrar.
+- **Recordações** (nova aba, estilo Google Fotos): álbum de mídia por data, filtros, ver/baixar/postar/excluir, +Adicionar. **Stories** no topo do feed + viewer fullscreen (7s/setas/toque). Mídia em **treino** (prova→memória, opção postar) e **alimentação** (📷 por refeição, miniatura à direita). **Postar no feed** com legenda opcional + público/privado (por post; `FeedPost.privado`). **Gerar do dia** reescrito: só dados reais em checkboxes + anexar 1 mídia.
+- **Conta de teste**: `felipeestudos220807@gmail.com` / `felipe220807@` (gênero m), contas antigas removidas (backup antes), populada com dados fictícios.
+- **Schema (não-destrutivo)**: +genero +resetToken +resetExp (Usuario), +privado (FeedPost). Novos state: `datas`, `recordacoes`, `rotina:plano`.
+
+### PENDENTE (depende de você / próximo)
+- **Credencial SMTP** pro reset de senha por e-mail (Gmail app-password ou Resend) no `server/.env`.
+- **Site de download** (a landing `/rotina/landing.html` já existe rebrandeada; expandir se quiser).
+- Deep-link pra post específico (hoje cai no perfil/feed).
+
 ## ONDA 5 — no ar (fechou a lista original toda)
 - **Estudos — previsão de término**: card "Previsão de conclusão" + por matéria, com base no ritmo real (logs). Mostra faltam X de Y conteúdos, ≈horas restantes e data prevista ("no teu ritmo termina ~DD/MM"). Também dentro do sheet de cada matéria.
 - **Publicação automática relocada**: saiu do Início, virou botão "⚡ Gerar do dia" na Batalha (ao lado de "Nova publicação").
