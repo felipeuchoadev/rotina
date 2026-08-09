@@ -1,7 +1,7 @@
 {
-  "name": "DISCIPLINA — ESA",
-  "short_name": "DISCIPLINA",
-  "description": "App de disciplina: treinos, estudos, alimentação, rotina e batalha. Foco no concurso da ESA.",
+  "name": "REDZONE",
+  "short_name": "REDZONE",
+  "description": "REDZONE: treinos, estudos, alimentação, rotina e batalha. Disciplina de verdade, rumo à ESA.",
   "start_url": "/rotina/",
   "scope": "/rotina/",
   "display": "standalone",

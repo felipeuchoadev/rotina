@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
 <meta name="theme-color" content="#0a0a0d">
 <link rel="manifest" href="manifest.json">
-<title>DISCIPLINA</title>
+<title>REDZONE</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
@@ -55,6 +55,7 @@ a{color:var(--accent2);}
 }
 .brand{font-weight:800; font-size:20px; letter-spacing:-.01em;}
 .brand .dot{color:var(--accent);}
+.home-logo{height:60px; width:auto; object-fit:contain; border-radius:12px; filter:drop-shadow(0 4px 12px rgba(224,30,43,.35));}
 .clock{font-weight:700; font-size:16px; color:var(--text-dim); font-variant-numeric:tabular-nums; text-align:right; line-height:1;}
 .clock small{color:var(--text-dim); font-size:11px; margin-left:3px; font-weight:600;}
 
@@ -163,7 +164,7 @@ textarea.auto{resize:none; overflow:hidden; min-height:48px;}
 .week.locked{opacity:1;}
 .lock-body{padding:20px 16px; text-align:center; background:color-mix(in srgb,var(--accent) 6%, transparent);}
 .lock-body .lockico{font-size:32px;}
-.esculacho{font-weight:800; font-size:15.5px; color:var(--accent2); margin:8px 0; line-height:1.4;}
+.esculacho{font-weight:800; font-size:15.5px; color:#fff; margin:8px 0; line-height:1.4; text-shadow:0 1px 3px rgba(0,0,0,.9);}
 .countdown{font-weight:800; font-variant-numeric:tabular-nums; font-size:19px; color:var(--text);}
 /* Semana travada: correntes em X + cadeado */
 .week.locked{position:relative; cursor:pointer;}
@@ -216,7 +217,7 @@ textarea.auto{resize:none; overflow:hidden; min-height:48px;}
 .nav{position:fixed; bottom:0; left:0; right:0; z-index:40; background:rgba(14,16,19,.92); backdrop-filter:blur(14px);
   border-top:1px solid var(--line); padding:8px 0 calc(8px + env(safe-area-inset-bottom));}
 .nav-inner{max-width:520px; margin:0 auto; display:flex; justify-content:space-between; padding:0 6px;}
-.nav button{background:none; border:none; color:var(--text-dim); flex:1; min-width:0; padding:7px 1px; display:flex; flex-direction:column; align-items:center; gap:4px; font-size:8.8px; font-weight:700; letter-spacing:-.01em; white-space:nowrap; border-radius:12px;}
+.nav button{background:none; border:none; color:#fff; flex:1; min-width:0; padding:7px 1px; display:flex; flex-direction:column; align-items:center; gap:4px; font-size:8.8px; font-weight:700; letter-spacing:-.01em; white-space:nowrap; border-radius:12px;}
 .nav button svg{width:21px; height:21px; stroke:currentColor; fill:none; stroke-width:1.8;}
 .nav button.active{color:var(--accent);}
 
@@ -244,7 +245,7 @@ textarea.auto{resize:none; overflow:hidden; min-height:48px;}
 
 /* Auth */
 #auth{max-width:440px; margin:0 auto; padding:0 20px; min-height:100vh; display:flex; flex-direction:column; justify-content:center;}
-.emblema{width:130px; height:130px; margin:0 auto 6px; display:block; object-fit:contain; filter:drop-shadow(0 8px 22px rgba(224,30,43,.28));}
+.emblema{width:180px; height:180px; margin:0 auto 2px; display:block; object-fit:contain; border-radius:24px; filter:drop-shadow(0 10px 30px rgba(224,30,43,.4));}
 .auth-title{font-weight:800; font-size:34px; text-align:center; letter-spacing:-.01em;}
 .auth-sub{text-align:center; color:var(--text-dim); margin:4px 0 24px; font-size:15px;}
 .tabs{display:flex; gap:8px; margin-bottom:16px;}
@@ -281,26 +282,26 @@ textarea.auto{resize:none; overflow:hidden; min-height:48px;}
 .rotina-col{flex:1 1 300px; min-width:0;}
 .rotina-cal{flex:1 1 280px; min-width:0;}
 /* Calendário branco e legível */
-.calbox{background:#f5f7f9; color:#1a1d22; border-radius:16px; padding:14px; border:1px solid var(--line);}
-.calhead{font-weight:800; font-size:15px; text-transform:capitalize; margin-bottom:10px; color:#1a1d22; text-align:center;}
+.calbox{background:var(--surface2); color:var(--text); border-radius:16px; padding:12px; border:1px solid var(--line); max-width:430px; margin:0 auto;}
+.calhead{font-weight:800; font-size:15px; text-transform:capitalize; margin-bottom:10px; color:var(--text); text-align:center;}
 .calgrid{display:grid; grid-template-columns:repeat(7,1fr); gap:5px;}
 .caldow{margin-bottom:5px;}
-.caldw{text-align:center; font-size:11px; font-weight:700; color:#8a919b;}
-.calc{aspect-ratio:1; display:flex; align-items:center; justify-content:center; border-radius:9px; font-size:13px; font-weight:600; background:#fff; color:#3a3f47; border:1px solid #e4e8ec;}
+.caldw{text-align:center; font-size:11px; font-weight:700; color:var(--text-dim);}
+.calc{aspect-ratio:1; display:flex; align-items:center; justify-content:center; border-radius:9px; font-size:12.5px; font-weight:700; background:var(--surface); color:var(--text); border:1px solid var(--line);}
 .calc.empty{background:transparent; border:none;}
-.calc.futuro{background:#fff; color:#c2c8cf;}
-.calc.sem{background:#fff; color:#3a3f47;}
-.calc.ok{background:#37d67a; color:#0b3d22; border-color:#2bbf68;}
-.calc.fail{background:#ff5a5a; color:#4a0d0d; border-color:#e64545;}
-.calc.hoje{box-shadow:0 0 0 2px #1a1d22;}
-.callegend{display:flex; gap:12px; margin-top:12px; font-size:11px; color:#5a616b; flex-wrap:wrap;}
+.calc.futuro{background:var(--surface); color:var(--text-dim);}
+.calc.sem{background:var(--surface); color:var(--text);}
+.calc.ok{background:color-mix(in srgb,var(--ok) 26%, var(--surface)); color:var(--ok); border-color:transparent;}
+.calc.fail{background:color-mix(in srgb,var(--accent) 26%, var(--surface)); color:#ff8080; border-color:transparent;}
+.calc.hoje{box-shadow:0 0 0 2px var(--accent);}
+.callegend{display:flex; gap:12px; margin-top:12px; font-size:11px; color:var(--text-dim); flex-wrap:wrap;}
 .callegend span{display:inline-flex; align-items:center; gap:4px;}
 .callegend i{display:inline-block; width:12px; height:12px; border-radius:3px;}
-.callegend .lok{background:#37d67a;} .callegend .lfail{background:#ff5a5a;} .callegend .lfut{background:#e4e8ec;}
+.callegend .lok{background:var(--ok);} .callegend .lfail{background:#ff6b6b;} .callegend .lfut{background:var(--line);}
 .callegend .ldot{background:var(--accent); border-radius:50%; width:8px; height:8px;}
 /* Rotina calendário editável: 100% ✅, incompleto vermelho, futuro claro */
-.calc.full{background:#eafaf0; color:#0b3d22; cursor:pointer;}
-.calc.inc{background:#fff; color:#e01e2b; font-weight:800; cursor:pointer;}
+.calc.full{background:color-mix(in srgb,var(--ok) 24%, var(--surface)); color:var(--ok); cursor:pointer;}
+.calc.inc{background:var(--surface); color:#ff6b6b; font-weight:800; cursor:pointer;}
 .calc[data-caldia]{cursor:pointer;}
 /* Agenda (Início): calendário grande navegável + banner de aniversário */
 .calbig{padding:16px;}
@@ -364,7 +365,7 @@ textarea.auto{resize:none; overflow:hidden; min-height:48px;}
  <symbol id="i-home" viewBox="0 0 24 24"><path d="M3 11l9-7 9 7M5 10v10h14V10"/></symbol>
  <symbol id="i-treino" viewBox="0 0 24 24"><path d="M4 9v6M20 9v6M7 7v10M17 7v10M7 12h10"/></symbol>
  <symbol id="i-alim" viewBox="0 0 24 24"><path d="M6 3v8a2 2 0 004 0V3M8 11v10M18 3c-2 0-3 3-3 6s1 4 3 4v8"/></symbol>
- <symbol id="i-estudo" viewBox="0 0 24 24"><path d="M4 5a2 2 0 012-2h13v16H6a2 2 0 00-2 2zM19 3v18"/></symbol>
+ <symbol id="i-estudo" viewBox="0 0 24 24"><path d="M2 8.5 12 4l10 4.5-10 4.5z"/><path d="M6 10.5V15c0 1.4 2.7 2.6 6 2.6s6-1.2 6-2.6v-4.5"/><path d="M22 8.5V14"/></symbol>
  <symbol id="i-rotina" viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/></symbol>
  <symbol id="i-batalha" viewBox="0 0 24 24"><path d="M4 4 L20 20 M20 4 L4 20 M3 6 L6 3 M18 3 L21 6 M6 21 L3 18 M21 18 L18 21"/></symbol>
  <symbol id="i-perfil" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></symbol>
@@ -561,7 +562,7 @@ function insignia(rankId, cls='insignia'){
 }
 /* Emblema ESA estilizado (arte própria) pra tela de login */
 function emblemaESA(){
-  return `<img class="emblema" src="logo-esa.png" alt="Emblema ESA" width="130" height="130">`;
+  return `<img class="emblema" src="redzone-logo.png" alt="REDZONE" width="180" height="180">`;
 }
 
 /* Esculachos (tom instrutor de quartel — pesado, sem ofensa degradante) */
@@ -710,13 +711,13 @@ function renderAuth(){
   if(authMode==='login'){
     inner.innerHTML = `
       ${emblemaESA()}
-      <div class="auth-title">Disciplina</div>
-      <div class="auth-sub">Rumo à Escola de Sargentos das Armas</div>
+      <div class="auth-title">REDZONE</div>
+      <div class="auth-sub">Disciplina é território. Domina o seu.</div>
       <div class="tabs"><button class="on">Entrar</button><button id="toSignup">Criar conta</button></div>
       <div class="field"><label>E-mail</label><input id="lgEmail" type="email" placeholder="voce@gmail.com" autocomplete="email"></div>
       <div class="field"><label>Senha</label><input id="lgPass" type="password" placeholder="••••••••" autocomplete="current-password"></div>
       <div class="err" id="lgErr"></div>
-      <button class="btn" id="lgBtn">Entrar na caserna</button>`;
+      <button class="btn" id="lgBtn">Voltar à Batalha</button>`;
     $('#toSignup').onclick=()=>{ authMode='signup'; signupStep=1; signupDraft={}; renderAuth(); };
     $('#lgBtn').onclick=doLogin;
     $('#lgEmail').onkeydown=e=>{ if(e.key==='Enter') $('#lgPass').focus(); };
@@ -777,7 +778,7 @@ async function signupNext(){
   if(p.length<6) return err.textContent='Senha muito curta (mínimo 6).';
   if(p!==p2) return err.textContent='As senhas não conferem.';
   try{ const d=await api('/auth/disponivel?email='+encodeURIComponent(email),{auth:false});
-    if(d.email===false) return err.textContent='Esse e-mail já está alistado.'; }catch(e){}
+    if(d.email===false) return err.textContent='Esse e-mail já está cadastrado. Faça login ou recupere a senha.'; }catch(e){}
   signupDraft.email=email; signupDraft.pass=p; err.textContent='';
   signupStep=2; renderAuth();
 }
@@ -808,8 +809,8 @@ async function doLogin(){
   try{
     const r = await api('/auth/login',{auth:false, method:'POST', body:{ email, senha:pass }});
     setToken(r.token); await enterApp();
-  }catch(e){ if(btn){ btn.disabled=false; btn.textContent='Entrar na caserna'; }
-    err.textContent = e.data?.erro || 'Falha no login. Sem conexão?'; }
+  }catch(e){ if(btn){ btn.disabled=false; btn.textContent='Voltar à Batalha'; }
+    err.textContent = e.status===401 ? 'E-mail ou senha incorretos.' : (e.data?.erro || 'Falha no login. Sem conexão?'); }
 }
 async function logout(){ setToken(null); location.reload(); }
 
@@ -880,7 +881,7 @@ function renderInicio(){
   $('#scr-inicio').innerHTML = `
     <div class="home-top">
       <div class="home-topline">
-        <div class="brand">DISCI<span class="dot">PLINA</span></div>
+        <img class="home-logo" src="redzone-logo.png" alt="REDZONE">
         ${homeClockHTML()}
       </div>
       <div class="herocard">
@@ -890,12 +891,12 @@ function renderInicio(){
         <div style="min-width:0">
           <div class="hero-name">${esc(p.nome)}</div>
           <div class="hero-user">@${esc(p.username)}</div>
-          <span class="pill">▲ ${r.name} · ${xp.toLocaleString('pt-BR')} XP</span>
+          <span class="pill" id="xpPill" style="cursor:pointer">▲ ${r.name} · ${xp.toLocaleString('pt-BR')} XP</span>
         </div>
       </div>
       <div class="biorow">
-        <div class="biocard"><b>${idadeDe(p.dataNasc) ?? p.idade ?? '—'}</b><s>anos</s></div>
-        <div class="biocard"><b>${fmtPeso(p.peso)}</b><s>kg</s></div>
+        <div class="biocard" data-bio="idade" style="cursor:pointer"><b>${idadeDe(p.dataNasc) ?? p.idade ?? '—'}</b><s>anos ⓘ</s></div>
+        <div class="biocard" data-bio="peso" style="cursor:pointer"><b>${fmtPeso(p.peso)}</b><s>kg ⓘ</s></div>
         <div class="biocard"><b>${p.altura}</b><s>altura (cm)</s></div>
       </div>
     </div>
@@ -922,8 +923,56 @@ function renderInicio(){
   `;
   $('#patenteBtn').onclick=patenteSheet;
   $('#addData').onclick=()=>dataSheet(null);
+  $('#xpPill').onclick=xpHistoricoSheet;
+  $$('#scr-inicio [data-bio]').forEach(c=>c.onclick=()=>{ if(c.dataset.bio==='idade') aniversarioUserSheet(); else pesoRelatorioSheet(); });
   $$('#scr-inicio [data-detalhe]').forEach(c=>c.onclick=()=>resumoDetalheSheet(c.dataset.detalhe));
   renderAgenda();
+}
+// clicar na idade → quanto falta pro aniversário do usuário
+function aniversarioUserSheet(){
+  const dn=S.profile.dataNasc;
+  if(!dn){ openSheet('<h3>Aniversário</h3><p class="muted small">Cadastre sua data de nascimento no Perfil pra eu contar os dias.</p>'); return; }
+  const [Y,M,D]=String(dn).split('-').map(Number);
+  const h=brasiliaNow(); h.setHours(0,0,0,0);
+  let occ=new Date(h.getFullYear(),M-1,D); occ.setHours(0,0,0,0);
+  if(occ<h) occ=new Date(h.getFullYear()+1,M-1,D);
+  const dias=Math.round((occ-h)/86400000);
+  const idade=idadeDe(dn); const faraIdade=occ.getFullYear()-Y;
+  const txt = dias===0 ? `🎂 É HOJE! Parabéns, você está fazendo ${faraIdade} anos!` : `Faltam <b>${dias}</b> dia(s) pro seu aniversário (${occ.toLocaleDateString('pt-BR',{day:'2-digit',month:'long'})}). Você vai fazer <b>${faraIdade}</b>.`;
+  openSheet(`<h3>Seu aniversário</h3>
+    <p class="small muted">Hoje você tem ${idade} anos.</p>
+    <div class="card"><p style="margin:0">🎉 ${txt}</p></div>`);
+}
+// clicar no peso → relatório/evolução de peso
+function pesoRelatorioSheet(){
+  const pesos=[...(S.pesos||[])].sort((a,b)=>String(a.dateISO).localeCompare(String(b.dateISO)));
+  const atual=S.profile.peso;
+  if(!pesos.length){ openSheet(`<h3>Relatório de peso</h3><p class="muted small">Peso atual: <b>${fmtPeso(atual)} kg</b>. Registre seu peso na Alimentação pra montar a evolução.</p>`); return; }
+  const first=pesos[0].valor, last=pesos[pesos.length-1].valor, delta=last-first;
+  const max=Math.max(...pesos.map(p=>p.valor)), min=Math.min(...pesos.map(p=>p.valor));
+  const linhas=pesos.slice(-12).map(p=>`<div class="rowitem"><div class="txt"><div class="t">${fmtPeso(p.valor)} kg</div><div class="s mono">${new Date(p.dateISO+'T00:00:00').toLocaleDateString('pt-BR')}</div></div></div>`).join('');
+  openSheet(`<h3>Relatório de peso</h3>
+    <div class="card"><div style="display:flex;justify-content:space-around;text-align:center">
+      <div><div class="muted small">Atual</div><div style="font-weight:800;font-size:22px">${fmtPeso(last)}</div></div>
+      <div><div class="muted small">Variação</div><div style="font-weight:800;font-size:22px;color:${delta<0?'var(--ok)':delta>0?'#ff6b6b':'var(--text)'}">${delta>0?'+':''}${delta.toFixed(2).replace('.',',')}</div></div>
+      <div><div class="muted small">Mín/Máx</div><div style="font-weight:800;font-size:16px">${fmtPeso(min)}–${fmtPeso(max)}</div></div>
+    </div></div>
+    <div class="section-title" style="margin-top:8px">Histórico</div>${linhas}`);
+}
+// clicar na patente/XP → histórico de pontos recebidos e descontados
+function xpHistoricoSheet(){
+  const itens=[];
+  S.treinoLogs.forEach(l=>{ const m=Math.floor((l.ativoMs||0)/60000); if(m>0) itens.push({dateISO:l.dateISO, xp:m, txt:`Treino · ${m} min`}); });
+  S.estudoLogs.forEach(l=>{ const m=Math.floor((l.ativoMs||0)/60000)*2; if(m>0) itens.push({dateISO:l.dateISO, xp:m, txt:`Estudo · ${Math.round(m/2)} min`});
+    const c=(l.conteudos?.length||0)*40; if(c>0) itens.push({dateISO:l.dateISO, xp:c, txt:`${l.conteudos.length} conteúdo(s) concluído(s)`}); });
+  Object.entries(S.agua||{}).forEach(([iso,v])=>{ if(v>=(S.profile.metaAgua||2500)) itens.push({dateISO:iso, xp:15, txt:'Meta de água batida'}); });
+  if(S.profile.xpBonus) itens.push({dateISO:todayISO(), xp:S.profile.xpBonus, txt:'Bônus/ajuste'});
+  itens.sort((a,b)=>String(b.dateISO).localeCompare(String(a.dateISO)));
+  const total=computeXP();
+  const linhas = itens.length ? itens.slice(0,60).map(i=>`<div class="rowitem"><div class="txt"><div class="t">${esc(i.txt)}</div><div class="s mono">${i.dateISO?new Date(i.dateISO+'T00:00:00').toLocaleDateString('pt-BR'):''}</div></div><div style="font-weight:800;color:${i.xp<0?'#ff6b6b':'var(--ok)'}">${i.xp>0?'+':''}${i.xp.toLocaleString('pt-BR')}</div></div>`).join('') : '<p class="muted small">Sem pontos ainda. Treine, estude e cumpra metas pra pontuar.</p>';
+  openSheet(`<h3>Histórico de XP</h3>
+    <p class="small muted">Total atual: <b>${total.toLocaleString('pt-BR')} XP</b>. Cada treino, estudo, conteúdo e meta de água vira ponto.</p>
+    ${linhas}`);
 }
 
 /* ---------- AGENDA: aniversários + datas importantes ---------- */
@@ -1153,7 +1202,7 @@ function resumoDetalheSheet(tipo){
 }
 
 /* ---------- helper de topo neutro ---------- */
-function topbar(title){ return `<div class="topbar"><div class="brand">${title}</div>${clockHTML()}</div>`; }
+function topbar(title){ return `<div class="topbar"><div class="brand">${title}</div>${homeClockHTML()}</div>`; }
 function editToggleHint(){ return S.config.editMode ? `<span class="chip" style="border-color:var(--accent2);color:var(--accent2)">✏️ MODO EDIÇÃO ON</span>` : ''; }
 
 /* =========================================================================
@@ -1168,7 +1217,6 @@ function renderTreinos(){
     <div style="display:flex;justify-content:space-between;align-items:center;margin:4px 2px">
       <h2 class="section-title" style="margin:0">Plano semanal</h2>${editToggleHint()}
     </div>
-    <p class="small muted">Template Segunda→Domingo. As semanas liberam por tempo real. ${edit?'Toque no lápis pra editar.':'Edite só no Modo de Edição (Perfil → Configurações).'}</p>
     <div class="days" id="treinoDays">${DIAS.map(d=>dayChip(d,treinoDiaSel)).join('')}</div>
     <div id="treinoDia"></div>
     <h2 class="section-title">Semanas</h2>
@@ -1945,7 +1993,7 @@ async function renderBatalha(){
     <div class="topbar"><div class="brand">BATALHA</div>
       <div style="display:flex;align-items:center;gap:10px">
         <button class="icobtn" id="dmBtn">${svgIcon('i-dm')}${dmBadge}</button>
-        <button class="icobtn" id="sinoBtn">${svgIcon('i-sino')}${badge}</button>${clockHTML()}
+        <button class="icobtn" id="sinoBtn">${svgIcon('i-sino')}${badge}</button>${homeClockHTML()}
       </div></div>
     <div style="position:relative;margin:4px 0 12px">
       <input id="buscaUser" placeholder="🔎 Buscar pessoas (nome ou @usuário)" style="width:100%;background:#0c0d11;border:1.5px solid var(--line);border-radius:14px;padding:13px;color:var(--text)">
@@ -2278,7 +2326,7 @@ function startTryHard(){
     if(!S) return;
     const now=brasiliaNow(); const hhmm=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
     // lembrete de hábito no horário exato
-    S.rotina.forEach(r=>{ if(r.hora===hhmm && r.done!==todayISO()){ notify('DISCIPLINA — '+r.nome, 'Está no horário. Cumpra agora, recruta.'); if(navigator.vibrate) navigator.vibrate(150); } });
+    S.rotina.forEach(r=>{ if(r.hora===hhmm && r.done!==todayISO()){ notify('REDZONE — '+r.nome, 'Está no horário. Cumpra agora, recruta.'); if(navigator.vibrate) navigator.vibrate(150); } });
     const atrasados=S.rotina.filter(r=>r.hora && r.hora<hhmm && r.done!==todayISO());
     if(!atrasados.length) return;
     _tryTick++;
@@ -2286,7 +2334,7 @@ function startTryHard(){
       notify('🔥 MODO TRY HARD', TRYHARD[_tryTick%TRYHARD.length]+' ('+atrasados.length+' pendente(s))');
       beep(); if(navigator.vibrate) navigator.vibrate([220,90,220]);
     } else if(S.config.notif && _tryTick%3===0){   // normal: cobra ~50% (bem mais leve)
-      notify('DISCIPLINA', COBRANCA[_tryTick%COBRANCA.length]+' ('+atrasados.length+' pendente(s))');
+      notify('REDZONE', COBRANCA[_tryTick%COBRANCA.length]+' ('+atrasados.length+' pendente(s))');
     }
   }, 20000);
 }

@@ -3,11 +3,11 @@
    Sempre que você subir código novo no host, muda a versão do CACHE abaixo
    (ou a lógica de fetch pega o novo do servidor). O app se atualiza sozinho
    na próxima abertura. */
-const CACHE = 'disciplina-v3-4';
+const CACHE = 'redzone-v5';
 
 // ---- Web Push: recebe notificação mesmo com o app fechado ----
 self.addEventListener('push', (e) => {
-  let d = { title: 'DISCIPLINA', body: 'Mexa-se, recruta.' };
+  let d = { title: 'REDZONE', body: 'Mexa-se, recruta.' };
   try { if (e.data) d = { ...d, ...e.data.json() }; } catch {}
   e.waitUntil(self.registration.showNotification(d.title, {
     body: d.body,
