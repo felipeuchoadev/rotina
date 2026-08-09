@@ -383,10 +383,32 @@ async function uploadMedia(file){
 }
 async function reportXP(){ try{ await api('/perfil',{method:'PATCH',body:{xp:computeXP()}}); }catch(e){} }
 
-/* ---------- STORE: dados pessoais como chave-valor por usuário no backend ---------- */
+/* ---------- OFFLINE: fila de escrita + cache (não perder progresso sem internet) ---------- */
+function offQueue(){ try{ return JSON.parse(localStorage.getItem('disc:queue')||'[]'); }catch{ return []; } }
+function setQueue(q){ try{ localStorage.setItem('disc:queue', JSON.stringify(q)); }catch{} }
+let _flushando=false;
+async function flushQueue(){
+  if(_flushando || !authToken) return; _flushando=true;
+  let q=offQueue(); const rest=[]; let ok=0;
+  for(const it of q){ try{ await api('/state/'+encodeURIComponent(it.chave),{method:'PUT',body:{valor:it.valor}}); ok++; }catch(e){ rest.push(it); } }
+  setQueue(rest); _flushando=false;
+  if(ok>0 && rest.length===0) toast('✅ Progresso offline sincronizado.');
+  return rest.length===0;
+}
+window.addEventListener('online', ()=>{ flushQueue(); });
+
+/* ---------- STORE: dados pessoais por usuário (backend + offline) ---------- */
 const Store = {
   async get(key){ try{ return await api('/state/'+encodeURIComponent(key)); }catch(e){ return null; } },
-  async set(key,val){ try{ await api('/state/'+encodeURIComponent(key),{method:'PUT',body:{valor:val}}); return true; }catch(e){ console.error(e); toast('Falha ao salvar — sem conexão com o servidor?'); return false; } },
+  async set(key,val){
+    try{ localStorage.setItem('disc:local:'+key, JSON.stringify(val)); }catch{}   // espelho local
+    try{ await api('/state/'+encodeURIComponent(key),{method:'PUT',body:{valor:val}}); return true; }
+    catch(e){
+      const q=offQueue().filter(i=>i.chave!==key); q.push({chave:key, valor:val}); setQueue(q);  // enfileira (última escrita vence)
+      toast('📴 Offline — salvo no aparelho, sincroniza quando a internet voltar.');
+      return true;
+    }
+  },
   async del(key){ try{ await api('/state/'+encodeURIComponent(key),{method:'DELETE'}); }catch(e){} },
 };
 
@@ -550,8 +572,18 @@ let currentUser = null;  // username
 const DEFAULT_TREINO_TEMPLATE = ()=>({ seg:[], ter:[], qua:[], qui:[], sex:[], sab:[], dom:[] });
 
 async function loadUserData(){
-  const me = await api('/auth/me');            // { usuario, xp, patente }
-  const st = await api('/state');              // { chave: valor, ... }
+  let me, st;
+  try{
+    me = await api('/auth/me');                // { usuario, xp, patente }
+    st = await api('/state');                  // { chave: valor, ... }
+    try{ localStorage.setItem('disc:cache:me', JSON.stringify(me)); localStorage.setItem('disc:cache:st', JSON.stringify(st)); }catch{}
+  }catch(e){
+    const cme=localStorage.getItem('disc:cache:me'), cst=localStorage.getItem('disc:cache:st');
+    if(cme && cst){ me=JSON.parse(cme); st=JSON.parse(cst); setTimeout(()=>toast('📴 Modo offline — usando dados salvos no aparelho.'),400); }
+    else throw e;   // sem cache e sem internet: não dá pra entrar
+  }
+  // aplica escritas offline pendentes por cima do que veio do servidor
+  offQueue().forEach(it=>{ st[it.chave]=it.valor; });
   const u = me.usuario;
   const g = (k,d)=> st[k]!==undefined && st[k]!==null ? st[k] : d;
   S = {
@@ -738,7 +770,7 @@ async function enterApp(){
   $('#auth').classList.add('hidden');
   $('#app').classList.remove('hidden');
   renderNav(); go('inicio');
-  startClock(); startTryHard(); connectSocket(); reportXP();
+  startClock(); startTryHard(); connectSocket(); reportXP(); flushQueue();
   if(S.config.notif) subscribePush();
 }
 
