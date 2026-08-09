@@ -145,6 +145,16 @@ echo "0 3 * * * root /opt/disciplina/backup.sh" | sudo tee /etc/cron.d/disciplin
 ```
 (Ideal: copiar os backups pra fora da VM também.)
 
+## ⛔ NUNCA fazer no deploy (protege as contas dos usuários)
+
+- **Não** rodar `DELETE FROM usuarios` / `TRUNCATE` / `prisma db push --accept-data-loss`.
+  Isso apaga as CONTAS REAIS e desloga todo mundo. Deploy de app = só copiar os
+  arquivos estáticos + `systemctl restart disciplina`, sem tocar no banco.
+- Mudança de schema: preferir `prisma migrate` (preserva dados) ou `prisma db push`
+  **sem** `--accept-data-loss` (recusa se houver perda).
+- Backup automático já roda (`/opt/disciplina/backup.sh`, cron a cada 6h,
+  em `/opt/disciplina/backups`). Restaurar: `gunzip -c db_XXXX.sql.gz | sudo -u postgres psql disciplina`.
+
 ## 7. Atualizar versão nova depois
 ```bash
 cd /opt/disciplina && git pull   # ou scp dos arquivos novos
