@@ -1310,7 +1310,7 @@ function feedPostHTML(post){
     ${media}
     ${post.texto?`<div class="post-body">${esc(post.texto)}</div>`:''}
     <div class="post-actions"><span data-like="${post.id}" style="cursor:pointer">${liked?'❤️':'🤍'} <b>${(post.likes||[]).length}</b></span>
-      <span>💬 <b>${nCom}</b></span></div>
+      <span data-comment="${post.id}" style="cursor:pointer">💬 <b>${nCom}</b></span></div>
   </div>`;
 }
 function bindFeedActions(){
@@ -1318,6 +1318,30 @@ function bindFeedActions(){
     try{ await api('/batalha/feed/'+el.dataset.like+'/like',{method:'POST'}); renderBatalha(); }
     catch(e){ toast('Falha ao curtir.'); }
   });
+  $$('#feed [data-comment]').forEach(el=>el.onclick=()=>openComentarios(el.dataset.comment));
+}
+async function openComentarios(postId){
+  openSheet(`<h3>Comentários</h3>
+    <div id="comLista" class="muted small" style="margin-bottom:12px">Carregando…</div>
+    <div class="field" style="margin:0 0 10px"><textarea id="comTxt" class="auto" placeholder="Escreve um comentário, soldado..."></textarea></div>
+    <button class="btn ok" id="comEnviar">Comentar</button>`);
+  const ta=$('#comTxt'); autoGrow(ta); ta.oninput=()=>autoGrow(ta);
+  async function carregar(){
+    try{ const cs=await api('/batalha/feed/'+postId+'/comentarios');
+      $('#comLista').innerHTML = cs.length
+        ? cs.map(c=>`<div class="rowitem"><div class="txt"><div class="t">${esc(c.usuario?.nomeGuerra||'—')} <span class="muted" style="font-weight:400">@${esc(c.usuario?.username||'')}</span></div><div class="s" style="color:var(--text)">${esc(c.texto)}</div></div></div>`).join('')
+        : '<p class="muted small">Sem comentários ainda. Seja o primeiro.</p>';
+    }catch(e){ $('#comLista').innerHTML='<p class="err">Falha ao carregar comentários.</p>'; }
+  }
+  carregar();
+  $('#comEnviar').onclick=async()=>{
+    const texto=$('#comTxt').value.trim(); if(!texto) return;
+    const btn=$('#comEnviar'); btn.disabled=true;
+    try{ await api('/batalha/feed/'+postId+'/comentar',{method:'POST',body:{texto}});
+      ta.value=''; autoGrow(ta); await carregar(); if(activeTab==='batalha') renderBatalha(); }
+    catch(e){ toast('Falha ao comentar.'); }
+    finally{ btn.disabled=false; }
+  };
 }
 function composePost(prefill=''){
   openSheet(`<h3>Nova publicação</h3>
