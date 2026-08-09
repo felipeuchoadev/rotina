@@ -38,8 +38,25 @@ model Usuario {
   bloqueados  Block[]       @relation("bloqueador")
   bloqueadoPor Block[]      @relation("bloqueado")
   notificacoes Notificacao[] @relation("destinatario")
+  msgEnviadas  Mensagem[]   @relation("de")
+  msgRecebidas Mensagem[]   @relation("para")
 
   @@map("usuarios")
+}
+
+model Mensagem {
+  id       Int      @id @default(autoincrement())
+  de       Usuario  @relation("de", fields: [deId], references: [id], onDelete: Cascade)
+  deId     String
+  para     Usuario  @relation("para", fields: [paraId], references: [id], onDelete: Cascade)
+  paraId   String
+  texto    String
+  lida     Boolean  @default(false)
+  criadoEm DateTime @default(now())
+
+  @@index([deId, paraId])
+  @@index([paraId, lida])
+  @@map("mensagens")
 }
 
 model Follow {

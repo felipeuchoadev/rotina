@@ -25,9 +25,15 @@ export function initRealtime(httpServer, corsOrigins) {
 
   io.on('connection', (socket) => {
     socket.join('feed'); // todos recebem eventos do feed/ranking ao vivo
+    if (socket.userId) socket.join('user:' + socket.userId); // sala pessoal (DM/notificações)
   });
 
   return io;
+}
+
+// Envia um evento só pra um usuário específico (DM, notificação pessoal)
+export function emitToUser(userId, evento, dados) {
+  if (io && userId) io.to('user:' + userId).emit(evento, dados);
 }
 
 // Broadcast de eventos do feed pra todo mundo conectado

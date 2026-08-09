@@ -11,6 +11,7 @@ import { authRouter } from './routes/auth.js';
 import { perfilRouter } from './routes/perfil.js';
 import { stateRouter } from './routes/state.js';
 import { batalhaRouter } from './routes/batalha.js';
+import { dmRouter } from './routes/dm.js';
 import { uploadRouter } from './routes/upload.js';
 import { initRealtime } from './realtime.js';
 
@@ -37,6 +38,7 @@ app.use('/api/auth', authLimiter, authRouter);
 app.use('/api/perfil', perfilRouter);
 app.use('/api/state', stateRouter);
 app.use('/api/batalha', batalhaRouter);
+app.use('/api/dm', dmRouter);
 app.use('/api/upload', uploadRouter);
 
 // 404 e handler de erro

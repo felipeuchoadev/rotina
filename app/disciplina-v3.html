@@ -1529,14 +1529,17 @@ function timeago(iso){ const s=Math.floor((Date.now()-new Date(iso).getTime())/1
 let _buscaT=null;
 async function renderBatalha(){
   await reportXP();
-  let board=[], feed=[], notif={naoLidas:0};
+  let board=[], feed=[], notif={naoLidas:0}, dmN={naoLidas:0};
   try{ board=await api('/batalha/ranking'); }catch(e){}
   try{ feed=await api('/batalha/feed'); }catch(e){}
   try{ notif=await api('/batalha/notificacoes'); }catch(e){}
+  try{ dmN=await api('/dm/naolidas'); }catch(e){}
   const badge = notif.naoLidas>0 ? `<span class="notif-badge">${notif.naoLidas>9?'9+':notif.naoLidas}</span>` : '';
+  const dmBadge = dmN.naoLidas>0 ? `<span class="notif-badge">${dmN.naoLidas>9?'9+':dmN.naoLidas}</span>` : '';
   $('#scr-batalha').innerHTML=`
     <div class="topbar"><div class="brand">BATALHA</div>
-      <div style="display:flex;align-items:center;gap:12px">
+      <div style="display:flex;align-items:center;gap:10px">
+        <button class="icobtn" id="dmBtn">✉️${dmBadge}</button>
         <button class="icobtn" id="sinoBtn">🔔${badge}</button>${clockHTML()}
       </div></div>
     <div style="position:relative;margin:4px 0 12px">
@@ -1556,8 +1559,41 @@ async function renderBatalha(){
   `;
   $('#novoPost').onclick=()=>composePost();
   $('#sinoBtn').onclick=abrirNotificacoes;
+  $('#dmBtn').onclick=abrirDMs;
   $('#buscaUser').oninput=(e)=>{ clearTimeout(_buscaT); const q=e.target.value.trim(); _buscaT=setTimeout(()=>buscarPessoas(q),300); };
   bindFeedActions();
+}
+async function abrirDMs(){
+  openSheet('<button class="sheet-close" onclick="closeSheet()">×</button><p class="muted" style="padding:20px 0">Carregando…</p>');
+  let convs=[]; try{ convs=await api('/dm/conversas'); }catch(e){}
+  openSheet(`<h3>Mensagens</h3>
+    ${convs.length? convs.map(c=>`
+      <div class="rowitem" data-chat="${esc(c.usuario.username)}" style="cursor:pointer">
+        ${avatarHTML({nome:c.usuario.nomeGuerra,foto:c.usuario.fotoUrl},'avatar sm')}
+        <div class="txt"><div class="t">${esc(c.usuario.nomeGuerra)} ${c.naoLidas?`<span class="notif-badge" style="position:static;display:inline-flex">${c.naoLidas}</span>`:''}</div>
+          <div class="s">${c.ultimo.meu?'Você: ':''}${esc(c.ultimo.texto.slice(0,40))}</div></div>
+      </div>`).join('') : '<p class="muted small">Nenhuma conversa ainda. Abra o perfil de alguém e toque em Mensagem.</p>'}`);
+  $$('#sheet [data-chat]').forEach(el=>el.onclick=()=>abrirChat(el.dataset.chat));
+}
+let _chatUser=null;
+async function abrirChat(username){
+  _chatUser=username;
+  openSheet('<button class="sheet-close" onclick="closeSheet()">×</button><p class="muted" style="padding:20px 0">Carregando…</p>');
+  let d; try{ d=await api('/dm/'+encodeURIComponent(username)); }catch(e){ $('#sheet').innerHTML='<button class="sheet-close" onclick="closeSheet()">×</button><p class="err">Conversa indisponível.</p>'; return; }
+  const bolhas=(msgs)=>msgs.map(m=>`<div style="display:flex;justify-content:${m.meu?'flex-end':'flex-start'};margin:4px 0">
+      <div style="max-width:78%;padding:9px 13px;border-radius:16px;background:${m.meu?'linear-gradient(135deg,var(--accent),var(--accent2))':'var(--surface2)'};color:${m.meu?'#fff':'var(--text)'};font-size:14.5px">${esc(m.texto)}<div style="font-size:10px;opacity:.7;margin-top:2px;text-align:right">${timeago(m.criadoEm)}</div></div></div>`).join('');
+  openSheet(`<h3>${esc(d.usuario.nomeGuerra)}</h3>
+    <div id="chatMsgs" style="max-height:52vh;overflow-y:auto;padding:6px 0;margin-bottom:10px">${d.mensagens.length?bolhas(d.mensagens):'<p class="muted small" style="text-align:center">Diga oi 👋</p>'}</div>
+    <div style="display:flex;gap:8px">
+      <input id="chatTxt" placeholder="Mensagem..." style="flex:1;background:#0c0d11;border:1.5px solid var(--line);border-radius:14px;padding:12px;color:var(--text)">
+      <button class="btn sm" id="chatSend">Enviar</button>
+    </div>`);
+  const box=$('#chatMsgs'); box.scrollTop=box.scrollHeight;
+  const enviar=async()=>{ const t=$('#chatTxt').value.trim(); if(!t) return; $('#chatTxt').value='';
+    try{ const m=await api('/dm/'+encodeURIComponent(username),{method:'POST',body:{texto:t}});
+      box.insertAdjacentHTML('beforeend', bolhas([m])); box.scrollTop=box.scrollHeight; }catch(e){ toast('Falha ao enviar.'); } };
+  $('#chatSend').onclick=enviar;
+  $('#chatTxt').onkeydown=e=>{ if(e.key==='Enter') enviar(); };
 }
 function feedPostHTML(post){
   const media = post.midiaTipo==='video'? `<video class="post-media" src="${post.midiaUrl}" controls playsinline></video>` : (post.midiaUrl?`<img class="post-media" src="${post.midiaUrl}">`:'');
@@ -1612,8 +1648,9 @@ async function abrirPerfil(username){
   const acoes = d.isEu ? '' : d.meBloqueou ? '<p class="muted small">Este usuário te bloqueou.</p>' : `
     <div style="display:flex;gap:8px;margin:14px 0">
       <button class="btn ${d.isSeguindo?'ghost':''}" id="pfSeguir" style="flex:1">${d.isSeguindo?'Seguindo ✓':'＋ Seguir'}</button>
-      <button class="btn ghost" id="pfBloquear">${d.euBloqueei?'Desbloquear':'Bloquear'}</button>
-    </div>`;
+      <button class="btn ghost" id="pfMsg" style="flex:1">✉️ Mensagem</button>
+    </div>
+    <button class="btn ghost sm" id="pfBloquear" style="width:auto">${d.euBloqueei?'Desbloquear':'Bloquear'}</button>`;
   const grade = !d.podeVer
     ? '<div class="card" style="text-align:center"><div style="font-size:30px">🔒</div><p class="muted small">Perfil privado. Siga pra ver as publicações.</p></div>'
     : (d.posts.length ? `<div class="pgrid">${d.posts.map(p=>{
@@ -1639,6 +1676,7 @@ async function abrirPerfil(username){
   if(!d.isEu && !d.meBloqueou){
     $('#pfSeguir').onclick=async()=>{ try{ await api('/batalha/seguir/'+u.username,{method:'POST'}); abrirPerfil(username); }catch(e){ toast('Falha.'); } };
     $('#pfBloquear').onclick=async()=>{ try{ const x=await api('/batalha/bloquear/'+u.username,{method:'POST'}); toast(x.bloqueado?'Usuário bloqueado.':'Desbloqueado.'); closeSheet(); renderBatalha(); }catch(e){ toast('Falha.'); } };
+    $('#pfMsg').onclick=()=>abrirChat(u.username);
   }
   $$('#sheet [data-openpost]').forEach(el=>el.onclick=()=>openComentarios(el.dataset.openpost));
 }
@@ -1838,6 +1876,17 @@ function connectSocket(){
     _socket.on('post:novo', refresh);
     _socket.on('post:like', refresh);
     _socket.on('post:comentario', refresh);
+    _socket.on('dm:nova', (m)=>{
+      const nome=m.de?.nomeGuerra||'Alguém';
+      if(_chatUser && m.de && m.de.username===_chatUser && $('#chatMsgs')){
+        $('#chatMsgs').insertAdjacentHTML('beforeend', `<div style="display:flex;justify-content:flex-start;margin:4px 0"><div style="max-width:78%;padding:9px 13px;border-radius:16px;background:var(--surface2);font-size:14.5px">${esc(m.texto)}</div></div>`);
+        $('#chatMsgs').scrollTop=$('#chatMsgs').scrollHeight;
+      } else {
+        toast('💬 '+nome+': '+m.texto.slice(0,40));
+        notify('Mensagem de '+nome, m.texto);
+        if(activeTab==='batalha') renderBatalha();
+      }
+    });
   }catch(e){} };
   if(window.io){ boot(); return; }
   const s=document.createElement('script'); s.src=src; s.onload=boot; s.onerror=()=>{}; document.head.appendChild(s);
