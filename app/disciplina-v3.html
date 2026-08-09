@@ -358,7 +358,11 @@ const $$ = (s,root=document)=>[...root.querySelectorAll(s)];
 function toast(m){ const t=$('#toast'); t.textContent=m; t.classList.add('show'); clearTimeout(window._tt); window._tt=setTimeout(()=>t.classList.remove('show'),3000); }
 function uid(){ return Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-4); }
 function esc(s){ const d=document.createElement('div'); d.textContent=s==null?'':String(s); return d.innerHTML; }
-function todayISO(){ return new Date().toISOString().slice(0,10); }
+function todayISO(){ const d=brasiliaNow(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function hojeDia(){ return DIAS[(brasiliaNow().getDay()+6)%7]; }
+function treinoFeitoHoje(exId){ return S.treinoLogs.some(l=>l.exId===exId && l.dateISO===todayISO()); }
+function estudoFeitoHoje(materiaId){ return S.estudoLogs.some(l=>String(l.materiaId)===String(materiaId) && l.dateISO===todayISO()); }
+function minsHojeItem(logs, campo, val){ return Math.round(logs.filter(l=>l.dateISO===todayISO() && String(l[campo])===String(val)).reduce((a,l)=>a+(l.ativoMs||0)/60000,0)); }
 function fmtHMS(sec){ sec=Math.max(0,Math.floor(sec)); const h=String(Math.floor(sec/3600)).padStart(2,'0'),m=String(Math.floor(sec%3600/60)).padStart(2,'0'),s=String(sec%60).padStart(2,'0'); return `${h}:${m}:${s}`; }
 function autoGrow(el){ el.style.height='auto'; el.style.height=el.scrollHeight+'px'; }
 function weekStartISO(d=new Date()){ const dt=new Date(d); const off=(dt.getDay()+6)%7; dt.setHours(0,0,0,0); dt.setDate(dt.getDate()-off); return dt.toISOString().slice(0,10); }
@@ -753,6 +757,7 @@ function renderInicio(){
   `;
   $('#genPost').onclick=gerarPublicacaoDoDia;
   $('#patenteBtn').onclick=patenteSheet;
+  $$('#scr-inicio [data-detalhe]').forEach(c=>c.onclick=()=>resumoDetalheSheet(c.dataset.detalhe));
 }
 function patenteSheet(){
   const xp=computeXP(); const atual=rankOf(xp);
@@ -794,23 +799,54 @@ function avatarHTML(p, cls){
   return `<div class="${cls}" style="display:flex;align-items:center;justify-content:center;font-weight:800;font-size:${fs}px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff">${esc((p.nome||'?')[0].toUpperCase())}</div>`;
 }
 function resumoHojeHTML(){
-  const dia = DIAS[(new Date().getDay()+6)%7];
-  const treinoHoje = S.treinoTemplate[dia]?.length||0;
-  const estudoHoje = (S.estudoSemana[dia]||[]).length;
+  const dia = hojeDia();
+  const treinoPlan = (S.treinoTemplate[dia]||[]);
+  const treinoFeitos = treinoPlan.filter(ex=>treinoFeitoHoje(ex.id)).length;
+  const estudoPlan = (S.estudoSemana[dia]||[]);
+  const estudoFeitos = estudoPlan.filter(mid=>estudoFeitoHoje(mid)).length;
   const rotinaTotal = S.rotina.length, rotinaFeita = S.rotina.filter(r=>r.done===todayISO()).length;
   const aguaHoje = S.agua[todayISO()]||0;
   const aguaPct = Math.min(100, Math.round(aguaHoje/(S.profile.metaAgua||2500)*100));
-  const rotinaPct = rotinaTotal ? Math.round(rotinaFeita/rotinaTotal*100) : 0;
-  const card = (ico,t,v,pct)=>`<div class="sumcard">
+  const pct = (a,b)=> b ? Math.round(a/b*100) : 0;
+  const card = (ico,t,v,p,det)=>`<div class="sumcard" data-detalhe="${det}" style="cursor:pointer">
     <div class="ic">${svgIcon(ico)}</div>
     <div class="g"><div class="t">${t}</div><div class="v">${v}</div></div>
-    <div class="prog"><i style="width:${pct}%"></i></div></div>`;
+    <div class="prog"><i style="width:${p}%"></i></div></div>`;
   return `<div class="sumgrid">
-    ${card('i-treino','Treino de hoje', treinoHoje+' exercício(s)', treinoHoje?100:0)}
-    ${card('i-estudo','Estudo de hoje', estudoHoje+' matéria(s)', estudoHoje?100:0)}
-    ${card('i-rotina','Rotina', rotinaFeita+'/'+rotinaTotal, rotinaPct)}
-    ${card('i-alim','Água', aguaHoje+' / '+S.profile.metaAgua+' ml', aguaPct)}
+    ${card('i-treino','Treino de hoje', treinoPlan.length?`${treinoFeitos}/${treinoPlan.length} feito(s)`:'sem treino hoje', pct(treinoFeitos,treinoPlan.length), 'treino')}
+    ${card('i-estudo','Estudo de hoje', estudoPlan.length?`${estudoFeitos}/${estudoPlan.length} feito(s)`:'sem matéria hoje', pct(estudoFeitos,estudoPlan.length), 'estudo')}
+    ${card('i-rotina','Rotina', rotinaFeita+'/'+rotinaTotal, pct(rotinaFeita,rotinaTotal), 'rotina')}
+    ${card('i-alim','Água', aguaHoje+' / '+S.profile.metaAgua+' ml', aguaPct, 'agua')}
   </div>`;
+}
+function resumoDetalheSheet(tipo){
+  const dia=hojeDia(); const hoje=todayISO();
+  let titulo='', corpo='';
+  if(tipo==='treino'){
+    titulo='Treino de hoje';
+    const plan=(S.treinoTemplate[dia]||[]);
+    corpo = plan.length ? plan.map(ex=>{ const f=treinoFeitoHoje(ex.id); const min=f?minsHojeItem(S.treinoLogs,'exId',ex.id):0;
+      return `<div class="rowitem ${f?'done':''}"><div class="chk">${f?'✓':''}</div><div class="txt"><div class="t">${esc(ex.nome)}</div><div class="s">${f?`✅ Feito · ${min} min`:'⏳ Ainda não feito hoje'}</div></div></div>`;
+    }).join('') : '<p class="muted small">Nenhum treino planejado pra hoje.</p>';
+  } else if(tipo==='estudo'){
+    titulo='Estudo de hoje';
+    const plan=(S.estudoSemana[dia]||[]);
+    corpo = plan.length ? plan.map(mid=>{ const m=S.materias.find(x=>x.id===mid); if(!m) return ''; const f=estudoFeitoHoje(m.id); const min=f?minsHojeItem(S.estudoLogs,'materiaId',m.id):0;
+      return `<div class="rowitem ${f?'done':''}"><div class="chk">${f?'✓':''}</div><div class="txt"><div class="t">${esc(m.nome)}</div><div class="s">${f?`✅ Estudado · ${min} min`:'⏳ Ainda não estudado hoje'}</div></div></div>`;
+    }).join('') : '<p class="muted small">Nenhuma matéria pra hoje.</p>';
+  } else if(tipo==='rotina'){
+    titulo='Rotina de hoje';
+    corpo = S.rotina.length ? [...S.rotina].sort((a,b)=>(a.hora||'').localeCompare(b.hora||'')).map(r=>{ const f=r.done===hoje;
+      return `<div class="rowitem ${f?'done':''}"><div class="chk">${f?'✓':''}</div><div class="txt"><div class="t">${esc(r.nome)}</div><div class="s mono">${r.hora||'--:--'} ${f?'· ✅ feito':'· ⏳ pendente'}</div></div></div>`;
+    }).join('') : '<p class="muted small">Sem hábitos na rotina.</p>';
+  } else {
+    titulo='Água de hoje';
+    const ml=S.agua[hoje]||0; const meta=S.profile.metaAgua;
+    corpo = `<div class="card"><div class="mono" style="font-size:34px">${ml}<span class="muted" style="font-size:16px"> / ${meta} ml</span></div>
+      <div class="xpbar" style="margin-top:10px"><i style="width:${Math.min(100,ml/meta*100)}%"></i></div>
+      <p class="small muted" style="margin-top:8px">${ml>=meta?'💧 Meta batida hoje!':'Faltam '+(meta-ml)+' ml. Edita na aba Alimentação.'}</p></div>`;
+  }
+  openSheet(`<h3>${titulo}</h3>${corpo}`);
 }
 
 /* ---------- helper de topo neutro ---------- */
@@ -850,10 +886,17 @@ function renderTreinoDia(){
   let h=`<div class="card"><div class="h">${DIAS_NOME[d]} — objetivo do dia ${edit?`<button class="btn sm" id="addExec">＋ exercício</button>`:''}</div>`;
   if(!list.length) h+=`<p class="muted small">Nada definido pra ${DIAS_NOME[d]}. ${edit?'Adicione um exercício.':'Ative o modo edição pra montar.'}</p>`;
   list.forEach(ex=>{
-    h+=`<div class="rowitem">
-      <div class="txt"><div class="t">${esc(ex.nome)}</div>${ex.desc?`<div class="s">${esc(ex.desc)}</div>`:''}</div>
+    const feito = treinoFeitoHoje(ex.id);
+    const mins = feito ? minsHojeItem(S.treinoLogs,'exId',ex.id) : 0;
+    h+=`<div class="rowitem ${feito?'done':''}">
+      ${feito?'<div class="chk">✓</div>':''}
+      <div class="txt"><div class="t">${esc(ex.nome)}</div>
+        ${ex.desc?`<div class="s">${esc(ex.desc)}</div>`:''}
+        ${feito?`<div class="s" style="color:var(--ok)">✅ Feito hoje · ${mins} min — toque em ↻ pra registrar outra série</div>`:''}
+        ${ex.videoUrl?`<video src="${ex.videoUrl}" controls playsinline style="border-radius:10px;margin-top:8px;max-height:200px;width:100%"></video>`:''}
+      </div>
       ${edit?`<button class="pencil" data-edex="${ex.id}">✏️</button><button class="pencil" data-delex="${ex.id}">🗑️</button>`
-             :`<button class="btn sm" data-startex="${ex.id}">▶</button>`}
+             :`<button class="btn sm ${feito?'ghost':''}" data-startex="${ex.id}">${feito?'↻':'▶'}</button>`}
     </div>`;
   });
   h+=`</div>`;
@@ -871,14 +914,25 @@ function editExecSheet(dia, exId){
     <h3>${exId?'Editar':'Novo'} exercício — ${DIAS_NOME[dia]}</h3>
     <div class="field"><label>Nome do exercício</label><input id="exNome" value="${esc(ex.nome)}" placeholder="Ex: Corrida 5km"></div>
     <div class="field"><label>Descrição / como fazer</label><textarea id="exDesc" class="auto" placeholder="Como executar...">${esc(ex.desc||'')}</textarea></div>
+    <label style="font-size:12.5px;color:var(--text-dim);font-weight:700">Vídeo de demonstração (opcional)</label>
+    <div id="exVideoArea" style="margin:7px 0 12px"></div>
     <button class="btn" id="exSave">Salvar</button>
   `);
+  let videoUrl = ex.videoUrl||null;
+  const va=$('#exVideoArea');
+  const paintVideo=()=>{ va.innerHTML = videoUrl
+    ? `<video src="${videoUrl}" controls playsinline style="border-radius:10px;max-height:200px;width:100%"></video><button class="btn sm ghost" id="exVideoDel" style="margin-top:6px">Remover vídeo</button>`
+    : `<button class="btn sm ghost" id="exVideoAdd">🎥 Selecionar vídeo</button>`;
+    if($('#exVideoAdd')) $('#exVideoAdd').onclick=()=>{ const inp=$('#capVideo'); inp.value=''; inp.removeAttribute('capture'); inp.onchange=async()=>{ const f=inp.files[0]; if(!f)return; va.innerHTML='<p class="muted small">Enviando vídeo…</p>'; try{ const up=await uploadMedia(f); videoUrl=up.url; }catch(e){ toast('Falha ao enviar vídeo.'); } paintVideo(); }; inp.click(); };
+    if($('#exVideoDel')) $('#exVideoDel').onclick=()=>{ videoUrl=null; paintVideo(); };
+  };
+  paintVideo();
   const ta=$('#exDesc'); autoGrow(ta); ta.oninput=()=>autoGrow(ta);
   $('#exSave').onclick=()=>{
     const nome=$('#exNome').value.trim(), desc=$('#exDesc').value.trim();
     if(!nome) return toast('Dê um nome ao exercício.');
-    if(exId){ ex.nome=nome; ex.desc=desc; }
-    else S.treinoTemplate[dia].push({id:uid(), nome, desc});
+    if(exId){ ex.nome=nome; ex.desc=desc; ex.videoUrl=videoUrl; }
+    else S.treinoTemplate[dia].push({id:uid(), nome, desc, videoUrl});
     save('treino:tpl'); closeSheet(); renderTreinoDia();
   };
 }
@@ -978,8 +1032,8 @@ function posTreino(sess){
   let prova=null;
   renderProvaPicker($('#provaArea'), (dataUrl,kind)=>{ prova={dataUrl,kind}; $('#finTreino').disabled=false; });
   $('#finTreino').onclick=()=>{
-    S.treinoLogs.push({ nome:S.treinoTemplate[sess.dia]?.find(x=>x.id===sess.refId)?.nome||'Treino', dia:sess.dia, dateISO:todayISO(), ativoMs:sess.ativoMs, pausaMs:sess.pausedMs });
-    save('treino:logs');
+    S.treinoLogs.push({ exId:sess.refId, nome:S.treinoTemplate[sess.dia]?.find(x=>x.id===sess.refId)?.nome||'Treino', dia:sess.dia, dateISO:todayISO(), ativoMs:sess.ativoMs, pausaMs:sess.pausedMs, prova:prova?.dataUrl, provaTipo:prova?.kind });
+    save('treino:logs'); reportXP();
     // marca no calendário da semana atual
     const wi=currentWeekIndex(); if(S.treinoWeeks[wi]){ S.treinoWeeks[wi].exec[sess.dia]={done:true, at:Date.now(), prova:prova?.dataUrl}; save('treino:weeks'); }
     closeSheet(); toast('Treino registrado. XP creditado, recruta.'); renderTreinos();
@@ -1005,8 +1059,8 @@ function renderProvaPicker(container, onReady){
       onReady(up.url, up.tipo);
     }catch(e){ $('#provaPreview').innerHTML='<p class="err">Falha ao enviar a mídia. Tente de novo.</p>'; }
   };
-  $('#provaFoto').onclick=()=>{ const inp=$('#capPhoto'); inp.value=''; inp.onchange=()=>enviar(inp); inp.click(); };
-  $('#provaVideo').onclick=()=>{ const inp=$('#capVideo'); inp.value=''; inp.onchange=()=>enviar(inp); inp.click(); };
+  $('#provaFoto').onclick=()=>{ const inp=$('#capPhoto'); inp.setAttribute('capture','environment'); inp.value=''; inp.onchange=()=>enviar(inp); inp.click(); };
+  $('#provaVideo').onclick=()=>{ const inp=$('#capVideo'); inp.setAttribute('capture','environment'); inp.value=''; inp.onchange=()=>enviar(inp); inp.click(); };
 }
 
 /* =========================================================================
@@ -1040,10 +1094,14 @@ function renderEstudoDia(){
   ids.forEach(mid=>{
     const m=S.materias.find(x=>x.id===mid); if(!m) return;
     const prox = m.conteudos.find(c=>!c.done);
-    h+=`<div class="rowitem">
+    const feito = estudoFeitoHoje(m.id);
+    const mins = feito ? minsHojeItem(S.estudoLogs,'materiaId',m.id) : 0;
+    h+=`<div class="rowitem ${feito?'done':''}">
+      ${feito?'<div class="chk">✓</div>':''}
       <div class="txt"><div class="t">${esc(m.nome)}</div>
-        <div class="s">${prox?('Próximo: '+esc(prox.nome)):'✅ Tudo concluído'} — ${m.conteudos.filter(c=>c.done).length}/${m.conteudos.length}</div></div>
-      <button class="btn sm" data-startmat="${m.id}">▶ Estudar</button>
+        <div class="s">${prox?('Próximo: '+esc(prox.nome)):'✅ Tudo concluído'} — ${m.conteudos.filter(c=>c.done).length}/${m.conteudos.length}</div>
+        ${feito?`<div class="s" style="color:var(--ok)">✅ Estudado hoje · ${mins} min</div>`:''}</div>
+      <button class="btn sm ${feito?'ghost':''}" data-startmat="${m.id}">${feito?'↻':'▶'} Estudar</button>
     </div>`;
   });
   h+=`</div>`;
