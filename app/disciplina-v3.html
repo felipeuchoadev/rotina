@@ -560,6 +560,7 @@ async function loadUserData(){
     treinoTemplate: g('treino:tpl', DEFAULT_TREINO_TEMPLATE()),
     treinoWeeks:    g('treino:weeks', null),
     treinoLogs:     g('treino:logs', []),
+    recordes:       g('treino:recordes', []),
     materias:       g('estudo:materias', []),
     estudoSemana:   g('estudo:semana', DEFAULT_TREINO_TEMPLATE()),
     estudoLogs:     g('estudo:logs', []),
@@ -581,7 +582,7 @@ async function saveProfile(){
   catch(e){ console.error(e); }
 }
 async function save(k){ await Store.set(k, S[cameMap(k)]); }
-function cameMap(k){ return ({'treino:tpl':'treinoTemplate','treino:weeks':'treinoWeeks','treino:logs':'treinoLogs','estudo:materias':'materias','estudo:semana':'estudoSemana','estudo:logs':'estudoLogs','alim:semana':'alimSemana','alim:pesos':'pesos','alim:agua':'agua','rotina':'rotina','rotina:hist':'rotinaHist','config':'config'})[k]; }
+function cameMap(k){ return ({'treino:tpl':'treinoTemplate','treino:weeks':'treinoWeeks','treino:logs':'treinoLogs','treino:recordes':'recordes','estudo:materias':'materias','estudo:semana':'estudoSemana','estudo:logs':'estudoLogs','alim:semana':'alimSemana','alim:pesos':'pesos','alim:agua':'agua','rotina':'rotina','rotina:hist':'rotinaHist','config':'config'})[k]; }
 
 /* XP total do usuário = soma de logs + bônus, menos punições. Recalcula. */
 function computeXP(){
@@ -910,11 +911,53 @@ function renderTreinos(){
     <h2 class="section-title">Semanas</h2>
     <div id="treinoWeeks"></div>
     ${edit?`<button class="btn ghost" id="addWeek" style="margin-top:8px">＋ Adicionar semana</button>`:''}
+    <div style="display:flex;justify-content:space-between;align-items:center;margin:22px 2px 4px">
+      <h2 class="section-title" style="margin:0">Meus recordes</h2><button class="btn sm" id="addRec">＋ recorde</button>
+    </div>
+    <div id="treinoRecordes"></div>
+    <h2 class="section-title">Relatório de horas</h2>
+    <div id="treinoRelatorio"></div>
   `;
   $('#scr-treinos').innerHTML=html;
   $$('#treinoDays .day').forEach(c=> c.onclick=()=>{ treinoDiaSel=c.dataset.d; renderTreinoDia(); $$('#treinoDays .day').forEach(x=>x.classList.toggle('sel',x.dataset.d===treinoDiaSel)); });
   if(edit) $('#addWeek').onclick=addTreinoWeek;
-  renderTreinoDia(); renderTreinoWeeks();
+  $('#addRec').onclick=()=>editRecordeSheet(null);
+  renderTreinoDia(); renderTreinoWeeks(); renderRecordes(); renderRelatorio('treinoRelatorio','treino');
+}
+function renderRecordes(){
+  const list=S.recordes||[];
+  $('#treinoRecordes').innerHTML = list.length ? list.map(rec=>{
+    const hist=rec.hist||[]; const max=Math.max(1,...hist.map(h=>h.valor));
+    const barras = hist.length>1 ? `<div class="report-bars" style="height:70px;margin-top:16px">${hist.slice(-8).map(h=>`<div class="bar" style="height:${Math.round(h.valor/max*60)+3}px"><b>${h.valor}</b></div>`).join('')}</div>` : '';
+    const melhor = hist.length? Math.max(...hist.map(h=>h.valor)) : rec.valor;
+    return `<div class="card"><div class="h">${esc(rec.nome)}
+        <span><button class="pencil" data-edrec="${rec.id}">✏️</button><button class="pencil" data-delrec="${rec.id}">🗑️</button></span></div>
+      <div style="display:flex;align-items:baseline;gap:14px">
+        <div><div class="muted small">Atual</div><div style="font-weight:800;font-size:26px">${rec.valor} <span class="muted" style="font-size:14px">${esc(rec.unidade||'')}</span></div></div>
+        <div><div class="muted small">Melhor</div><div style="font-weight:800;font-size:20px;color:var(--ok)">${melhor}</div></div>
+      </div>${barras}</div>`;
+  }).join('') : '<p class="muted small">Sem recordes ainda. Ex: máximo de flexões, tempo dos 5km, barra fixa…</p>';
+  $$('#treinoRecordes [data-edrec]').forEach(b=>b.onclick=()=>editRecordeSheet(b.dataset.edrec));
+  $$('#treinoRecordes [data-delrec]').forEach(b=>b.onclick=()=>{ S.recordes=S.recordes.filter(x=>x.id!==b.dataset.delrec); save('treino:recordes'); renderRecordes(); });
+}
+function editRecordeSheet(id){
+  const rec = id ? S.recordes.find(x=>x.id===id) : {nome:'',unidade:'reps',valor:''};
+  openSheet(`<h3>${id?'Atualizar':'Novo'} recorde</h3>
+    <div class="field"><label>O que</label><input id="recNome" value="${esc(rec.nome)}" placeholder="Ex: Máximo de flexões"></div>
+    <div class="grid2">
+      <div class="field"><label>Marca atual</label><input id="recValor" type="number" inputmode="decimal" step="0.01" value="${rec.valor??''}" placeholder="ex: 45"></div>
+      <div class="field"><label>Unidade</label><input id="recUnidade" value="${esc(rec.unidade||'')}" placeholder="reps, kg, min"></div>
+    </div>
+    <p class="small muted">Cada atualização guarda o histórico pra montar o gráfico de evolução.</p>
+    <button class="btn" id="recSave" style="margin-top:8px">Salvar</button>`);
+  $('#recSave').onclick=()=>{
+    const nome=$('#recNome').value.trim(); const valor=+$('#recValor').value;
+    if(!nome) return toast('O que é o recorde?'); if(!valor && valor!==0) return toast('Coloque a marca.');
+    const unidade=$('#recUnidade').value.trim();
+    if(id){ rec.nome=nome; rec.unidade=unidade; if(valor!==rec.valor){ rec.hist=rec.hist||[]; rec.hist.push({dateISO:todayISO(),valor}); } rec.valor=valor; }
+    else S.recordes.push({id:uid(), nome, unidade, valor, hist:[{dateISO:todayISO(),valor}]});
+    save('treino:recordes'); closeSheet(); renderRecordes();
+  };
 }
 function dayChip(d, sel){ const today=DIAS[(new Date().getDay()+6)%7];
   return `<div class="day ${d===sel?'sel':''} ${d===today?'today':''}" data-d="${d}"><div class="dn">${DIAS_AB[d]}</div><div class="dd">${d===today?'hoje':''}</div></div>`; }
@@ -1157,15 +1200,31 @@ function setDayMateriasSheet(d){
     <button class="btn" id="saveDayMat">Salvar</button>`);
   $('#saveDayMat').onclick=()=>{ S.estudoSemana[d]=$$('#sheet [data-mid]').filter(c=>c.checked).map(c=>c.dataset.mid); save('estudo:semana'); closeSheet(); renderEstudoDia(); };
 }
+function fmtDur(ms){ const min=Math.round((ms||0)/60000); if(min<60) return min+' min'; return (min/60).toFixed(1).replace('.',',')+'h'; }
 function renderMaterias(){
   const edit=S.config.editMode;
-  $('#estMaterias').innerHTML = S.materias.length ? S.materias.map(m=>`
-    <div class="card"><div class="h">${esc(m.nome)}
-      <span>${edit?`<button class="pencil" data-edm="${m.id}">✏️</button><button class="pencil" data-delm="${m.id}">🗑️</button>`:`<span class="small muted">${m.conteudos.filter(c=>c.done).length}/${m.conteudos.length}</span>`}</span></div>
-      ${m.conteudos.map(c=>`<div class="rowitem ${c.done?'done':''}"><div class="chk">${c.done?'✓':''}</div><div class="txt"><div class="t" style="${c.done?'text-decoration:line-through;opacity:.6':''}">${esc(c.nome)}</div></div></div>`).join('')||'<p class="muted small">Sem conteúdos ainda.</p>'}
-    </div>`).join('') : '<p class="muted small">Nenhuma matéria. Ative o modo edição e adicione (ex: Português) com todos os conteúdos.</p>';
+  $('#estMaterias').innerHTML = S.materias.length ? S.materias.map(m=>{
+    const feitos=m.conteudos.filter(c=>c.done).length; const pct=m.conteudos.length?Math.round(feitos/m.conteudos.length*100):0;
+    return `<div class="rowitem" data-openmat="${m.id}" style="cursor:pointer">
+      <div class="txt"><div class="t">${esc(m.nome)}</div><div class="s">${feitos}/${m.conteudos.length} conteúdos • ${pct}%</div>
+        <div class="xpbar" style="margin-top:6px"><i style="width:${pct}%"></i></div></div>
+      ${edit?`<button class="pencil" data-edm="${m.id}">✏️</button><button class="pencil" data-delm="${m.id}">🗑️</button>`:'<span class="muted" style="font-size:20px">›</span>'}
+    </div>`; }).join('') : '<p class="muted small">Nenhuma matéria. Ative o modo edição e adicione (ex: Português) com todos os conteúdos.</p>';
+  $$('#estMaterias [data-openmat]').forEach(b=>b.onclick=(e)=>{ if(e.target.closest('[data-edm],[data-delm]')) return; abrirMateria(b.dataset.openmat); });
   if(edit){ $$('#estMaterias [data-edm]').forEach(b=>b.onclick=()=>editMateriaSheet(b.dataset.edm));
     $$('#estMaterias [data-delm]').forEach(b=>b.onclick=()=>{ S.materias=S.materias.filter(x=>x.id!==b.dataset.delm); save('estudo:materias'); renderMaterias(); }); }
+}
+function abrirMateria(mid){
+  const m=S.materias.find(x=>x.id===mid); if(!m) return;
+  const totalMs=(m.conteudos||[]).reduce((a,c)=>a+(c.tempoMs||0),0);
+  openSheet(`<h3>${esc(m.nome)}</h3>
+    <p class="small muted">${m.conteudos.filter(c=>c.done).length}/${m.conteudos.length} concluídos · tempo total ${fmtDur(totalMs)}</p>
+    <div style="margin-top:8px">${m.conteudos.length? m.conteudos.map(c=>`
+      <div class="rowitem ${c.done?'done':''}">
+        <div class="chk">${c.done?'✓':''}</div>
+        <div class="txt"><div class="t" style="${c.done?'opacity:.7':''}">${esc(c.nome)}</div>${c.done&&c.tempoMs?`<div class="s" style="color:var(--ok)">✅ concluído</div>`:''}</div>
+        <div class="mono muted" style="font-size:13px">${c.tempoMs?fmtDur(c.tempoMs):'—'}</div>
+      </div>`).join('') : '<p class="muted small">Sem conteúdos. Edite a matéria pra adicionar.</p>'}</div>`);
 }
 function editMateriaSheet(mid){
   const m = mid ? S.materias.find(x=>x.id===mid) : {nome:'', conteudos:[]};
@@ -1198,9 +1257,14 @@ function posEstudo(sess){
   `);
   $('#finEstudo').onclick=()=>{
     const marcados=$$('#sheet [data-cid]').filter(c=>c.checked).map(c=>c.dataset.cid);
-    if(m){ m.conteudos.forEach(c=>{ if(marcados.includes(c.id)) c.done=true; }); save('estudo:materias'); }
+    if(m){
+      // distribui o tempo ativo da sessão entre os conteúdos concluídos (ou tudo na matéria se nenhum marcado)
+      const fatia = marcados.length ? Math.round(sess.ativoMs/marcados.length) : 0;
+      m.conteudos.forEach(c=>{ if(marcados.includes(c.id)){ c.done=true; c.tempoMs=(c.tempoMs||0)+fatia; c.concluidoEm=todayISO(); } });
+      save('estudo:materias');
+    }
     S.estudoLogs.push({ materia:m?.nome||'Estudo', materiaId:sess.refId, dateISO:todayISO(), ativoMs:sess.ativoMs, pausaMs:sess.pausedMs, conteudos:marcados });
-    save('estudo:logs'); closeSheet(); toast('Estudo registrado. Continue, recruta.'); renderEstudos();
+    save('estudo:logs'); reportXP(); closeSheet(); toast('Estudo registrado. Continue, recruta.'); renderEstudos();
   };
 }
 
