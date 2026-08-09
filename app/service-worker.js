@@ -3,7 +3,29 @@
    Sempre que você subir código novo no host, muda a versão do CACHE abaixo
    (ou a lógica de fetch pega o novo do servidor). O app se atualiza sozinho
    na próxima abertura. */
-const CACHE = 'disciplina-v3-2';
+const CACHE = 'disciplina-v3-3';
+
+// ---- Web Push: recebe notificação mesmo com o app fechado ----
+self.addEventListener('push', (e) => {
+  let d = { title: 'DISCIPLINA', body: 'Mexa-se, recruta.' };
+  try { if (e.data) d = { ...d, ...e.data.json() }; } catch {}
+  e.waitUntil(self.registration.showNotification(d.title, {
+    body: d.body,
+    icon: 'icon-192.png',
+    badge: 'icon-192.png',
+    tag: d.tag || 'disciplina',
+    data: { url: d.url || '/rotina/' },
+    vibrate: [80, 40, 80],
+  }));
+});
+self.addEventListener('notificationclick', (e) => {
+  e.notification.close();
+  const url = (e.notification.data && e.notification.data.url) || '/rotina/';
+  e.waitUntil(clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
+    for (const c of list) { if (c.url.includes('/rotina') && 'focus' in c) return c.focus(); }
+    if (clients.openWindow) return clients.openWindow(url);
+  }));
+});
 const CORE = [
   './disciplina-v3.html',
   './manifest.json'

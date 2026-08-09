@@ -40,8 +40,21 @@ model Usuario {
   notificacoes Notificacao[] @relation("destinatario")
   msgEnviadas  Mensagem[]   @relation("de")
   msgRecebidas Mensagem[]   @relation("para")
+  pushSubs     PushSub[]
 
   @@map("usuarios")
+}
+
+model PushSub {
+  id        Int      @id @default(autoincrement())
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  usuarioId String
+  endpoint  String   @unique
+  p256dh    String
+  auth      String
+  criadoEm  DateTime @default(now())
+
+  @@map("push_subs")
 }
 
 model Mensagem {

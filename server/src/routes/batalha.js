@@ -3,7 +3,8 @@ import { z } from 'zod';
 import { prisma } from '../lib/db.js';
 import { exigirAuth } from '../lib/auth.js';
 import { rankOf } from '../lib/xp.js';
-import { emitFeed } from '../realtime.js';
+import { emitFeed, emitToUser } from '../realtime.js';
+import { enviarPush } from '../lib/push.js';
 
 export const batalhaRouter = Router();
 batalhaRouter.use(exigirAuth);
@@ -13,6 +14,8 @@ const pubSel = { id: true, username: true, nomeGuerra: true, fotoUrl: true, priv
 async function notificar(usuarioId, tipo, texto, deUsername) {
   if (!usuarioId) return;
   try { await prisma.notificacao.create({ data: { usuarioId, tipo, texto, deUsername } }); } catch {}
+  emitToUser(usuarioId, 'notif:nova', { tipo, texto });
+  enviarPush(usuarioId, { title: 'DISCIPLINA', body: texto, tag: 'notif' });
 }
 async function contextoSocial(userId) {
   const [blkEu, blkMe, sigo] = await Promise.all([
