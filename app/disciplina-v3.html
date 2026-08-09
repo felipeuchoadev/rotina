@@ -81,8 +81,8 @@ a{color:var(--accent2);}
 /* Patente / insígnia (perfil) */
 .patente-row{display:flex; align-items:center; gap:14px; margin:14px 0 4px; padding:16px; border-radius:20px;
   background:linear-gradient(150deg,var(--surface2),var(--surface)); border:1px solid var(--line); box-shadow:0 14px 32px -20px rgba(0,0,0,.6);}
-.insignia{width:40px; height:66px; flex:0 0 40px;}
-.insignia.sm{width:25px; height:41px; flex-basis:25px;}
+.insignia{width:38px; height:68px; flex:0 0 38px;}
+.insignia.sm{width:23px; height:41px; flex-basis:23px;}
 .patente-name{font-weight:800; font-size:19px; color:var(--text);}
 .xpbar{height:8px; border-radius:99px; background:rgba(255,255,255,.09); overflow:hidden; margin-top:9px;}
 .xpbar>i{display:block; height:100%; border-radius:99px; background:var(--ok);}
@@ -415,16 +415,16 @@ function nextRank(xp){ return RANKS.find(k=>k.min>xp)||null; }
 function insignia(rankId, cls='insignia'){
   const r = RANKS.find(x=>x.id===rankId)||RANKS[0];
   const n = r.divisas; // 0=Recruta, 1=Soldado, 2=Cabo, 3=3º Sargento
-  // divisas brancas em "V" sobre patch verde (padrão graduação de praça)
+  // divisas brancas em "V" sobre patch verde (padrão graduação de praça EB)
   let chevrons='';
-  const cx=20, x1=6, x2=34, arm=11, gap=13, center=36;
+  const x1=4.5, cx=19, x2=33.5, arm=9, gap=11, center=40; // viewBox 38x68
   for(let i=0;i<n;i++){
-    const ay = center + ((n-1)/2 - i)*gap; // apex, grupo centralizado verticalmente
-    chevrons += `<path d="M${x1} ${ay+arm} L${cx} ${ay} L${x2} ${ay+arm}" fill="none" stroke="#f7faf5" stroke-width="6.5" stroke-linejoin="miter" stroke-linecap="butt"/>`;
+    const ay = center + ((n-1)/2 - i)*gap; // apex, grupo no terço inferior
+    chevrons += `<path d="M${x1} ${ay+arm} L${cx} ${ay} L${x2} ${ay+arm}" fill="none" stroke="#fbfdfa" stroke-width="7" stroke-linejoin="miter" stroke-linecap="butt"/>`;
   }
-  return `<svg class="${cls}" viewBox="0 0 40 66" xmlns="http://www.w3.org/2000/svg">
-    <rect x="2" y="2" width="36" height="62" rx="2" fill="#34512f"/>
-    <rect x="4.5" y="4.5" width="31" height="57" rx="1" fill="none" stroke="#e6efe0" stroke-width="1.2"/>
+  return `<svg class="${cls}" viewBox="0 0 38 68" xmlns="http://www.w3.org/2000/svg">
+    <rect x="1.4" y="1.4" width="35.2" height="65.2" rx="1.5" fill="#35512e" stroke="#1f3a1b" stroke-width="1"/>
+    <rect x="3.6" y="3.6" width="30.8" height="60.8" rx="1" fill="none" stroke="#eef3ea" stroke-width="1.1"/>
     ${chevrons}
   </svg>`;
 }
