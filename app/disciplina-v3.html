@@ -326,11 +326,30 @@ textarea.auto{resize:none; overflow:hidden; min-height:48px;}
    pronta pra trocar por Supabase depois sem reescrever o app.
 ========================================================================== */
 
-/* ---------- STORE (hoje localStorage; amanhã Supabase) ---------- */
+/* ---------- API (backend Node + PostgreSQL na VM) ---------- */
+const API_BASE = location.pathname.includes('/rotina') ? '/rotina/api' : 'https://redsystems.ddns.net/rotina/api';
+let authToken = localStorage.getItem('disc:token') || null;
+function setToken(t){ authToken=t; if(t) localStorage.setItem('disc:token',t); else localStorage.removeItem('disc:token'); }
+async function api(path,{method='GET',body,auth=true}={}){
+  const headers={}; if(body!==undefined) headers['Content-Type']='application/json';
+  if(auth && authToken) headers['Authorization']='Bearer '+authToken;
+  const res=await fetch(API_BASE+path,{method,headers,body:body!==undefined?JSON.stringify(body):undefined});
+  const txt=await res.text(); let data=null; try{ data=txt?JSON.parse(txt):null; }catch{ data=txt; }
+  if(!res.ok){ const e=new Error((data&&data.erro)||('HTTP '+res.status)); e.status=res.status; e.data=data; throw e; }
+  return data;
+}
+async function uploadMedia(file){
+  const fd=new FormData(); fd.append('arquivo',file);
+  const res=await fetch(API_BASE+'/upload',{method:'POST',headers:authToken?{'Authorization':'Bearer '+authToken}:{},body:fd});
+  if(!res.ok) throw new Error('Falha no upload'); return res.json(); // {url,tipo}
+}
+async function reportXP(){ try{ await api('/perfil',{method:'PATCH',body:{xp:computeXP()}}); }catch(e){} }
+
+/* ---------- STORE: dados pessoais como chave-valor por usuário no backend ---------- */
 const Store = {
-  async get(key){ try{ const r = localStorage.getItem('disc:'+key); return r?JSON.parse(r):null; }catch(e){ return null; } },
-  async set(key,val){ try{ localStorage.setItem('disc:'+key, JSON.stringify(val)); return true; }catch(e){ console.error(e); toast('Sem espaço no armazenamento — mídia muito pesada precisa do R2.'); return false; } },
-  async del(key){ localStorage.removeItem('disc:'+key); },
+  async get(key){ try{ return await api('/state/'+encodeURIComponent(key)); }catch(e){ return null; } },
+  async set(key,val){ try{ await api('/state/'+encodeURIComponent(key),{method:'PUT',body:{valor:val}}); return true; }catch(e){ console.error(e); toast('Falha ao salvar — sem conexão com o servidor?'); return false; } },
+  async del(key){ try{ await api('/state/'+encodeURIComponent(key),{method:'DELETE'}); }catch(e){} },
 };
 
 /* ---------- HELPERS ---------- */
@@ -503,31 +522,37 @@ let currentUser = null;  // username
 
 const DEFAULT_TREINO_TEMPLATE = ()=>({ seg:[], ter:[], qua:[], qui:[], sex:[], sab:[], dom:[] });
 
-async function loadUserData(username){
-  const p = await Store.get('profile:'+username);
+async function loadUserData(){
+  const me = await api('/auth/me');            // { usuario, xp, patente }
+  const st = await api('/state');              // { chave: valor, ... }
+  const u = me.usuario;
+  const g = (k,d)=> st[k]!==undefined && st[k]!==null ? st[k] : d;
   S = {
-    profile: p,
-    treinoTemplate: (await Store.get('treino:tpl:'+username)) || DEFAULT_TREINO_TEMPLATE(),
-    treinoWeeks:    (await Store.get('treino:weeks:'+username)) || null,
-    treinoLogs:     (await Store.get('treino:logs:'+username)) || [],
-    materias:       (await Store.get('estudo:materias:'+username)) || [],
-    estudoSemana:   (await Store.get('estudo:semana:'+username)) || DEFAULT_TREINO_TEMPLATE(),
-    estudoLogs:     (await Store.get('estudo:logs:'+username)) || [],
-    alimSemana:     (await Store.get('alim:semana:'+username)) || DEFAULT_TREINO_TEMPLATE(),
-    pesos:          (await Store.get('alim:pesos:'+username)) || [],
-    agua:           (await Store.get('alim:agua:'+username)) || {},
-    rotina:         (await Store.get('rotina:'+username)) || [],
-    config:         (await Store.get('config:'+username)) || {editMode:false, tryHard:false, notif:false},
+    profile: { id:u.id, nome:u.nomeGuerra, username:u.username, email:u.email, foto:u.fotoUrl,
+               idade:u.idade, peso:u.pesoKg, altura:u.alturaCm, metaAgua:u.metaAgua, tema:u.tema, xpBonus:0 },
+    treinoTemplate: g('treino:tpl', DEFAULT_TREINO_TEMPLATE()),
+    treinoWeeks:    g('treino:weeks', null),
+    treinoLogs:     g('treino:logs', []),
+    materias:       g('estudo:materias', []),
+    estudoSemana:   g('estudo:semana', DEFAULT_TREINO_TEMPLATE()),
+    estudoLogs:     g('estudo:logs', []),
+    alimSemana:     g('alim:semana', DEFAULT_TREINO_TEMPLATE()),
+    pesos:          g('alim:pesos', []),
+    agua:           g('alim:agua', {}),
+    rotina:         g('rotina', []),
+    config:         g('config', {editMode:false, tryHard:false, notif:false}),
   };
-  if(!S.treinoWeeks){ // cria semana 1 começando hoje
-    S.treinoWeeks = [{ id:uid(), startISO:todayISO(), exec:{} }];
-    await Store.set('treino:weeks:'+username, S.treinoWeeks);
-  }
-  currentUser = username;
+  if(!S.treinoWeeks){ S.treinoWeeks = [{ id:uid(), startISO:todayISO(), exec:{} }]; await save('treino:weeks'); }
+  currentUser = u.username;
   applyTheme(S.profile.tema||'red');
 }
-async function saveProfile(){ await Store.set('profile:'+currentUser, S.profile); }
-async function save(k){ await Store.set(k+':'+currentUser, S[cameMap(k)]); }
+async function saveProfile(){
+  const p=S.profile;
+  try{ await api('/perfil',{method:'PATCH',body:{ nomeGuerra:p.nome, username:p.username, idade:p.idade,
+    pesoKg:p.peso, alturaCm:p.altura, fotoUrl:p.foto, tema:p.tema, metaAgua:p.metaAgua, xp:computeXP() }}); }
+  catch(e){ console.error(e); }
+}
+async function save(k){ await Store.set(k, S[cameMap(k)]); }
 function cameMap(k){ return ({'treino:tpl':'treinoTemplate','treino:weeks':'treinoWeeks','treino:logs':'treinoLogs','estudo:materias':'materias','estudo:semana':'estudoSemana','estudo:logs':'estudoLogs','alim:semana':'alimSemana','alim:pesos':'pesos','alim:agua':'agua','rotina':'rotina','config':'config'})[k]; }
 
 /* XP total do usuário = soma de logs + bônus, menos punições. Recalcula. */
@@ -612,8 +637,8 @@ async function signupNext(){
   if(!validEmail(email)) return err.textContent='E-mail inválido. Use algo como voce@gmail.com';
   if(p.length<6) return err.textContent='Senha muito curta (mínimo 6).';
   if(p!==p2) return err.textContent='As senhas não conferem.';
-  const idx = (await Store.get('auth:emailIndex'))||{};
-  if(idx[email]) return err.textContent='Esse e-mail já está alistado.';
+  try{ const d=await api('/auth/disponivel?email='+encodeURIComponent(email),{auth:false});
+    if(d.email===false) return err.textContent='Esse e-mail já está alistado.'; }catch(e){}
   signupDraft.email=email; signupDraft.pass=p; err.textContent='';
   signupStep=2; renderAuth();
 }
@@ -626,35 +651,28 @@ async function signupFinish(){
   if(!idade||idade<10||idade>90) return err.textContent='Idade inválida.';
   if(!peso||peso<30||peso>250) return err.textContent='Peso inválido.';
   if(!altura||altura<120||altura>230) return err.textContent='Altura inválida (em cm).';
-  const users=(await Store.get('auth:users'))||{};
-  if(users[username]) return err.textContent='Esse username já existe. Escolha outro.';
-
-  let foto=null; const f=$('#suFoto').files[0];
-  if(f) foto = await compressImage(f, 400, 0.8);
-
-  const {hashHex, saltHex} = await hashPassword(signupDraft.pass);
-  users[username] = { email:signupDraft.email, hash:hashHex, salt:saltHex, criadoEm:Date.now() };
-  await Store.set('auth:users', users);
-  const idx=(await Store.get('auth:emailIndex'))||{}; idx[signupDraft.email]=username; await Store.set('auth:emailIndex', idx);
-
-  const metaAgua = Math.round(peso*35); // fórmula peso_kg * 35ml
-  await Store.set('profile:'+username, { nome, username, email:signupDraft.email, foto, idade, peso, altura, metaAgua, tema:'red', xpBonus:0, criadoEm:Date.now() });
-  await Store.set('auth:session', username);
-  toast('Alistamento concluído. Bem-vindo à caserna, '+nome+'.');
-  await enterApp(username);
+  const btn=$('#suFinish'); if(btn){ btn.disabled=true; btn.textContent='Alistando…'; }
+  try{
+    const r = await api('/auth/cadastro',{auth:false, method:'POST', body:{ email:signupDraft.email, senha:signupDraft.pass, username, nomeGuerra:nome, idade, pesoKg:peso, alturaCm:altura }});
+    setToken(r.token);
+    const f=$('#suFoto').files[0];
+    if(f){ try{ const up=await uploadMedia(f); await api('/perfil',{method:'PATCH',body:{fotoUrl:up.url}}); }catch(e){} }
+    toast('Alistamento concluído. Bem-vindo à caserna, '+nome+'.');
+    await enterApp();
+  }catch(e){ if(btn){ btn.disabled=false; btn.textContent='Concluir alistamento'; }
+    err.textContent = e.status===409 ? (e.data?.erro||'E-mail ou username já cadastrado.') : (e.data?.erro||'Falha no cadastro. Sem conexão?'); }
 }
 async function doLogin(){
   const email=$('#lgEmail').value.trim().toLowerCase(), pass=$('#lgPass').value, err=$('#lgErr');
   if(!validEmail(email)) return err.textContent='E-mail inválido.';
-  const idx=(await Store.get('auth:emailIndex'))||{}; const username=idx[email];
-  if(!username) return err.textContent='E-mail não encontrado. Crie uma conta.';
-  const users=(await Store.get('auth:users'))||{}; const u=users[username];
-  const {hashHex}=await hashPassword(pass, u.salt);
-  if(hashHex!==u.hash) return err.textContent='Senha incorreta, recruta.';
-  await Store.set('auth:session', username);
-  await enterApp(username);
+  const btn=$('#lgBtn'); if(btn){ btn.disabled=true; btn.textContent='Entrando…'; }
+  try{
+    const r = await api('/auth/login',{auth:false, method:'POST', body:{ email, senha:pass }});
+    setToken(r.token); await enterApp();
+  }catch(e){ if(btn){ btn.disabled=false; btn.textContent='Entrar na caserna'; }
+    err.textContent = e.data?.erro || 'Falha no login. Sem conexão?'; }
 }
-async function logout(){ await Store.del('auth:session'); location.reload(); }
+async function logout(){ setToken(null); location.reload(); }
 
 /* =========================================================================
    APP / ROUTER
@@ -686,12 +704,12 @@ function go(tab){
   ({inicio:renderInicio, treinos:renderTreinos, alimentacao:renderAlimentacao, estudos:renderEstudos, rotina:renderRotina, batalha:renderBatalha, perfil:renderPerfil})[tab]();
 }
 
-async function enterApp(username){
-  await loadUserData(username);
+async function enterApp(){
+  await loadUserData();
   $('#auth').classList.add('hidden');
   $('#app').classList.remove('hidden');
   renderNav(); go('inicio');
-  startClock(); startTryHard();
+  startClock(); startTryHard(); connectSocket(); reportXP();
   if(S.config.notif && 'Notification' in window && Notification.permission==='default') Notification.requestPermission();
 }
 
@@ -958,21 +976,17 @@ function renderProvaPicker(container, onReady){
       <button class="btn ghost" id="provaVideo">🎥 Vídeo</button>
     </div>
     <div id="provaPreview"></div>`;
-  $('#provaFoto').onclick=()=>{
-    const inp=$('#capPhoto'); inp.value='';
-    inp.onchange=async()=>{ const f=inp.files[0]; if(!f) return; const url=await compressImage(f,1000,0.72);
-      $('#provaPreview').innerHTML=`<img src="${url}" style="border-radius:12px;max-height:260px">`; onReady(url,'foto'); };
-    inp.click();
+  const enviar=async(inp)=>{ const f=inp.files[0]; if(!f) return;
+    $('#provaPreview').innerHTML='<p class="muted small">Enviando mídia…</p>';
+    try{ const up=await uploadMedia(f);
+      $('#provaPreview').innerHTML = up.tipo==='video'
+        ? `<video src="${up.url}" controls playsinline style="border-radius:12px;max-height:260px;width:100%"></video>`
+        : `<img src="${up.url}" style="border-radius:12px;max-height:260px">`;
+      onReady(up.url, up.tipo);
+    }catch(e){ $('#provaPreview').innerHTML='<p class="err">Falha ao enviar a mídia. Tente de novo.</p>'; }
   };
-  $('#provaVideo').onclick=()=>{
-    const inp=$('#capVideo'); inp.value='';
-    inp.onchange=()=>{ const f=inp.files[0]; if(!f) return;
-      if(f.size>4*1024*1024){ toast('Vídeo pesado: guardado só nesta sessão. Persistência real precisa do Cloudflare R2.'); }
-      const url=URL.createObjectURL(f);
-      $('#provaPreview').innerHTML=`<video src="${url}" controls playsinline style="border-radius:12px;max-height:260px;width:100%"></video>`;
-      onReady(url,'video'); };
-    inp.click();
-  };
+  $('#provaFoto').onclick=()=>{ const inp=$('#capPhoto'); inp.value=''; inp.onchange=()=>enviar(inp); inp.click(); };
+  $('#provaVideo').onclick=()=>{ const inp=$('#capVideo'); inp.value=''; inp.onchange=()=>enviar(inp); inp.click(); };
 }
 
 /* =========================================================================
@@ -1265,45 +1279,44 @@ function editHabitoSheet(id){
    BATALHA (ranking + feed + compositor)
 ========================================================================= */
 async function renderBatalha(){
-  const users=(await Store.get('auth:users'))||{};
-  const board=[];
-  for(const uname of Object.keys(users)){ const pr=await Store.get('profile:'+uname); if(pr) board.push({username:uname, profile:pr, xp: uname===currentUser?computeXP():(pr.xpCache||0)}); }
-  // atualiza cache do próprio xp
-  S.profile.xpCache=computeXP(); saveProfile();
-  board.sort((a,b)=>b.xp-a.xp);
-  const feed=(await Store.get('feed'))||[];
+  await reportXP();                            // garante meu XP atualizado no ranking
+  let board=[], feed=[];
+  try{ board=await api('/batalha/ranking'); }catch(e){}
+  try{ feed=await api('/batalha/feed'); }catch(e){}
   $('#scr-batalha').innerHTML=`
     ${topbar('BATALHA')}
     <button class="btn" id="novoPost">＋ Nova publicação</button>
-    <h2 class="section-title">Ranking de disciplina</h2>
-    <div id="ranking">${board.map((e,i)=>{
-      const r=rankOf(e.xp);
-      return `<div class="leader"><div class="pos">${i+1}</div>${insignia(r.id,'insignia sm')}${avatarHTML(e.profile,'avatar sm')}
-        <div class="who"><div class="n">${esc(e.profile.nome)}</div><div class="u">@${esc(e.username)} • ${r.name}</div></div>
-        <div class="xp">${e.xp.toLocaleString('pt-BR')}</div></div>`;
-    }).join('')}</div>
-    <h2 class="section-title">Feed</h2>
+    <div class="section-title">Ranking de disciplina</div>
+    <div id="ranking">${board.length?board.map((e,i)=>{
+      const r=rankOf(e.xp||0); const prof={nome:e.nomeGuerra, foto:e.fotoUrl};
+      return `<div class="leader"><div class="pos">${i+1}</div>${insignia(r.id,'insignia sm')}${avatarHTML(prof,'avatar sm')}
+        <div class="who"><div class="n">${esc(e.nomeGuerra)}</div><div class="u">@${esc(e.username)} • ${r.name}</div></div>
+        <div class="xp">${(e.xp||0).toLocaleString('pt-BR')}</div></div>`;
+    }).join(''):'<p class="muted small">Sem soldados no ranking ainda.</p>'}</div>
+    <div class="section-title">Feed</div>
     <div id="feed">${feed.length?feed.map(feedPostHTML).join(''):'<p class="muted small">Sem publicações. Seja o primeiro a mostrar serviço.</p>'}</div>
   `;
   $('#novoPost').onclick=()=>composePost();
   bindFeedActions();
 }
 function feedPostHTML(post){
-  const media = post.kind==='video'? `<video class="post-media" src="${post.media}" controls playsinline></video>` : (post.media?`<img class="post-media" src="${post.media}">`:'');
-  const liked = (post.likes||[]).includes(currentUser);
+  const media = post.midiaTipo==='video'? `<video class="post-media" src="${post.midiaUrl}" controls playsinline></video>` : (post.midiaUrl?`<img class="post-media" src="${post.midiaUrl}">`:'');
+  const meuId=S.profile?.id;
+  const liked = (post.likes||[]).some(l=>l.usuarioId===meuId);
+  const prof={nome:post.usuario?.nomeGuerra||'?', foto:post.usuario?.fotoUrl};
+  const nCom = post._count ? post._count.comentarios : 0;
   return `<div class="post" data-post="${post.id}">
-    <div class="post-top">${avatarHTML(post.authorProfile||{nome:post.nome},'avatar xs')}<div><div class="n">${esc(post.nome)}</div><div class="t">${new Date(post.at).toLocaleString('pt-BR')}</div></div></div>
+    <div class="post-top">${avatarHTML(prof,'avatar xs')}<div><div class="n">${esc(prof.nome)}</div><div class="t">${new Date(post.criadoEm).toLocaleString('pt-BR')}</div></div></div>
     ${media}
-    ${post.legenda?`<div class="post-body">${esc(post.legenda)}</div>`:''}
+    ${post.texto?`<div class="post-body">${esc(post.texto)}</div>`:''}
     <div class="post-actions"><span data-like="${post.id}" style="cursor:pointer">${liked?'❤️':'🤍'} <b>${(post.likes||[]).length}</b></span>
-      <span>💬 <b>${(post.coment||[]).length}</b></span></div>
+      <span>💬 <b>${nCom}</b></span></div>
   </div>`;
 }
 function bindFeedActions(){
   $$('#feed [data-like]').forEach(el=>el.onclick=async()=>{
-    const feed=(await Store.get('feed'))||[]; const p=feed.find(x=>x.id===el.dataset.like);
-    p.likes=p.likes||[]; const i=p.likes.indexOf(currentUser); if(i>=0)p.likes.splice(i,1); else p.likes.push(currentUser);
-    await Store.set('feed',feed); renderBatalha();
+    try{ await api('/batalha/feed/'+el.dataset.like+'/like',{method:'POST'}); renderBatalha(); }
+    catch(e){ toast('Falha ao curtir.'); }
   });
 }
 function composePost(prefill=''){
@@ -1312,14 +1325,14 @@ function composePost(prefill=''){
     <div class="field"><label>Legenda</label><textarea id="postLeg" class="auto" placeholder="Conta o que você fez hoje...">${esc(prefill)}</textarea></div>
     <button class="btn ok" id="postPub">Publicar no feed</button>`);
   const ta=$('#postLeg'); autoGrow(ta); ta.oninput=()=>autoGrow(ta);
-  let media=null, kind=null;
-  renderProvaPicker($('#postProva'), (url,k)=>{ media=url; kind=k; });
+  let midiaUrl=null, midiaTipo=null;
+  renderProvaPicker($('#postProva'), (url,tipo)=>{ midiaUrl=url; midiaTipo=tipo; });
   $('#postPub').onclick=async()=>{
-    const legenda=$('#postLeg').value.trim();
-    if(!media && !legenda) return toast('Coloque uma foto/vídeo ou uma legenda.');
-    const feed=(await Store.get('feed'))||[];
-    feed.unshift({id:uid(), username:currentUser, nome:S.profile.nome, authorProfile:{nome:S.profile.nome,foto:S.profile.foto}, media, kind, legenda, at:Date.now(), likes:[], coment:[]});
-    await Store.set('feed', feed.slice(0,50)); closeSheet(); toast('Publicado, soldado.'); renderBatalha();
+    const texto=$('#postLeg').value.trim();
+    if(!midiaUrl && !texto) return toast('Coloque uma foto/vídeo ou uma legenda.');
+    try{ await api('/batalha/feed',{method:'POST',body:{texto, midiaUrl, midiaTipo, tipo:'manual'}});
+      closeSheet(); toast('Publicado, soldado.'); renderBatalha(); }
+    catch(e){ toast('Falha ao publicar.'); }
   };
 }
 async function gerarPublicacaoDoDia(){
@@ -1375,28 +1388,23 @@ function renderPerfilConta(){
       <div class="err" id="pfErr"></div>
       <button class="btn" id="pfSave">Salvar alterações</button>
     </div>`;
-  $('#trocarFoto').onclick=()=>{ const inp=$('#capGallery'); inp.value=''; inp.onchange=async()=>{ const f=inp.files[0]; if(!f)return; S.profile.foto=await compressImage(f,400,0.8); await saveProfile(); renderPerfil(); toast('Foto atualizada.'); }; inp.click(); };
+  $('#trocarFoto').onclick=()=>{ const inp=$('#capGallery'); inp.value=''; inp.onchange=async()=>{ const f=inp.files[0]; if(!f)return;
+    toast('Enviando foto…');
+    try{ const up=await uploadMedia(f); S.profile.foto=up.url; await api('/perfil',{method:'PATCH',body:{fotoUrl:up.url}}); renderPerfil(); toast('Foto atualizada.'); }
+    catch(e){ toast('Falha ao enviar a foto.'); } }; inp.click(); };
   $('#pfSave').onclick=async()=>{
     const err=$('#pfErr'); const nome=$('#pfNome').value.trim();
     const username=$('#pfUser').value.trim().toLowerCase().replace(/\s+/g,'_');
     const idade=+$('#pfIdade').value, peso=+$('#pfPeso').value, altura=+$('#pfAltura').value;
     if(!nome) return err.textContent='Nome de guerra vazio.';
     if(!/^[a-z0-9_]{3,20}$/.test(username)) return err.textContent='Username inválido.';
-    if(username!==p.username){
-      const users=(await Store.get('auth:users'))||{};
-      if(users[username]) return err.textContent='Esse username já existe.';
-      // renomeia chave de auth + migra dados
-      users[username]=users[p.username]; delete users[p.username]; await Store.set('auth:users',users);
-      const idx=(await Store.get('auth:emailIndex'))||{}; idx[p.email]=username; await Store.set('auth:emailIndex',idx);
-      await migrateUserKeys(p.username, username); currentUser=username; await Store.set('auth:session',username);
-    }
-    p.nome=nome; p.username=username; p.idade=idade; p.peso=peso; p.altura=altura; p.metaAgua=Math.round(peso*35);
-    await saveProfile(); err.textContent=''; toast('Dados atualizados.'); renderPerfil();
+    if(!idade||!peso||!altura) return err.textContent='Preencha idade, peso e altura.';
+    try{
+      await api('/perfil',{method:'PATCH',body:{ nomeGuerra:nome, username, idade, pesoKg:peso, alturaCm:altura, metaAgua:Math.round(peso*35) }});
+      p.nome=nome; p.username=username; p.idade=idade; p.peso=peso; p.altura=altura; p.metaAgua=Math.round(peso*35); currentUser=username;
+      err.textContent=''; toast('Dados atualizados.'); renderPerfil();
+    }catch(e){ err.textContent = e.status===409 ? 'Esse username já existe.' : (e.data?.erro||'Falha ao salvar.'); }
   };
-}
-async function migrateUserKeys(oldU,newU){
-  const suffixes=['profile','treino:tpl','treino:weeks','treino:logs','estudo:materias','estudo:semana','estudo:logs','alim:semana','alim:pesos','alim:agua','rotina','config'];
-  for(const s of suffixes){ const v=await Store.get(s+':'+oldU); if(v!=null){ await Store.set(s+':'+newU,v); await Store.del(s+':'+oldU); } }
 }
 function renderPerfilConfig(){
   const c=S.config;
@@ -1454,13 +1462,33 @@ $('#overlay').addEventListener('click',e=>{ if(e.target.id==='overlay') closeShe
 window.closeSheet=closeSheet;
 
 /* =========================================================================
+   TEMPO REAL (Socket.io) — feed/ranking ao vivo
+========================================================================= */
+let _socket=null;
+function connectSocket(){
+  if(_socket || !authToken) return;
+  const origin = API_BASE.startsWith('http') ? API_BASE.replace(/\/api$/,'') : location.origin;
+  const src = origin + '/socket.io/socket.io.js';
+  const boot=()=>{ try{
+    _socket = io(origin, { path:'/rotina/socket.io', auth:{ token:authToken }, transports:['websocket','polling'] });
+    const refresh=()=>{ if(activeTab==='batalha') renderBatalha(); };
+    _socket.on('post:novo', refresh);
+    _socket.on('post:like', refresh);
+    _socket.on('post:comentario', refresh);
+  }catch(e){} };
+  if(window.io){ boot(); return; }
+  const s=document.createElement('script'); s.src=src; s.onload=boot; s.onerror=()=>{}; document.head.appendChild(s);
+}
+
+/* =========================================================================
    BOOT
 ========================================================================= */
 (async function boot(){
   applyTheme('red');
-  const sess=await Store.get('auth:session');
-  if(sess && (await Store.get('profile:'+sess))){ await enterApp(sess); }
-  else { $('#auth').classList.remove('hidden'); renderAuth(); }
+  if(authToken){
+    try{ await enterApp(); }
+    catch(e){ setToken(null); $('#auth').classList.remove('hidden'); renderAuth(); }
+  } else { $('#auth').classList.remove('hidden'); renderAuth(); }
   // registra service worker (só funciona em https/host real; ignora falha local)
   if('serviceWorker' in navigator){ navigator.serviceWorker.register('service-worker.js').catch(()=>{}); }
 })();

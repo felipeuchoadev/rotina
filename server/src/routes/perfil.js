@@ -13,8 +13,10 @@ const editSchema = z.object({
   idade: z.number().int().min(10).max(90).optional(),
   pesoKg: z.number().min(30).max(250).optional(),
   alturaCm: z.number().int().min(120).max(230).optional(),
-  fotoUrl: z.string().optional(),
+  fotoUrl: z.string().nullable().optional(),
   tema: z.string().max(30).optional(),
+  xp: z.number().int().min(0).optional(),        // XP auto-reportado (ranking)
+  metaAgua: z.number().int().min(500).max(8000).optional(),
 });
 
 perfilRouter.patch('/', async (req, res) => {

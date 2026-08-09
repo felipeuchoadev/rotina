@@ -4,7 +4,11 @@ import jwt from 'jsonwebtoken';
 let io = null;
 
 export function initRealtime(httpServer, corsOrigins) {
-  io = new Server(httpServer, { cors: { origin: corsOrigins, credentials: true } });
+  // path casa com o proxy do nginx: /rotina/socket.io/
+  io = new Server(httpServer, {
+    path: process.env.SOCKET_PATH || '/rotina/socket.io',
+    cors: { origin: corsOrigins, credentials: true },
+  });
 
   // Autentica o socket pelo token (mesmo JWT da API)
   io.use((socket, next) => {

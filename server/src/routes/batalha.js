@@ -2,23 +2,19 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../lib/db.js';
 import { exigirAuth } from '../lib/auth.js';
-import { xpDoUsuario, rankOf } from '../lib/xp.js';
-import { emitFeed, emitRanking } from '../realtime.js';
+import { rankOf } from '../lib/xp.js';
+import { emitFeed } from '../realtime.js';
 
 export const batalhaRouter = Router();
 batalhaRouter.use(exigirAuth);
 
-// ---- Ranking de disciplina (XP calculado no servidor) ----
+// ---- Ranking de disciplina (XP auto-reportado, ordenado no banco) ----
 batalhaRouter.get('/ranking', async (req, res) => {
   const usuarios = await prisma.usuario.findMany({
-    select: { id: true, username: true, nomeGuerra: true, fotoUrl: true },
+    select: { id: true, username: true, nomeGuerra: true, fotoUrl: true, xp: true },
+    orderBy: { xp: 'desc' },
   });
-  const comXp = await Promise.all(usuarios.map(async (u) => {
-    const xp = await xpDoUsuario(prisma, u.id);
-    return { ...u, xp, patente: rankOf(xp).id, patenteNome: rankOf(xp).name };
-  }));
-  comXp.sort((a, b) => b.xp - a.xp);
-  res.json(comXp);
+  res.json(usuarios.map((u) => ({ ...u, patente: rankOf(u.xp).id, patenteNome: rankOf(u.xp).name })));
 });
 
 // ---- Feed ----

@@ -9,10 +9,7 @@ import { fileURLToPath } from 'node:url';
 
 import { authRouter } from './routes/auth.js';
 import { perfilRouter } from './routes/perfil.js';
-import { treinosRouter } from './routes/treinos.js';
-import { estudosRouter } from './routes/estudos.js';
-import { alimentacaoRouter } from './routes/alimentacao.js';
-import { rotinaRouter } from './routes/rotina.js';
+import { stateRouter } from './routes/state.js';
 import { batalhaRouter } from './routes/batalha.js';
 import { uploadRouter } from './routes/upload.js';
 import { initRealtime } from './realtime.js';
@@ -38,10 +35,7 @@ app.get('/api/saude', (req, res) => res.json({ ok: true, hora: new Date().toISOS
 
 app.use('/api/auth', authLimiter, authRouter);
 app.use('/api/perfil', perfilRouter);
-app.use('/api/treinos', treinosRouter);
-app.use('/api/estudos', estudosRouter);
-app.use('/api/alimentacao', alimentacaoRouter);
-app.use('/api/rotina', rotinaRouter);
+app.use('/api/state', stateRouter);
 app.use('/api/batalha', batalhaRouter);
 app.use('/api/upload', uploadRouter);
 

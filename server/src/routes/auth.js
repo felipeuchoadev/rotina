@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../lib/db.js';
 import { hashSenha, conferirSenha, assinarToken, exigirAuth } from '../lib/auth.js';
-import { xpDoUsuario, rankOf } from '../lib/xp.js';
+import { rankOf } from '../lib/xp.js';
 
 export const authRouter = Router();
 
@@ -63,12 +63,11 @@ authRouter.post('/login', async (req, res) => {
   res.json({ token, usuario: publico(usuario) });
 });
 
-// Dados do usuário logado + XP/patente
+// Dados do usuário logado + patente
 authRouter.get('/me', exigirAuth, async (req, res) => {
   const usuario = await prisma.usuario.findUnique({ where: { id: req.userId } });
   if (!usuario) return res.status(404).json({ erro: 'Usuário não encontrado.' });
-  const xp = await xpDoUsuario(prisma, usuario.id);
-  res.json({ usuario: publico(usuario), xp, patente: rankOf(xp).id });
+  res.json({ usuario: publico(usuario), xp: usuario.xp, patente: rankOf(usuario.xp).id });
 });
 
 // Remove o hash de senha antes de mandar pro cliente
@@ -76,7 +75,7 @@ function publico(u) {
   return {
     id: u.id, email: u.email, username: u.username, nomeGuerra: u.nomeGuerra,
     fotoUrl: u.fotoUrl, idade: u.idade, pesoKg: u.pesoKg, alturaCm: u.alturaCm,
-    metaAgua: u.metaAgua, tema: u.tema, criadoEm: u.criadoEm,
+    metaAgua: u.metaAgua, tema: u.tema, xp: u.xp, criadoEm: u.criadoEm,
   };
 }
 export { publico };

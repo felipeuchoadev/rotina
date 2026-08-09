@@ -3,7 +3,7 @@
    Sempre que você subir código novo no host, muda a versão do CACHE abaixo
    (ou a lógica de fetch pega o novo do servidor). O app se atualiza sozinho
    na próxima abertura. */
-const CACHE = 'disciplina-v3-1';
+const CACHE = 'disciplina-v3-2';
 const CORE = [
   './disciplina-v3.html',
   './manifest.json'
@@ -26,6 +26,9 @@ self.addEventListener('activate', (e) => {
 self.addEventListener('fetch', (e) => {
   const req = e.request;
   if (req.method !== 'GET') return;
+  // API e tempo real: sempre rede, nunca cache (dados dinâmicos)
+  const p = new URL(req.url).pathname;
+  if (p.includes('/api/') || p.includes('/socket.io/')) return;
   const isHTML = req.mode === 'navigate' || (req.headers.get('accept') || '').includes('text/html');
   if (isHTML) {
     e.respondWith(
