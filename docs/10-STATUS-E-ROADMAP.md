@@ -40,16 +40,16 @@
 - Offline com sincronização.
 - Edição só no modo edição (treino/estudo/alim/rotina); item feito = só ✅.
 - Cadastro por data de nascimento (idade calculada), peso/altura flexíveis (vírgula/metros/8895→88,95), nav por extenso, ícones novos, "Cadastro", Enter avança, Try Hard brutal + normal 50%.
+- **Treinos — arte das semanas (ONDA 2 — no ar)**: semana **concluída** ganha selo ✅ (fundo hachurado verde) e é clicável → sheet "Semana N — progresso" listando os 7 dias (feito/não, data, miniatura da prova). Semana **atual** mostra fita dos 7 dias (✓ nos treinados, destaque no dia de hoje) e também abre o progresso. Semana **travada** ganha correntes em X (SVG de elos metálicos, straps diagonais) + cadeado grande; ao tocar, a semana **treme** e o esculacho aparece por ~5s (toast com duração). `toast(msg, ms)` agora aceita duração.
 - **Aniversários & datas importantes (ONDA 1 — no ar)**: seção no Início substituindo "publicação automática". Calendário GRANDE navegável (‹ › mês/ano, com virada de ano) e bolinha nos dias marcados; lista "Próximas datas" com contagem regressiva (HOJE/amanhã/em N dias) e idade que a pessoa fará. Adicionar/editar/excluir data (nome, tipo aniversário/evento, data, repete-todo-ano, avisos por marco). Banner de parabéns no próprio aniversário do usuário. Persistência: state `datas` por usuário. Notificações programadas via **backend** (`server/src/lib/agenda.js`): varre `datas` de todos os usuários 1x/dia (≥9h Brasília, dedupe no `Kv agenda:lastRun`) e dispara Web Push nos marcos 1 mês / 1 semana / 1 dia / no dia. Modelo `Kv` adicionado ao Prisma (não-destrutivo). Testado ao vivo (add/persist/editar/excluir/navegação); push real depende do device aceitar permissão.
 
 ## PENDENTE (próximas ondas — ordem sugerida)
-1. **Treinos — arte das semanas**: ✅ cobrindo semana concluída (clicável p/ ver progresso); correntes (diagonais) + cadeado na semana travada; esculacho por ~5s ao clicar na travada.
-2. **Início mais estético**: relógio+data integrados com bom visual (só no Início, melhorar o do canto); card de perfil mais bonito.
-3. **Nova logo** do app (emblema atual é provisório).
-4. **Estudos**: análise de "quanto tempo falta pra terminar" com base no ritmo.
-5. **Calendário editável** (rotina/geral): no modo edição, clicar num dia e escrever o que quiser; salvar; dias passados só visualização; opção "deixar padrão"; ✅ dia 100%, número vermelho se passou incompleto, branco se futuro.
-6. **Deep-link de notificação**: clicar na notificação cai direto no assunto (perfil, post, DM…).
-7. **Página de download universal** (landing): funcionalidades, dispositivos (desktop/TV/celular/tablet), botão instalar (PWA `beforeinstallprompt`) + entrar; sempre atualizado ao vivo (autoupdate do service worker).
+1. **Início mais estético**: relógio+data integrados com bom visual (só no Início, melhorar o do canto); card de perfil mais bonito.
+2. **Nova logo** do app (emblema atual é provisório).
+3. **Estudos**: análise de "quanto tempo falta pra terminar" com base no ritmo.
+4. **Calendário editável** (rotina/geral): no modo edição, clicar num dia e escrever o que quiser; salvar; dias passados só visualização; opção "deixar padrão"; ✅ dia 100%, número vermelho se passou incompleto, branco se futuro.
+5. **Deep-link de notificação**: clicar na notificação cai direto no assunto (perfil, post, DM…).
+6. **Página de download universal** (landing): funcionalidades, dispositivos (desktop/TV/celular/tablet), botão instalar (PWA `beforeinstallprompt`) + entrar; sempre atualizado ao vivo (autoupdate do service worker).
 
 ## Como continuar numa sessão nova
 1. Ler este arquivo + memória do projeto.

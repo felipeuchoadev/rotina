@@ -157,6 +157,34 @@ textarea.auto{resize:none; overflow:hidden; min-height:48px;}
 .lock-body .lockico{font-size:32px;}
 .esculacho{font-weight:800; font-size:15.5px; color:var(--accent2); margin:8px 0; line-height:1.4;}
 .countdown{font-weight:800; font-variant-numeric:tabular-nums; font-size:19px; color:var(--text);}
+/* Semana travada: correntes em X + cadeado */
+.week.locked{position:relative; cursor:pointer;}
+.lock-body{position:relative; overflow:hidden;}
+.chains{position:relative; height:118px; display:flex; align-items:center; justify-content:center; margin-bottom:2px;}
+.chains .strap{position:absolute; left:-12%; width:124%; height:30px; top:50%; transform-origin:center;
+  background:linear-gradient(180deg,#464b53,#23272d); border-top:1px solid rgba(255,255,255,.18); border-bottom:1px solid rgba(0,0,0,.55); box-shadow:0 5px 14px rgba(0,0,0,.45);}
+.chains .strap::before{content:''; position:absolute; inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='44' height='22'%3E%3Cg fill='none' stroke='%23c9ccd1' stroke-width='3'%3E%3Cellipse cx='11' cy='11' rx='8.5' ry='6'/%3E%3Cellipse cx='33' cy='11' rx='8.5' ry='6'/%3E%3C/g%3E%3C/svg%3E");
+  background-repeat:repeat-x; background-position:center; background-size:auto 20px; opacity:.92;}
+.chains .s1{transform:translateY(-50%) rotate(19deg);}
+.chains .s2{transform:translateY(-50%) rotate(-19deg);}
+.chains .lockbig{position:relative; z-index:3; font-size:46px; filter:drop-shadow(0 3px 7px rgba(0,0,0,.55));}
+@keyframes shakex{0%,100%{transform:translateX(0)}15%,55%{transform:translateX(-8px)}35%,75%{transform:translateX(8px)}}
+.week.shake{animation:shakex .5s;}
+/* Semana concluída: selo ✅ cobrindo, clicável */
+.week.done2{border-color:color-mix(in srgb,var(--ok) 55%, var(--line)); cursor:pointer;}
+.week.done2 .week-head{background:color-mix(in srgb,var(--ok) 13%, transparent);}
+.doneart{padding:22px 16px; text-align:center;
+  background:repeating-linear-gradient(45deg, color-mix(in srgb,var(--ok) 9%, transparent) 0 14px, transparent 14px 28px);}
+.doneart .bigcheck{font-size:46px; filter:drop-shadow(0 4px 10px rgba(0,0,0,.35));}
+.doneart .donelbl{font-weight:800; letter-spacing:.06em; color:var(--ok); margin-top:2px; font-size:15px;}
+/* Semana atual: fita dos 7 dias */
+.week.atual{cursor:pointer;}
+.weekstrip{display:flex; gap:6px; padding:12px 14px 4px;}
+.weekstrip .wd{flex:1; text-align:center; padding:7px 0; border-radius:10px; background:var(--surface2); font-size:10px; font-weight:800; color:var(--text-dim); border:1px solid var(--line);}
+.weekstrip .wd.ok{background:color-mix(in srgb,var(--ok) 22%, transparent); color:var(--ok); border-color:transparent;}
+.weekstrip .wd.today{box-shadow:0 0 0 2px var(--accent);}
+.weekstrip .wd b{display:block; font-size:15px; line-height:1.3;}
 
 /* Ranking batalha */
 .leader{display:flex; align-items:center; gap:12px; padding:13px; border:1px solid var(--line); border-radius:16px; margin:10px 0; background:var(--surface);}
@@ -429,7 +457,7 @@ const Store = {
 /* ---------- HELPERS ---------- */
 const $ = (s,root=document)=>root.querySelector(s);
 const $$ = (s,root=document)=>[...root.querySelectorAll(s)];
-function toast(m){ const t=$('#toast'); t.textContent=m; t.classList.add('show'); clearTimeout(window._tt); window._tt=setTimeout(()=>t.classList.remove('show'),3000); }
+function toast(m,ms=3000){ const t=$('#toast'); t.textContent=m; t.classList.add('show'); clearTimeout(window._tt); window._tt=setTimeout(()=>t.classList.remove('show'),ms); }
 function uid(){ return Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-4); }
 function esc(s){ const d=document.createElement('div'); d.textContent=s==null?'':String(s); return d.innerHTML; }
 function todayISO(){ const d=brasiliaNow(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
@@ -1240,29 +1268,70 @@ function addTreinoWeek(){
 }
 function renderTreinoWeeks(){
   const now=new Date(); now.setHours(0,0,0,0);
+  const cwi=currentWeekIndex();
   let h='';
   S.treinoWeeks.forEach((w,i)=>{
     const start=new Date(w.startISO); start.setHours(0,0,0,0);
     const end=new Date(start); end.setDate(end.getDate()+7);
     const locked = start>now;
     const done = Object.values(w.exec).filter(e=>e&&e.done).length;
+    const concluida = !locked && (end<=now || done>=7);
     if(locked){
       const esc1=ESC_LOCKED[i%ESC_LOCKED.length];
       const secs=Math.max(0,Math.floor((start-new Date())/1000));
-      h+=`<div class="week locked"><div class="week-head"><h3>Semana ${i+1}</h3><span>🔒</span></div>
-        <div class="lock-body" data-lockedweek="${i}">
-          <div class="lockico">🔒</div>
-          <div class="esculacho">${esc(esc1)}</div>
+      h+=`<div class="week locked" data-lockedweek="${i}"><div class="week-head"><h3>Semana ${i+1}</h3><span>🔒</span></div>
+        <div class="lock-body">
+          <div class="chains" aria-hidden="true"><span class="strap s1"></span><span class="strap s2"></span><div class="lockbig">🔒</div></div>
+          <div class="esculacho" data-esc="${i}">${esc(esc1)}</div>
           <div class="countdown" data-cd="${start.getTime()}">${fmtDHM(secs)}</div>
         </div></div>`;
+    } else if(concluida){
+      h+=`<div class="week done2" data-weekview="${i}"><div class="week-head"><h3>Semana ${i+1}</h3><span class="small" style="color:var(--ok);font-weight:800">${done}/7</span></div>
+        <div class="doneart">
+          <div class="bigcheck">✅</div>
+          <div class="donelbl">SEMANA CONCLUÍDA</div>
+          <div class="small muted" style="margin-top:3px">${done}/7 dias cumpridos · toque pra ver o progresso</div>
+        </div></div>`;
     } else {
-      h+=`<div class="week"><div class="week-head"><h3>Semana ${i+1} ${i===currentWeekIndex()?'• ATUAL':''}</h3><span class="small muted">${done}/7 dias</span></div>
-        <div style="padding:10px 14px" class="small muted">Início ${new Date(w.startISO).toLocaleDateString('pt-BR')}. Clique num dia acima e inicie a sessão.</div></div>`;
+      const strip=DIAS.map(d=>{ const e=w.exec[d]; const ok=e&&e.done; const isToday=d===hojeDia()&&i===cwi;
+        return `<div class="wd ${ok?'ok':''} ${isToday?'today':''}"><b>${ok?'✓':(DIAS_AB[d][0])}</b>${DIAS_AB[d]}</div>`; }).join('');
+      h+=`<div class="week atual" data-weekview="${i}"><div class="week-head"><h3>Semana ${i+1} ${i===cwi?'• ATUAL':''}</h3><span class="small muted">${done}/7 dias</span></div>
+        <div class="weekstrip">${strip}</div>
+        <div style="padding:2px 14px 12px" class="small muted">Início ${new Date(w.startISO).toLocaleDateString('pt-BR')}. Clique num dia acima e inicie a sessão — ou toque aqui pra ver o progresso.</div></div>`;
     }
   });
   $('#treinoWeeks').innerHTML=h;
-  $$('#treinoWeeks [data-lockedweek]').forEach(el=> el.onclick=()=>{ toast(ESC_LOCKED[(+el.dataset.lockedweek)%ESC_LOCKED.length]); });
+  $$('#treinoWeeks [data-lockedweek]').forEach(el=> el.onclick=()=>esculachoTravada(el, +el.dataset.lockedweek));
+  $$('#treinoWeeks [data-weekview]').forEach(el=> el.onclick=()=>weekProgressSheet(+el.dataset.weekview));
   clearInterval(window._cdTimer); window._cdTimer=setInterval(updateCountdowns,1000);
+}
+// ao tocar na semana travada: tremor + esculacho por ~5s
+function esculachoTravada(el, i){
+  el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake');
+  const escEl=el.querySelector('[data-esc]');
+  if(escEl){ escEl.style.transition='none'; escEl.style.transform='scale(1.06)'; escEl.style.filter='brightness(1.4)';
+    setTimeout(()=>{ escEl.style.transition='transform .4s, filter 4s'; escEl.style.transform='scale(1)'; escEl.style.filter='brightness(1)'; },50); }
+  toast(ESC_LOCKED[i%ESC_LOCKED.length], 5000);
+}
+// progresso de uma semana (concluída ou atual): dias feitos + prova
+function weekProgressSheet(i){
+  const w=S.treinoWeeks[i]; if(!w) return;
+  const start=new Date(w.startISO);
+  const done=Object.values(w.exec).filter(e=>e&&e.done).length;
+  const linhas=DIAS.map((d,di)=>{
+    const e=w.exec[d]; const ok=e&&e.done;
+    const dt=new Date(start); dt.setDate(dt.getDate()+di);
+    const dataStr=dt.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+    const prova = e&&e.prova ? `<img src="${e.prova}" alt="" style="width:46px;height:46px;object-fit:cover;border-radius:9px;border:1px solid var(--line)">` : '';
+    return `<div class="rowitem ${ok?'done':''}">
+      <div class="chk">${ok?'✓':''}</div>
+      <div class="txt"><div class="t">${DIAS_NOME[d]}</div><div class="s mono">${dataStr}${ok&&e.at?` · concluído`:' · não treinou'}</div></div>
+      ${prova}
+    </div>`;
+  }).join('');
+  openSheet(`<h3>Semana ${i+1} — progresso</h3>
+    <p class="small muted">${done}/7 dias cumpridos${done>=7?' · 🏆 semana perfeita!':''}. Início ${start.toLocaleDateString('pt-BR')}.</p>
+    ${linhas}`);
 }
 function currentWeekIndex(){ const now=new Date(); now.setHours(0,0,0,0);
   let idx=0; S.treinoWeeks.forEach((w,i)=>{ const s=new Date(w.startISO); s.setHours(0,0,0,0); if(s<=now) idx=i; }); return idx; }
