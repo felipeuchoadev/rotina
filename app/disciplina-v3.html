@@ -1449,8 +1449,7 @@ function renderAlimAnalise(){
     partes.push(aguaOk>=5?'💧 Hidratação em dia ('+aguaOk+'/7 dias na meta).':'💧 Só '+aguaOk+'/7 dias bateu a meta de água. Bebe mais.');
     msg=partes.join(' ');
   }
-  $('#alimAnalise').innerHTML=`<div class="card"><div class="h">Análise (heurística)</div><p style="font-size:15.5px;line-height:1.5">${msg}</p>
-    <p class="small muted" style="margin-top:8px">Análise por regras. IA generativa de verdade dando dicas viria depois, via Supabase Edge Function + API de LLM (custo por uso).</p></div>`;
+  $('#alimAnalise').innerHTML=`<div class="card"><div class="h">Análise da semana</div><p style="font-size:15.5px;line-height:1.5">${msg}</p></div>`;
 }
 function renderAlimPeso(){
   const p=S.profile;
