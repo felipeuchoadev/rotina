@@ -420,6 +420,8 @@ function uid(){ return Math.random().toString(36).slice(2,9)+Date.now().toString
 function esc(s){ const d=document.createElement('div'); d.textContent=s==null?'':String(s); return d.innerHTML; }
 function todayISO(){ const d=brasiliaNow(); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 function hojeDia(){ return DIAS[(brasiliaNow().getDay()+6)%7]; }
+// lê número aceitando vírgula (89,50 -> 89.5). Retorna NaN se vazio/invalido.
+function numBR(v){ if(v==null) return NaN; const s=String(v).trim().replace(/\s/g,'').replace(',','.'); return s===''?NaN:Number(s); }
 function treinoFeitoHoje(exId){ return S.treinoLogs.some(l=>l.exId===exId && l.dateISO===todayISO()); }
 function estudoFeitoHoje(materiaId){ return S.estudoLogs.some(l=>String(l.materiaId)===String(materiaId) && l.dateISO===todayISO()); }
 function minsHojeItem(logs, campo, val){ return Math.round(logs.filter(l=>l.dateISO===todayISO() && String(l[campo])===String(val)).reduce((a,l)=>a+(l.ativoMs||0)/60000,0)); }
@@ -684,9 +686,9 @@ function renderSignupStep(){
       <div class="field"><label>Username (único)</label><input id="suUser" placeholder="ex: flip_esa" value="${esc(signupDraft.username||'')}"></div>
       <div class="grid2">
         <div class="field"><label>Idade</label><input id="suIdade" type="number" inputmode="numeric" placeholder="anos"></div>
-        <div class="field"><label>Peso (kg)</label><input id="suPeso" type="number" inputmode="decimal" step="0.01" placeholder="ex: 88,00"></div>
+        <div class="field"><label>Peso (kg)</label><input id="suPeso" type="text" inputmode="decimal" placeholder="ex: 88,50"></div>
       </div>
-      <div class="field"><label>Altura (cm)</label><input id="suAltura" type="number" inputmode="numeric" placeholder="cm"></div>
+      <div class="field"><label>Altura (cm ou metros)</label><input id="suAltura" type="text" inputmode="decimal" placeholder="176 ou 1,76"></div>
       <div class="field"><label>Foto de perfil (opcional)</label><input id="suFoto" type="file" accept="image/*"></div>`;
   }
 }
@@ -706,12 +708,14 @@ async function signupNext(){
 async function signupFinish(){
   const err=$('#suErr');
   const nome=$('#suNome').value.trim(), username=$('#suUser').value.trim().toLowerCase().replace(/\s+/g,'_');
-  const idade=+$('#suIdade').value, peso=+$('#suPeso').value, altura=+$('#suAltura').value;
+  const idade=Math.round(numBR($('#suIdade').value)); const peso=numBR($('#suPeso').value); let altura=numBR($('#suAltura').value);
+  if(altura>0 && altura<3) altura=Math.round(altura*100);   // metros -> cm
+  altura=Math.round(altura);
   if(!nome) return err.textContent='Informe o nome de guerra.';
   if(!/^[a-z0-9_]{3,20}$/.test(username)) return err.textContent='Username: 3–20 caracteres, letras/números/_';
-  if(!idade||idade<10||idade>90) return err.textContent='Idade inválida.';
-  if(!peso||peso<30||peso>250) return err.textContent='Peso inválido.';
-  if(!altura||altura<120||altura>230) return err.textContent='Altura inválida (em cm).';
+  if(!(idade>=10&&idade<=90)) return err.textContent='Idade inválida (10–90).';
+  if(!(peso>=30&&peso<=250)) return err.textContent='Peso inválido (30–250 kg). Use vírgula, ex: 89,50.';
+  if(!(altura>=120&&altura<=230)) return err.textContent='Altura inválida. Use cm (176) ou metros (1,76).';
   const btn=$('#suFinish'); if(btn){ btn.disabled=true; btn.textContent='Alistando…'; }
   try{
     const r = await api('/auth/cadastro',{auth:false, method:'POST', body:{ email:signupDraft.email, senha:signupDraft.pass, username, nomeGuerra:nome, idade, pesoKg:peso, alturaCm:altura }});
@@ -1362,13 +1366,17 @@ function renderAlimentacao(){
       <div style="display:flex;gap:8px;margin-top:12px;flex-wrap:wrap">
         <button class="btn sm" data-agua="250">＋250</button>
         <button class="btn sm" data-agua="500">＋500</button>
-        <button class="btn sm" data-agua="-250">－250</button>
       </div>
-      <div style="display:flex;gap:8px;margin-top:10px">
-        <input id="aguaInput" type="number" inputmode="numeric" placeholder="quantidade exata (ml)" style="flex:1;background:#0c0d11;border:1.5px solid var(--line);border-radius:12px;padding:12px;color:var(--text)">
-        <button class="btn sm" id="aguaSet">Definir</button>
+      <p class="small muted" style="margin:12px 0 6px">Ou digite a quantidade e escolha somar ou remover:</p>
+      <div style="display:flex;gap:8px">
+        <input id="aguaQtd" type="number" inputmode="numeric" placeholder="quantidade (ml)" style="flex:1;background:#0c0d11;border:1.5px solid var(--line);border-radius:12px;padding:12px;color:var(--text)">
+        <button class="btn sm" id="aguaMais">＋</button>
+        <button class="btn sm ghost" id="aguaMenos">－</button>
       </div>
-      <button class="btn sm ghost" id="aguaDel" style="margin-top:8px">🗑️ Remover registro de hoje</button>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn sm ghost" id="aguaDefinir">Definir total</button>
+        <button class="btn sm ghost" id="aguaZerar">🗑️ Zerar hoje</button>
+      </div>
     </div>
 
     <h2 class="section-title">Peso & evolução</h2>
@@ -1379,10 +1387,13 @@ function renderAlimentacao(){
   `;
   $$('#alimDays .day').forEach(c=>c.onclick=()=>{ alimDiaSel=c.dataset.d; $$('#alimDays .day').forEach(x=>x.classList.toggle('sel',x.dataset.d===alimDiaSel)); renderAlimDia(); });
   const setAgua=(v)=>{ const k=todayISO(); v=Math.max(0,Math.round(v)); if(v===0) delete S.agua[k]; else S.agua[k]=v; save('alim:agua'); renderAlimentacao(); };
-  $$('[data-agua]').forEach(b=>b.onclick=()=>setAgua((S.agua[todayISO()]||0)+ (+b.dataset.agua)));
-  $('#aguaSet').onclick=()=>{ const v=+$('#aguaInput').value; if(!$('#aguaInput').value) return toast('Digite a quantidade em ml.'); setAgua(v); };
-  $('#aguaInput').onkeydown=e=>{ if(e.key==='Enter') $('#aguaSet').click(); };
-  $('#aguaDel').onclick=()=>{ delete S.agua[todayISO()]; save('alim:agua'); toast('Registro de água de hoje removido.'); renderAlimentacao(); };
+  const cur=()=>S.agua[todayISO()]||0;
+  const qtd=()=>numBR($('#aguaQtd').value);
+  $$('[data-agua]').forEach(b=>b.onclick=()=>setAgua(cur()+ (+b.dataset.agua)));
+  $('#aguaMais').onclick=()=>{ const q=qtd(); if(!(q>0)) return toast('Digite a quantidade em ml.'); setAgua(cur()+q); };
+  $('#aguaMenos').onclick=()=>{ const q=qtd(); if(!(q>0)) return toast('Digite a quantidade em ml.'); setAgua(cur()-q); };
+  $('#aguaDefinir').onclick=()=>{ const q=qtd(); if(!(q>=0)) return toast('Digite a quantidade em ml.'); setAgua(q); };
+  $('#aguaZerar').onclick=()=>{ delete S.agua[todayISO()]; save('alim:agua'); toast('Água de hoje zerada.'); renderAlimentacao(); };
   renderAlimDia(); renderAlimAnalise(); renderAlimPeso();
   renderAlimRelatorio();
 }
@@ -1458,13 +1469,13 @@ function renderAlimPeso(){
   const delta = (first!=null&&last!=null)? (last-first) : 0;
   $('#alimPeso').innerHTML=`<div class="card">
     <div style="display:flex;gap:10px;align-items:flex-end;margin-bottom:10px">
-      <div class="field" style="flex:1;margin:0"><label>Registrar peso hoje (kg)</label><input id="pesoInput" type="number" inputmode="decimal" step="0.01" placeholder="ex: 88,00"></div>
+      <div class="field" style="flex:1;margin:0"><label>Registrar peso hoje (kg)</label><input id="pesoInput" type="text" inputmode="decimal" placeholder="ex: 88,50"></div>
       <button class="btn sm" id="pesoSave">Salvar</button>
     </div>
     ${hist.length?`<div class="report-bars">${(()=>{ const min=Math.min(...hist.map(h=>h.peso))-1, max=Math.max(...hist.map(h=>h.peso))+1; return hist.map(h=>`<div class="bar" style="height:${Math.round((h.peso-min)/(max-min)*110)+3}px"><b>${h.peso}</b></div>`).join(''); })()}</div>`:'<p class="muted small">Sem registros de peso ainda.</p>'}
     ${first!=null?`<p class="small" style="margin-top:24px">Evolução: <b>${delta>0?'+':''}${delta.toFixed(1)} kg</b> desde o início. ${delta<0?'Secando, soldado. Continua.':delta>0?'Subiu — se é massa, ok; se é gordura, ajusta a dieta.':'Estável.'}</p>`:''}
   </div>`;
-  $('#pesoSave').onclick=()=>{ const v=+$('#pesoInput').value; if(!v) return toast('Digite o peso.');
+  $('#pesoSave').onclick=()=>{ const v=numBR($('#pesoInput').value); if(!(v>=30&&v<=250)) return toast('Peso inválido (30–250 kg). Use vírgula, ex: 89,50.');
     S.pesos.push({dateISO:todayISO(), peso:v}); S.profile.peso=v; save('alim:pesos'); saveProfile(); renderAlimPeso(); };
 }
 function renderAlimRelatorio(){
@@ -1809,9 +1820,9 @@ function renderPerfilConta(){
       <div class="field"><label>E-mail</label><input value="${esc(p.email)}" disabled></div>
       <div class="grid2">
         <div class="field"><label>Idade</label><input id="pfIdade" type="number" value="${p.idade}"></div>
-        <div class="field"><label>Peso (kg)</label><input id="pfPeso" type="number" inputmode="decimal" step="0.01" value="${p.peso}"></div>
+        <div class="field"><label>Peso (kg)</label><input id="pfPeso" type="text" inputmode="decimal" value="${p.peso!=null?String(p.peso).replace('.',','):''}"></div>
       </div>
-      <div class="field"><label>Altura (cm)</label><input id="pfAltura" type="number" value="${p.altura}"></div>
+      <div class="field"><label>Altura (cm ou metros)</label><input id="pfAltura" type="text" inputmode="decimal" value="${p.altura??''}" placeholder="176 ou 1,76"></div>
       <div class="err" id="pfErr"></div>
       <button class="btn" id="pfSave">Salvar alterações</button>
     </div>`;
@@ -1822,10 +1833,14 @@ function renderPerfilConta(){
   $('#pfSave').onclick=async()=>{
     const err=$('#pfErr'); const nome=$('#pfNome').value.trim();
     const username=$('#pfUser').value.trim().toLowerCase().replace(/\s+/g,'_');
-    const idade=+$('#pfIdade').value, peso=+$('#pfPeso').value, altura=+$('#pfAltura').value;
+    const idade=Math.round(numBR($('#pfIdade').value)); const peso=numBR($('#pfPeso').value); let altura=numBR($('#pfAltura').value);
+    if(altura>0 && altura<3) altura=Math.round(altura*100);   // digitou em metros (1,76) -> 176 cm
+    altura=Math.round(altura);
     if(!nome) return err.textContent='Nome de guerra vazio.';
     if(!/^[a-z0-9_]{3,20}$/.test(username)) return err.textContent='Username inválido.';
-    if(!idade||!peso||!altura) return err.textContent='Preencha idade, peso e altura.';
+    if(!(idade>=10&&idade<=90)) return err.textContent='Idade inválida (10–90).';
+    if(!(peso>=30&&peso<=250)) return err.textContent='Peso inválido (30–250 kg). Use vírgula pros decimais, ex: 89,50.';
+    if(!(altura>=120&&altura<=230)) return err.textContent='Altura inválida. Use cm (ex: 176) ou metros (ex: 1,76).';
     try{
       await api('/perfil',{method:'PATCH',body:{ nomeGuerra:nome, username, idade, pesoKg:peso, alturaCm:altura, metaAgua:Math.round(peso*35) }});
       p.nome=nome; p.username=username; p.idade=idade; p.peso=peso; p.altura=altura; p.metaAgua=Math.round(peso*35); currentUser=username;
