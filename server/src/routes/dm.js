@@ -68,7 +68,7 @@ dmRouter.post('/:username', async (req, res) => {
   const m = await prisma.mensagem.create({ data: { deId: req.userId, paraId: outro.id, texto } });
   const payload = { id: m.id, texto: m.texto, criadoEm: m.criadoEm, de: me };
   emitToUser(outro.id, 'dm:nova', payload);
-  enviarPush(outro.id, { title: 'Mensagem de ' + me.nomeGuerra, body: texto, tag: 'dm', url: '/rotina/' });
+  enviarPush(outro.id, { title: 'Mensagem de ' + me.nomeGuerra, body: texto, tag: 'dm', url: '/rotina/#dm=' + encodeURIComponent(me.username) });
   res.status(201).json({ id: m.id, texto: m.texto, criadoEm: m.criadoEm, meu: true });
 });
 

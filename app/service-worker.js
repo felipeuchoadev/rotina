@@ -22,7 +22,12 @@ self.addEventListener('notificationclick', (e) => {
   e.notification.close();
   const url = (e.notification.data && e.notification.data.url) || '/rotina/';
   e.waitUntil(clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
-    for (const c of list) { if (c.url.includes('/rotina') && 'focus' in c) return c.focus(); }
+    for (const c of list) {
+      if (c.url.includes('/rotina') && 'focus' in c) {
+        // app já aberto: foca e navega pro assunto (dispara o deep-link por hash)
+        return Promise.resolve(c.focus()).then(() => { if ('navigate' in c && url) return c.navigate(url).catch(() => {}); });
+      }
+    }
     if (clients.openWindow) return clients.openWindow(url);
   }));
 });

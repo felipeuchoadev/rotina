@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>DISCIPLINA — treino, estudo e rotina rumo à ESA</title>
+<meta name="description" content="App de disciplina militar: treinos, estudos, alimentação, rotina, rede social de constância e lembretes. Instale no celular, tablet, desktop ou TV.">
+<meta name="theme-color" content="#0a0a0d">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  :root{
+    --bg:#0b0d10; --bg2:#12151b; --panel:#14181e; --line:#242a32;
+    --ink:#f3f4f6; --muted:#9aa1ab; --faint:#6c7480;
+    --accent:#e01e2b; --accent2:#ff5a3c; --gold:#ffd34d; --ok:#37d67a;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html{scroll-behavior:smooth;}
+  body{background:var(--bg); color:var(--ink); line-height:1.6;
+    font-family:ui-sans-serif,system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; -webkit-font-smoothing:antialiased; overflow-x:hidden;}
+  .cond{font-family:"Oswald","Roboto Condensed","Arial Narrow Bold","Arial Narrow",system-ui,sans-serif; text-transform:uppercase; letter-spacing:.03em; font-weight:800;}
+  .wrap{max-width:1100px; margin:0 auto; padding:0 20px;}
+  a{color:inherit; text-decoration:none;}
+  img{max-width:100%; display:block;}
+
+  /* HERO */
+  .hero{position:relative; text-align:center; padding:60px 20px 46px; overflow:hidden;}
+  .hero::before{content:''; position:absolute; inset:0; z-index:0;
+    background:radial-gradient(90% 60% at 50% -10%, color-mix(in srgb,var(--accent) 26%, transparent), transparent 60%);}
+  .hero>*{position:relative; z-index:1;}
+  .hero img.logo{width:120px; height:120px; margin:0 auto 14px; object-fit:contain; filter:drop-shadow(0 10px 26px rgba(224,30,43,.35));}
+  .brand{font-size:clamp(38px,9vw,72px); line-height:.95; letter-spacing:-.01em;}
+  .brand .hot{color:var(--accent2);}
+  .tagline{color:var(--muted); font-size:clamp(15px,2.4vw,19px); max-width:38ch; margin:14px auto 0;}
+  .cta{display:flex; gap:12px; justify-content:center; flex-wrap:wrap; margin-top:28px;}
+  .btn{display:inline-flex; align-items:center; gap:9px; border:none; border-radius:14px; padding:15px 24px;
+    font-weight:800; font-size:16px; cursor:pointer; letter-spacing:.01em;
+    background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff;
+    box-shadow:0 14px 30px -12px color-mix(in srgb,var(--accent) 80%, transparent);}
+  .btn:active{transform:translateY(1px);}
+  .btn.ghost{background:transparent; border:1.6px solid var(--line); color:var(--ink); box-shadow:none;}
+  .hint{margin-top:14px; font-size:13px; color:var(--faint);}
+
+  section{padding:48px 0;}
+  .eyebrow{text-align:center; font-size:12px; letter-spacing:.22em; text-transform:uppercase; color:var(--accent2); font-weight:800;}
+  h2.sec{text-align:center; font-size:clamp(26px,5vw,40px); margin:8px 0 6px; text-wrap:balance;}
+  .sub{text-align:center; color:var(--muted); max-width:56ch; margin:0 auto 30px;}
+
+  .grid{display:grid; gap:16px;}
+  .devs{grid-template-columns:repeat(auto-fit,minmax(150px,1fr));}
+  .dev{background:var(--panel); border:1px solid var(--line); border-radius:18px; padding:22px 16px; text-align:center;}
+  .dev .ic{font-size:34px; margin-bottom:8px;}
+  .dev b{display:block; font-size:16px;}
+  .dev span{font-size:12.5px; color:var(--faint);}
+
+  .feats{grid-template-columns:repeat(auto-fit,minmax(250px,1fr));}
+  .feat{background:linear-gradient(160deg,var(--bg2),var(--panel)); border:1px solid var(--line); border-radius:20px; padding:22px;}
+  .feat .ic{width:46px; height:46px; border-radius:13px; display:grid; place-items:center; margin-bottom:14px;
+    background:color-mix(in srgb,var(--accent) 14%, transparent);}
+  .feat .ic svg{width:24px; height:24px; stroke:var(--accent2); fill:none; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round;}
+  .feat h3{font-size:19px; margin-bottom:6px;}
+  .feat p{color:var(--muted); font-size:14.5px;}
+
+  .live{background:var(--panel); border:1px solid var(--line); border-radius:22px; padding:30px 24px; text-align:center;}
+  .live .row{display:flex; gap:26px; justify-content:center; flex-wrap:wrap; margin-top:18px;}
+  .live .row div{max-width:220px;}
+  .live .row .k{font-weight:800; color:var(--gold); font-size:15px;}
+  .live .row .v{font-size:13.5px; color:var(--muted);}
+
+  .final{text-align:center;}
+  footer{border-top:1px solid var(--line); padding:26px 20px; text-align:center; color:var(--faint); font-size:13px;}
+
+  /* modal instruções de instalação */
+  .modal{position:fixed; inset:0; background:rgba(0,0,0,.7); display:none; align-items:center; justify-content:center; padding:20px; z-index:50;}
+  .modal.on{display:flex;}
+  .modal .box{background:var(--panel); border:1px solid var(--line); border-radius:20px; max-width:440px; width:100%; padding:24px;}
+  .modal h3{font-size:20px; margin-bottom:10px;}
+  .modal ol{margin:10px 0 0 18px; color:var(--muted); font-size:14.5px;}
+  .modal li{margin:7px 0;}
+  .modal .btn{width:100%; margin-top:18px; justify-content:center;}
+  @media (prefers-reduced-motion:reduce){ html{scroll-behavior:auto;} }
+</style>
+</head>
+<body>
+
+  <header class="hero">
+    <img class="logo" src="logo-esa.png" alt="DISCIPLINA">
+    <div class="brand cond">DISCI<span class="hot">PLINA</span></div>
+    <p class="tagline">Treino, estudo, alimentação e rotina num app só. Disciplina de quartel na palma da mão — rumo à Escola de Sargentos das Armas.</p>
+    <div class="cta">
+      <button class="btn" id="instalar">📲 Instalar o app</button>
+      <a class="btn ghost" href="./">Entrar / Abrir no navegador →</a>
+    </div>
+    <div class="hint" id="instHint">Funciona instalado ou direto pelo navegador. Grátis.</div>
+  </header>
+
+  <section id="dispositivos">
+    <div class="wrap">
+      <div class="eyebrow">Universal</div>
+      <h2 class="sec cond">Funciona em todo lugar</h2>
+      <p class="sub">Um único app que se adapta à tela: instale como aplicativo ou use pelo navegador. Seus dados sincronizam entre todos os aparelhos.</p>
+      <div class="grid devs">
+        <div class="dev"><div class="ic">📱</div><b>Celular</b><span>Android e iPhone — adicionar à tela inicial</span></div>
+        <div class="dev"><div class="ic">📟</div><b>Tablet</b><span>Layout amplo, ótimo pra planejar</span></div>
+        <div class="dev"><div class="ic">💻</div><b>Desktop</b><span>Windows, Mac e Linux, no navegador ou instalado</span></div>
+        <div class="dev"><div class="ic">📺</div><b>Smart TV</b><span>Acompanhe seu progresso na tela grande</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="funcionalidades" style="background:var(--bg2)">
+    <div class="wrap">
+      <div class="eyebrow">O que você ganha</div>
+      <h2 class="sec cond">Tudo pra manter a constância</h2>
+      <p class="sub">Cada área do seu preparo, medida e cobrada. O app conta de verdade — e te lembra quando você vacila.</p>
+      <div class="grid feats">
+        <div class="feat"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 9v6M20 9v6M7 7v10M17 7v10M7 12h10"/></svg></div>
+          <h3 class="cond">Treinos</h3><p>Template semanal, cronômetro full-screen, comprovação por foto/vídeo, recordes com gráfico e vídeo de demonstração por exercício.</p></div>
+        <div class="feat"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 5a2 2 0 012-2h13v16H6a2 2 0 00-2 2zM19 3v18"/></svg></div>
+          <h3 class="cond">Estudos</h3><p>Matérias e conteúdos, tempo por conteúdo, agenda por dia e <b>previsão de quando você termina</b> no seu ritmo real.</p></div>
+        <div class="feat"><div class="ic"><svg viewBox="0 0 24 24"><path d="M6 3v8a2 2 0 004 0V3M8 11v10M18 3c-2 0-3 3-3 6s1 4 3 4v8"/></svg></div>
+          <h3 class="cond">Alimentação</h3><p>Refeições da semana, análise automática, controle de água e evolução de peso.</p></div>
+        <div class="feat"><div class="ic"><svg viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/></svg></div>
+          <h3 class="cond">Rotina</h3><p>Hábitos diários e calendário editável: escreva o plano de cada dia, veja ✅ nos dias 100% e o histórico do que já passou.</p></div>
+        <div class="feat"><div class="ic"><svg viewBox="0 0 24 24"><path d="M4 4 L20 20 M20 4 L4 20 M3 6 L6 3 M18 3 L21 6 M6 21 L3 18 M21 18 L18 21"/></svg></div>
+          <h3 class="cond">Batalha</h3><p>Rede social da tropa: ranking de disciplina, feed, seguir, perfis, mensagens e notificações em tempo real.</p></div>
+        <div class="feat"><div class="ic"><svg viewBox="0 0 24 24"><path d="M6 9a6 6 0 0112 0c0 5 2 6 2 6H4s2-1 2-6M10 20a2 2 0 004 0"/></svg></div>
+          <h3 class="cond">Aniversários & datas</h3><p>Calendário grande no Início. O app te lembra 1 mês, 1 semana, 1 dia antes e no dia — até com o app fechado.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="tempo-real">
+    <div class="wrap">
+      <div class="live">
+        <div class="eyebrow">Sempre no ar</div>
+        <h2 class="sec cond" style="margin-top:6px">Tempo real, sem travar</h2>
+        <p class="sub" style="margin-bottom:0">Nada de F5. O app atualiza sozinho — código novo e dados novos chegam na hora.</p>
+        <div class="row">
+          <div><div class="k">⚡ Atualização automática</div><div class="v">Novas versões entram sozinhas, sem reinstalar nem recarregar.</div></div>
+          <div><div class="k">🔄 Ao vivo</div><div class="v">Feed, ranking e mensagens em tempo real via conexão persistente.</div></div>
+          <div><div class="k">📴 Offline</div><div class="v">Salva sem internet e sincroniza sozinho quando você reconecta.</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="final">
+    <div class="wrap">
+      <h2 class="sec cond">Bora, recruta. A vaga não espera.</h2>
+      <p class="sub">Cria sua conta e começa hoje. Leva menos de um minuto.</p>
+      <div class="cta">
+        <button class="btn" id="instalar2">📲 Instalar o app</button>
+        <a class="btn ghost" href="./">Criar conta / Entrar →</a>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    DISCIPLINA · app de treino, estudo e rotina rumo à ESA · feito com disciplina.
+  </footer>
+
+  <div class="modal" id="instModal">
+    <div class="box">
+      <h3 class="cond">Instalar o DISCIPLINA</h3>
+      <p style="color:var(--muted);font-size:14.5px">Seu navegador não abriu o instalador automático. É rápido no manual:</p>
+      <ol>
+        <li><b>Android (Chrome):</b> menu ⋮ → “Adicionar à tela inicial” / “Instalar app”.</li>
+        <li><b>iPhone (Safari):</b> botão Compartilhar → “Adicionar à Tela de Início”.</li>
+        <li><b>Desktop (Chrome/Edge):</b> ícone de instalar na barra de endereço, ou menu → “Instalar DISCIPLINA”.</li>
+      </ol>
+      <button class="btn" id="modalOk">Entendi</button>
+    </div>
+  </div>
+
+<script>
+  // Registra o service worker (necessário pra instalar como PWA e pro autoupdate)
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('service-worker.js').catch(() => {});
+    let reloaded = false;
+    navigator.serviceWorker.addEventListener('controllerchange', () => { if (reloaded) return; reloaded = true; location.reload(); });
+  }
+
+  // PWA install: captura o evento e usa no botão
+  let deferredPrompt = null;
+  const hint = document.getElementById('instHint');
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault(); deferredPrompt = e;
+    if (hint) hint.textContent = 'Pronto pra instalar no seu aparelho. Toque em “Instalar o app”.';
+  });
+  window.addEventListener('appinstalled', () => { if (hint) hint.textContent = '✅ Instalado! Abra o DISCIPLINA pela tela inicial.'; });
+
+  const modal = document.getElementById('instModal');
+  function instalar() {
+    if (deferredPrompt) {
+      deferredPrompt.prompt();
+      deferredPrompt.userChoice.finally(() => { deferredPrompt = null; });
+    } else if (window.matchMedia('(display-mode: standalone)').matches) {
+      if (hint) hint.textContent = 'Você já está no app instalado. 💪';
+    } else {
+      modal.classList.add('on'); // instruções manuais
+    }
+  }
+  document.getElementById('instalar').addEventListener('click', instalar);
+  document.getElementById('instalar2').addEventListener('click', instalar);
+  document.getElementById('modalOk').addEventListener('click', () => modal.classList.remove('on'));
+  modal.addEventListener('click', (e) => { if (e.target === modal) modal.classList.remove('on'); });
+</script>
+</body>
+</html>

@@ -67,7 +67,7 @@ async function rodarAgenda() {
       const body = evento
         ? (dd === 0 ? `Hoje: ${nome}.` : dd === 1 ? `Amanhã: ${nome}.` : dd === 7 ? `Falta 1 semana: ${nome}.` : `Falta 1 mês: ${nome}.`)
         : marco.txt(nome);
-      await enviarPush(row.usuarioId, { title: 'DISCIPLINA', body, tag: 'agenda-' + (item.id || dd), url: '/rotina/' });
+      await enviarPush(row.usuarioId, { title: 'DISCIPLINA', body, tag: 'agenda-' + (item.id || dd), url: '/rotina/#tab=inicio' });
     }
   }
   await marcarRodou(iso);

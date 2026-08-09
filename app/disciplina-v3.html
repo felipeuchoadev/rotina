@@ -297,6 +297,11 @@ textarea.auto{resize:none; overflow:hidden; min-height:48px;}
 .callegend span{display:inline-flex; align-items:center; gap:4px;}
 .callegend i{display:inline-block; width:12px; height:12px; border-radius:3px;}
 .callegend .lok{background:#37d67a;} .callegend .lfail{background:#ff5a5a;} .callegend .lfut{background:#e4e8ec;}
+.callegend .ldot{background:var(--accent); border-radius:50%; width:8px; height:8px;}
+/* Rotina calendário editável: 100% ✅, incompleto vermelho, futuro claro */
+.calc.full{background:#eafaf0; color:#0b3d22; cursor:pointer;}
+.calc.inc{background:#fff; color:#e01e2b; font-weight:800; cursor:pointer;}
+.calc[data-caldia]{cursor:pointer;}
 /* Agenda (Início): calendário grande navegável + banner de aniversário */
 .calbig{padding:16px;}
 .calbig .calc{font-size:15px; border-radius:11px;}
@@ -590,6 +595,8 @@ const TRYHARD = [
   'SEM CHORO! DE PÉ, CARA DE GUERRA. FAZ O QUE TEM QUE SER FEITO!',
   'VOCÊ JUROU DISCIPLINA E TÁ FURANDO?! VOLTA PRA MISSÃO, JÁ!',
   'PREGUIÇA É INIMIGA DA FARDA. ACORDA E EXECUTA, SOLDADO!',
+  'EU COBRO 10.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000% DE VOCÊ. NÃO ACEITO MENOS QUE TUDO. EXECUTA!',
+  'ISSO AQUI NÃO É ACAMPAMENTO DE FÉRIAS. É PORRADA E PANCADARIA ATÉ VIRAR SARGENTO. MEXE-SE!',
 ];
 // Modo normal: cobra, mas 50% (mais leve)
 const COBRANCA = [
@@ -665,6 +672,7 @@ async function loadUserData(){
     agua:           g('alim:agua', {}),
     rotina:         g('rotina', []),
     rotinaHist:     g('rotina:hist', {}),
+    rotinaPlano:    g('rotina:plano', {dias:{}, padrao:''}),   // plano por dia + padrão
     config:         g('config', {editMode:false, tryHard:false, notif:false}),
     datas:          g('datas', []),   // aniversários + datas importantes
   };
@@ -679,7 +687,7 @@ async function saveProfile(){
   catch(e){ console.error(e); }
 }
 async function save(k){ await Store.set(k, S[cameMap(k)]); }
-function cameMap(k){ return ({'treino:tpl':'treinoTemplate','treino:weeks':'treinoWeeks','treino:logs':'treinoLogs','treino:recordes':'recordes','estudo:materias':'materias','estudo:semana':'estudoSemana','estudo:logs':'estudoLogs','alim:semana':'alimSemana','alim:pesos':'pesos','alim:agua':'agua','rotina':'rotina','rotina:hist':'rotinaHist','config':'config','datas':'datas'})[k]; }
+function cameMap(k){ return ({'treino:tpl':'treinoTemplate','treino:weeks':'treinoWeeks','treino:logs':'treinoLogs','treino:recordes':'recordes','estudo:materias':'materias','estudo:semana':'estudoSemana','estudo:logs':'estudoLogs','alim:semana':'alimSemana','alim:pesos':'pesos','alim:agua':'agua','rotina':'rotina','rotina:hist':'rotinaHist','rotina:plano':'rotinaPlano','config':'config','datas':'datas'})[k]; }
 
 /* XP total do usuário = soma de logs + bônus, menos punições. Recalcula. */
 function computeXP(){
@@ -703,7 +711,7 @@ function renderAuth(){
     inner.innerHTML = `
       ${emblemaESA()}
       <div class="auth-title">Disciplina</div>
-      <div class="auth-sub">Escola de Sargentos das Armas — modo</div>
+      <div class="auth-sub">Rumo à Escola de Sargentos das Armas</div>
       <div class="tabs"><button class="on">Entrar</button><button id="toSignup">Criar conta</button></div>
       <div class="field"><label>E-mail</label><input id="lgEmail" type="email" placeholder="voce@gmail.com" autocomplete="email"></div>
       <div class="field"><label>Senha</label><input id="lgPass" type="password" placeholder="••••••••" autocomplete="current-password"></div>
@@ -842,6 +850,8 @@ async function enterApp(){
   renderNav(); go('inicio');
   startClock(); startTryHard(); connectSocket(); reportXP(); flushQueue();
   if(S.config.notif) subscribePush();
+  handleDeepLink();
+  if(!window._dlBound){ window._dlBound=true; window.addEventListener('hashchange', handleDeepLink); }
 }
 
 /* Relógio de Brasília (canto sup. direito, grande, só horário) */
@@ -1453,6 +1463,8 @@ function renderEstudos(){
     <p class="small muted">Cada dia mostra as matérias e o próximo conteúdo pendente. ${edit?'Edite matérias/dias no lápis.':''}</p>
     <div class="days" id="estDays">${DIAS.map(d=>dayChip(d,estudoDiaSel)).join('')}</div>
     <div id="estDia"></div>
+    <h2 class="section-title">Previsão de conclusão</h2>
+    <div id="estPrevisao"></div>
     <h2 class="section-title">Banco de matérias ${edit?`<button class="btn sm" id="addMateria">＋</button>`:''}</h2>
     <div id="estMaterias"></div>
     <h2 class="section-title">Relatório</h2>
@@ -1460,7 +1472,47 @@ function renderEstudos(){
   `;
   $$('#estDays .day').forEach(c=>c.onclick=()=>{ estudoDiaSel=c.dataset.d; $$('#estDays .day').forEach(x=>x.classList.toggle('sel',x.dataset.d===estudoDiaSel)); renderEstudoDia(); });
   if(edit) $('#addMateria').onclick=()=>editMateriaSheet(null);
-  renderEstudoDia(); renderMaterias(); renderRelatorio('estRelatorio','estudo');
+  renderEstudoDia(); renderPrevisaoEstudo(); renderMaterias(); renderRelatorio('estRelatorio','estudo');
+}
+/* Previsão de término com base no ritmo real (logs de estudo) */
+function ritmoDe(logs){
+  const concl = logs.reduce((a,l)=>a+(l.conteudos?.length||0),0);
+  const ms = logs.reduce((a,l)=>a+(l.ativoMs||0),0);
+  const datas = logs.map(l=>l.dateISO).filter(Boolean).sort();
+  let span=1;
+  if(datas.length){ const d0=new Date(datas[0]), dN=new Date(datas[datas.length-1]); span=Math.max(1, Math.round((dN-d0)/86400000)+1); }
+  return { concl, ms, span, avgMs: concl?ms/concl:0, porDia: concl/span };
+}
+function previsaoMateria(m){
+  const conts=m.conteudos||[]; const total=conts.length, done=conts.filter(c=>c.done).length, rest=total-done;
+  const r=ritmoDe(S.estudoLogs.filter(l=>String(l.materiaId)===String(m.id)));
+  const restMin = r.avgMs? Math.round(r.avgMs*rest/60000):0;
+  let etaData=null, etaDias=null;
+  if(rest>0 && r.concl>=2 && r.porDia>0){ etaDias=Math.ceil(rest/r.porDia); const e=brasiliaNow(); e.setHours(0,0,0,0); e.setDate(e.getDate()+etaDias); etaData=e; }
+  return {total,done,rest,restMin,etaData,etaDias};
+}
+function fmtDataCurta(d){ return d.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit',year:'2-digit'}); }
+function fmtHoras(min){ if(!min) return ''; if(min<60) return min+' min'; return (min/60).toFixed(1).replace('.',',')+'h'; }
+function renderPrevisaoEstudo(){
+  const box=$('#estPrevisao'); if(!box) return;
+  const mats=S.materias.filter(m=>(m.conteudos||[]).length);
+  if(!mats.length){ box.innerHTML='<p class="muted small">Cadastre matérias e comece a estudar — aqui eu vou prever quando você termina cada uma, no seu ritmo real.</p>'; return; }
+  let total=0, totalDone=0, totalRest=0, totalRestMin=0;
+  const linhas=mats.map(m=>{ const p=previsaoMateria(m); total+=p.total; totalDone+=p.done; totalRest+=p.rest; totalRestMin+=p.restMin;
+    const pct=p.total?Math.round(p.done/p.total*100):0;
+    const eta = p.rest===0 ? '<b style="color:var(--ok)">concluída ✅</b>' : (p.etaData?`termina ~<b>${fmtDataCurta(p.etaData)}</b> (${p.etaDias}d)`:'ritmo insuficiente ainda');
+    return `<div class="rowitem"><div class="txt"><div class="t">${esc(m.nome)}</div>
+      <div class="s">${p.done}/${p.total} · faltam ${p.rest}${p.restMin?` (≈${fmtHoras(p.restMin)})`:''} · ${eta}</div>
+      <div class="xpbar" style="margin-top:6px"><i style="width:${pct}%"></i></div></div></div>`;
+  }).join('');
+  const rGlobal=ritmoDe(S.estudoLogs);
+  let etaTxt;
+  if(totalRest===0){ etaTxt='Tudo concluído. Monstro. 🏆'; }
+  else if(rGlobal.concl>=2 && rGlobal.porDia>0){ const dias=Math.ceil(totalRest/rGlobal.porDia); const e=brasiliaNow(); e.setHours(0,0,0,0); e.setDate(e.getDate()+dias);
+    etaTxt=`No teu ritmo (${rGlobal.porDia.toFixed(1).replace('.',',')} conteúdos/dia), você termina tudo por volta de <b>${fmtDataCurta(e)}</b> — uns ${dias} dias. Acelera que dá pra antecipar.`; }
+  else { etaTxt='Estuda mais uns dias que eu calculo a data de término no teu ritmo.'; }
+  box.innerHTML=`<div class="card"><div class="h">Faltam ${totalRest} de ${total} conteúdos${totalRestMin?` · ≈${fmtHoras(totalRestMin)} de estudo`:''}</div>
+    <p class="small" style="margin:0">${etaTxt}</p></div>${linhas}`;
 }
 function renderEstudoDia(){
   const edit=S.config.editMode; const d=estudoDiaSel;
@@ -1511,8 +1563,13 @@ function renderMaterias(){
 function abrirMateria(mid){
   const m=S.materias.find(x=>x.id===mid); if(!m) return;
   const totalMs=(m.conteudos||[]).reduce((a,c)=>a+(c.tempoMs||0),0);
+  const p=previsaoMateria(m);
+  const prevTxt = p.rest===0 ? '<b style="color:var(--ok)">Matéria concluída ✅</b>'
+    : (p.etaData ? `Faltam <b>${p.rest}</b>${p.restMin?` (≈${fmtHoras(p.restMin)})`:''} · no teu ritmo termina ~<b>${fmtDataCurta(p.etaData)}</b> (${p.etaDias} dias)`
+                 : `Faltam <b>${p.rest}</b> conteúdos${p.restMin?` (≈${fmtHoras(p.restMin)})`:''} · estuda mais uns dias que eu prevejo a data`);
   openSheet(`<h3>${esc(m.nome)}</h3>
     <p class="small muted">${m.conteudos.filter(c=>c.done).length}/${m.conteudos.length} concluídos · tempo total ${fmtDur(totalMs)}</p>
+    <div class="card" style="margin:8px 0"><p class="small" style="margin:0">📈 ${prevTxt}</p></div>
     <div style="margin-top:8px">${m.conteudos.length? m.conteudos.map(c=>`
       <div class="rowitem ${c.done?'done':''}">
         <div class="chk">${c.done?'✓':''}</div>
@@ -1769,29 +1826,77 @@ function atualizaRotinaHist(){
   S.rotinaHist[todayISO()]={done,total};
   save('rotina:hist');
 }
+let rotCalY=null, rotCalM=null;   // mês/ano em exibição no calendário da rotina
 function renderCalendarioRotina(){
-  const now=brasiliaNow(); const y=now.getFullYear(), mo=now.getMonth();
+  const now=brasiliaNow();
+  if(rotCalY==null){ rotCalY=now.getFullYear(); rotCalM=now.getMonth(); }
+  const y=rotCalY, mo=rotCalM;
   const startDow=new Date(y,mo,1).getDay(); // 0=domingo
   const dim=new Date(y,mo+1,0).getDate();
   const hoje=todayISO();
   const nomes=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
   const hist=S.rotinaHist||{};
+  const plano=S.rotinaPlano||{dias:{},padrao:''};
   let cells='';
   for(let i=0;i<startDow;i++) cells+='<div class="calc empty"></div>';
   for(let d=1; d<=dim; d++){
     const iso=`${y}-${String(mo+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-    let cls;
-    if(iso>hoje) cls='futuro';
-    else { const h=hist[iso]; cls = (h && h.total>0) ? (h.done>=h.total?'ok':'fail') : 'sem'; }
+    let cls, content=d;
+    if(iso>hoje){ cls='futuro'; }                                   // futuro: branco
+    else { const h=hist[iso];
+      if(h && h.total>0 && h.done>=h.total){ cls='full'; content='✅'; }  // 100%: ✅
+      else if(h && h.total>0){ cls='inc'; }                         // passou incompleto: vermelho
+      else { cls='sem'; }                                           // sem dados
+    }
+    const temPlano = (plano.dias&&plano.dias[iso]) || (iso>=hoje && plano.padrao);
     if(iso===hoje) cls+=' hoje';
-    cells+=`<div class="calc ${cls}">${d}</div>`;
+    cells+=`<div class="calc ${cls}" data-caldia="${iso}">${content}${temPlano?'<i class="cdot"></i>':''}</div>`;
   }
   $('#rotinaCal').innerHTML=`<div class="calbox">
-    <div class="calhead">${nomes[mo]} ${y}</div>
+    <div class="calnav">
+      <button id="rotPrev" aria-label="Anterior">‹</button>
+      <div class="calhead" style="margin:0">${nomes[mo]} ${y}</div>
+      <button id="rotNext" aria-label="Próximo">›</button>
+    </div>
     <div class="calgrid caldow">${['D','S','T','Q','Q','S','S'].map(x=>`<div class="caldw">${x}</div>`).join('')}</div>
     <div class="calgrid">${cells}</div>
-    <div class="callegend"><span><i class="lok"></i>tudo feito</span><span><i class="lfail"></i>incompleto</span><span><i class="lfut"></i>a fazer</span></div>
+    <div class="callegend"><span><i class="lok"></i>100% ✅</span><span><i class="lfail"></i>incompleto</span><span><i class="lfut"></i>futuro</span><span><i class="ldot"></i>tem plano</span></div>
   </div>`;
+  $('#rotPrev').onclick=()=>{ rotCalM--; if(rotCalM<0){ rotCalM=11; rotCalY--; } renderCalendarioRotina(); };
+  $('#rotNext').onclick=()=>{ rotCalM++; if(rotCalM>11){ rotCalM=0; rotCalY++; } renderCalendarioRotina(); };
+  $$('#rotinaCal [data-caldia]').forEach(c=>c.onclick=()=>diaRotinaSheet(c.dataset.caldia));
+}
+// clicar num dia do calendário: editar plano (hoje/futuro no modo edição) ou visualizar (passado)
+function diaRotinaSheet(iso){
+  const hoje=todayISO();
+  const past = iso<hoje;
+  const editable = S.config.editMode && iso>=hoje;
+  if(!S.rotinaPlano) S.rotinaPlano={dias:{},padrao:''};
+  const plano=S.rotinaPlano; if(!plano.dias) plano.dias={};
+  const h=(S.rotinaHist||{})[iso];
+  const dObj=new Date(iso+'T00:00:00');
+  const dataLabel=dObj.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long'});
+  const txtAtual = plano.dias[iso] || (iso>=hoje ? (plano.padrao||'') : '');
+  const cem = h && h.total>0 && h.done>=h.total;
+  const histLine = h && h.total>0 ? `${h.done}/${h.total} hábitos cumpridos${cem?' · dia 100% ✅':''}` : 'Sem registro de hábitos nesse dia.';
+  if(!editable){
+    openSheet(`<h3 style="text-transform:capitalize">${dataLabel}</h3>
+      <p class="small" style="${cem?'color:var(--ok)':'color:var(--text-dim)'}">${histLine}</p>
+      ${txtAtual?`<div class="card"><div class="h">Plano do dia</div><div style="white-space:pre-wrap">${esc(txtAtual)}</div></div>`:'<p class="muted small">Sem plano anotado nesse dia.</p>'}
+      ${past?'<p class="small muted">Dias passados são só pra visualização — não dá pra reescrever o passado, recruta.</p>':(!S.config.editMode?'<p class="small muted">Ative o Modo de Edição (Perfil → Configurações) pra escrever o plano deste dia.</p>':'')}`);
+    return;
+  }
+  openSheet(`<h3 style="text-transform:capitalize">${dataLabel}</h3>
+    <p class="small muted">${histLine}</p>
+    <div class="field"><label>Plano do dia — escreve tudo o que quiser</label>
+      <textarea id="planoTxt" class="auto" style="min-height:120px" placeholder="Ex: 06:00 corrida 5km · 14:00 revisar Português · 20:00 ler 10 páginas...">${esc(txtAtual)}</textarea></div>
+    <button class="btn" id="planoSalvar">Salvar plano</button>
+    <button class="btn ghost" id="planoPadrao" style="margin-top:8px">📌 Deixar como padrão (dias futuros)</button>
+    ${plano.dias[iso]?`<button class="btn ghost" id="planoLimpar" style="margin-top:8px;color:#e0342b">Limpar este dia</button>`:''}`);
+  const ta=$('#planoTxt'); autoGrow(ta); ta.oninput=()=>autoGrow(ta);
+  $('#planoSalvar').onclick=async()=>{ const v=$('#planoTxt').value.trim(); if(v) plano.dias[iso]=v; else delete plano.dias[iso]; await save('rotina:plano'); closeSheet(); toast('Plano salvo.'); renderCalendarioRotina(); };
+  $('#planoPadrao').onclick=async()=>{ plano.padrao=$('#planoTxt').value.trim(); await save('rotina:plano'); closeSheet(); toast('Padrão definido pros dias futuros.'); renderCalendarioRotina(); };
+  if(plano.dias[iso]) $('#planoLimpar').onclick=async()=>{ delete plano.dias[iso]; await save('rotina:plano'); closeSheet(); toast('Plano do dia removido.'); renderCalendarioRotina(); };
 }
 function renderRotinaList(){
   const edit=S.config.editMode;
@@ -1846,7 +1951,10 @@ async function renderBatalha(){
       <input id="buscaUser" placeholder="🔎 Buscar pessoas (nome ou @usuário)" style="width:100%;background:#0c0d11;border:1.5px solid var(--line);border-radius:14px;padding:13px;color:var(--text)">
       <div id="buscaRes"></div>
     </div>
-    <button class="btn" id="novoPost">＋ Nova publicação</button>
+    <div style="display:flex;gap:8px">
+      <button class="btn" id="novoPost" style="flex:1">＋ Nova publicação</button>
+      <button class="btn ghost" id="genPost" style="flex:0 0 auto">⚡ Gerar do dia</button>
+    </div>
     <div class="section-title">Ranking de disciplina</div>
     <div id="ranking">${board.length?board.map((e,i)=>{
       const r=rankOf(e.xp||0); const prof={nome:e.nomeGuerra, foto:e.fotoUrl};
@@ -1858,6 +1966,7 @@ async function renderBatalha(){
     <div id="feed">${feed.length?feed.map(feedPostHTML).join(''):'<p class="muted small">Sem publicações. Seja o primeiro a mostrar serviço.</p>'}</div>
   `;
   $('#novoPost').onclick=()=>composePost();
+  $('#genPost').onclick=gerarPublicacaoDoDia;
   $('#sinoBtn').onclick=abrirNotificacoes;
   $('#dmBtn').onclick=abrirDMs;
   $('#buscaUser').oninput=(e)=>{ clearTimeout(_buscaT); const q=e.target.value.trim(); _buscaT=setTimeout(()=>buscarPessoas(q),300); };
@@ -1983,14 +2092,35 @@ async function abrirPerfil(username){
 async function abrirNotificacoes(){
   openSheet('<button class="sheet-close" onclick="closeSheet()">×</button><p class="muted" style="padding:20px 0">Carregando…</p>');
   let d; try{ d=await api('/batalha/notificacoes'); }catch(e){ d={notificacoes:[]}; }
+  const nots=d.notificacoes||[];
   openSheet(`<h3>Notificações</h3>
-    ${d.notificacoes.length ? d.notificacoes.map(n=>`
-      <div class="notif-item ${n.lida?'':'nova'}">
+    ${nots.length ? nots.map((n,i)=>`
+      <div class="notif-item ${n.lida?'':'nova'}" data-noti="${i}" style="cursor:pointer">
         <div style="flex:1"><div style="font-size:14px">${esc(n.texto)}</div><div class="s muted" style="font-size:12px">${timeago(n.criadoEm)}</div></div>
-        ${n.deUsername?`<button class="btn sm ghost" data-perfilnotif="${esc(n.deUsername)}">ver</button>`:''}
+        ${n.deUsername||n.tipo==='aviso'?`<span class="muted" style="font-size:22px">›</span>`:''}
       </div>`).join('') : '<p class="muted small">Sem notificações ainda. Quando alguém te seguir, curtir ou comentar, aparece aqui.</p>'}`);
   api('/batalha/notificacoes/lidas',{method:'POST'}).catch(()=>{});
-  $$('#sheet [data-perfilnotif]').forEach(el=>el.onclick=()=>abrirPerfil(el.dataset.perfilnotif));
+  $$('#sheet [data-noti]').forEach(el=>el.onclick=()=>abrirNotifAlvo(nots[+el.dataset.noti]));
+}
+// clicar na notificação cai direto no assunto
+function abrirNotifAlvo(n){
+  if(!n) return;
+  if(n.deUsername && (n.tipo==='seguidor'||n.tipo==='curtida'||n.tipo==='comentario')){ abrirPerfil(n.deUsername); return; }
+  if(n.tipo==='aviso'){ closeSheet(); go('inicio'); return; }
+  if(n.deUsername){ abrirPerfil(n.deUsername); return; }
+  closeSheet(); go('inicio');
+}
+// deep-link por hash (usado quando a notificação push abre/foca o app: #u=, #dm=, #tab=)
+function handleDeepLink(){
+  const h=location.hash||''; if(h.length<2) return;
+  const parts=Object.fromEntries(h.slice(1).split('&').map(kv=>{ const [k,v]=kv.split('='); return [k, decodeURIComponent(v||'')]; }));
+  try{
+    if(parts.u){ go('batalha'); abrirPerfil(parts.u); }
+    else if(parts.dm){ go('batalha'); abrirChat(parts.dm); }
+    else if(parts.noti!==undefined){ go('batalha'); setTimeout(abrirNotificacoes,250); }
+    else if(parts.tab){ go(parts.tab); }
+  }catch(e){}
+  history.replaceState(null,'',location.pathname+location.search);
 }
 async function openComentarios(postId){
   openSheet(`<h3>Comentários</h3>
@@ -2176,9 +2306,10 @@ let _socket=null;
 function connectSocket(){
   if(_socket || !authToken) return;
   const origin = API_BASE.startsWith('http') ? API_BASE.replace(/\/api$/,'') : location.origin;
-  const src = origin + '/socket.io/socket.io.js';
+  const base = location.pathname.includes('/rotina') ? '/rotina' : '';
+  const src = origin + base + '/socket.io/socket.io.js';
   const boot=()=>{ try{
-    _socket = io(origin, { path:'/rotina/socket.io', auth:{ token:authToken }, transports:['websocket','polling'] });
+    _socket = io(origin, { path: base + '/socket.io', auth:{ token:authToken }, transports:['websocket','polling'] });
     const refresh=()=>{ if(activeTab==='batalha') renderBatalha(); };
     _socket.on('post:novo', refresh);
     _socket.on('post:like', refresh);
@@ -2226,7 +2357,14 @@ async function subscribePush(){
     catch(e){ setToken(null); $('#auth').classList.remove('hidden'); renderAuth(); }
   } else { $('#auth').classList.remove('hidden'); renderAuth(); }
   // registra service worker (só funciona em https/host real; ignora falha local)
-  if('serviceWorker' in navigator){ navigator.serviceWorker.register('service-worker.js').catch(()=>{}); }
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('service-worker.js').catch(()=>{});
+    // autoupdate: quando uma versão nova assume, recarrega sozinho (sem F5)
+    let _reloaded=false;
+    navigator.serviceWorker.addEventListener('controllerchange', ()=>{ if(_reloaded) return; _reloaded=true; location.reload(); });
+    // checa por atualização periodicamente (app aberto por muito tempo)
+    setInterval(()=>{ navigator.serviceWorker.getRegistration().then(r=>r&&r.update()).catch(()=>{}); }, 60000);
+  }
 })();
 </script>
 </body>

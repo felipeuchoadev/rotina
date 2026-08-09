@@ -15,7 +15,9 @@ async function notificar(usuarioId, tipo, texto, deUsername) {
   if (!usuarioId) return;
   try { await prisma.notificacao.create({ data: { usuarioId, tipo, texto, deUsername } }); } catch {}
   emitToUser(usuarioId, 'notif:nova', { tipo, texto });
-  enviarPush(usuarioId, { title: 'DISCIPLINA', body: texto, tag: 'notif' });
+  // deep-link: clicar na notificação cai direto no assunto (perfil de quem interagiu, ou o feed)
+  const url = deUsername ? ('/rotina/#u=' + encodeURIComponent(deUsername)) : '/rotina/#tab=batalha';
+  enviarPush(usuarioId, { title: 'DISCIPLINA', body: texto, tag: 'notif', url });
 }
 async function contextoSocial(userId) {
   const [blkEu, blkMe, sigo] = await Promise.all([
