@@ -50,7 +50,7 @@ batalhaRouter.get('/feed', async (req, res) => {
   });
   const visiveis = posts.filter(p =>
     !bloqueados.has(p.usuarioId) &&
-    (p.usuarioId === req.userId || !p.usuario.privado || sigoSet.has(p.usuarioId))
+    (p.usuarioId === req.userId || (!p.privado && (!p.usuario.privado || sigoSet.has(p.usuarioId))))
   ).slice(0, 50);
   res.json(visiveis);
 });
@@ -60,6 +60,7 @@ const postSchema = z.object({
   midiaUrl: z.string().optional().nullable(),
   midiaTipo: z.enum(['foto', 'video']).optional().nullable(),
   tipo: z.enum(['treino', 'estudo', 'simulado', 'manual']).default('manual'),
+  privado: z.boolean().optional(),
 });
 batalhaRouter.post('/feed', async (req, res) => {
   const p = postSchema.safeParse(req.body);
@@ -87,8 +88,11 @@ batalhaRouter.patch('/feed/:id', async (req, res) => {
   const id = Number(req.params.id);
   const dono = await prisma.feedPost.findFirst({ where: { id, usuarioId: req.userId } });
   if (!dono) return res.status(404).json({ erro: 'Não encontrado.' });
-  const post = await prisma.feedPost.update({ where: { id }, data: { comentariosOff: !!req.body.comentariosOff } });
-  res.json({ comentariosOff: post.comentariosOff });
+  const data = {};
+  if (req.body.comentariosOff !== undefined) data.comentariosOff = !!req.body.comentariosOff;
+  if (req.body.privado !== undefined) data.privado = !!req.body.privado;
+  const post = await prisma.feedPost.update({ where: { id }, data });
+  res.json({ comentariosOff: post.comentariosOff, privado: post.privado });
 });
 
 // Curtir / descurtir

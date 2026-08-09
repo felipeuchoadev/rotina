@@ -139,6 +139,7 @@ model FeedPost {
   midiaUrl    String?
   midiaTipo   String?
   comentariosOff Boolean    @default(false)
+  privado     Boolean       @default(false)
   criadoEm    DateTime      @default(now())
   likes       FeedLike[]
   comentarios FeedComment[]

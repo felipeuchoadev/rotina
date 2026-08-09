@@ -332,6 +332,41 @@ textarea.auto{resize:none; overflow:hidden; min-height:48px;}
 .notif-item{display:flex; align-items:center; gap:10px; padding:12px; border:1px solid var(--line); border-radius:13px; margin:8px 0; background:var(--surface);}
 .notif-item.nova{border-color:var(--accent); background:color-mix(in srgb,var(--accent) 8%, var(--surface));}
 
+/* Recordações (memórias) */
+.recfilt{display:flex; gap:8px; overflow-x:auto; padding:2px 0 10px; scrollbar-width:none;}
+.recfilt::-webkit-scrollbar{display:none;}
+.chipf{flex:0 0 auto; background:var(--surface2); border:1px solid var(--line); color:var(--text-dim); padding:8px 14px; border-radius:999px; font-size:12.5px; font-weight:700; cursor:pointer; white-space:nowrap;}
+.chipf.on{background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff; border-color:transparent;}
+.rec-datehead{font-weight:800; font-size:13px; color:var(--text-dim); text-transform:capitalize; margin:14px 2px 8px;}
+.rec-grid{display:grid; grid-template-columns:repeat(3,1fr); gap:5px;}
+@media (min-width:700px){ .rec-grid{grid-template-columns:repeat(5,1fr);} }
+.rec-cell{position:relative; aspect-ratio:1; border-radius:10px; overflow:hidden; background:#000; cursor:pointer;}
+.rec-cell img,.rec-cell video{width:100%; height:100%; object-fit:cover;}
+.rec-badge{position:absolute; top:4px; left:4px; font-size:12px; filter:drop-shadow(0 1px 2px #000);}
+.rec-play{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#fff; font-size:22px; text-shadow:0 2px 6px #000; pointer-events:none;}
+
+/* Stories (topo do feed) */
+.stories{display:flex; gap:12px; overflow-x:auto; padding:6px 2px 14px; scrollbar-width:none;}
+.stories::-webkit-scrollbar{display:none;}
+.story{flex:0 0 auto; width:66px; text-align:center; cursor:pointer;}
+.story .ring2{width:64px; height:64px; border-radius:50%; padding:3px; background:linear-gradient(135deg,var(--accent),var(--accent2)); }
+.story .ring2 > *{width:100%; height:100%; border-radius:50%; object-fit:cover; border:2px solid var(--bg,#0b0d10); display:block; background:#0c0d11;}
+.story .slbl{font-size:10.5px; color:var(--text-dim); margin-top:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
+.story.add .ring2{background:var(--line);} .story.add .ring2 > div{display:flex;align-items:center;justify-content:center;font-size:26px;color:var(--accent2);}
+
+/* Story viewer (fullscreen) */
+.storyview{position:fixed; inset:0; z-index:80; background:#000; display:none; flex-direction:column;}
+.storyview.on{display:flex;}
+.storyview .bars{display:flex; gap:4px; padding:10px 12px 4px;}
+.storyview .bars i{flex:1; height:3px; background:rgba(255,255,255,.3); border-radius:3px; overflow:hidden;}
+.storyview .bars i b{display:block; height:100%; width:0; background:#fff;}
+.storyview .media{flex:1; display:flex; align-items:center; justify-content:center; overflow:hidden;}
+.storyview .media img,.storyview .media video{max-width:100%; max-height:100%; object-fit:contain;}
+.storyview .cap{position:absolute; bottom:24px; left:16px; right:16px; color:#fff; font-size:15px; text-shadow:0 2px 6px #000;}
+.storyview .navzone{position:absolute; top:60px; bottom:0; width:40%;}
+.storyview .navL{left:0;} .storyview .navR{right:0;}
+.storyview .closev{position:absolute; top:12px; right:14px; z-index:2; background:rgba(0,0,0,.4); border:none; color:#fff; width:36px; height:36px; border-radius:50%; font-size:20px;}
+
 /* ============================================================
    RESPONSIVO — tablet / desktop / TV
    No celular: nav inferior. A partir de 900px: nav vira barra
@@ -371,6 +406,7 @@ textarea.auto{resize:none; overflow:hidden; min-height:48px;}
  <symbol id="i-perfil" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></symbol>
  <symbol id="i-dm" viewBox="0 0 24 24"><path d="M4 6a2 2 0 012-2h12a2 2 0 012 2v8a2 2 0 01-2 2H9l-5 4z"/></symbol>
  <symbol id="i-sino" viewBox="0 0 24 24"><path d="M6 9a6 6 0 0112 0c0 5 2 6 2 6H4s2-1 2-6M10 20a2 2 0 004 0"/></symbol>
+ <symbol id="i-fotos" viewBox="0 0 24 24"><rect x="3" y="5" width="14" height="14" rx="2"/><path d="M3 15l4-4 3 3 4-4 3 3"/><circle cx="8" cy="9" r="1"/><path d="M20 8v11a2 2 0 01-2 2H8"/></symbol>
 </svg>
 
 <!-- ===================== AUTH ===================== -->
@@ -386,6 +422,7 @@ textarea.auto{resize:none; overflow:hidden; min-height:48px;}
   <section id="scr-alimentacao" class="screen"></section>
   <section id="scr-estudos" class="screen"></section>
   <section id="scr-rotina" class="screen"></section>
+  <section id="scr-recordacoes" class="screen"></section>
   <section id="scr-batalha" class="screen"></section>
   <section id="scr-perfil" class="screen"></section>
 
@@ -405,6 +442,16 @@ textarea.auto{resize:none; overflow:hidden; min-height:48px;}
     <button class="btn ghost" id="timerPauseBtn">Pausar</button>
     <button class="btn ok" id="timerFinishBtn">Finalizar</button>
   </div>
+</div>
+
+<!-- Story viewer fullscreen (estilo Instagram) -->
+<div class="storyview" id="storyview">
+  <div class="bars" id="storyBars"></div>
+  <button class="closev" onclick="fecharStories()">×</button>
+  <div class="media" id="storyMedia"></div>
+  <div class="cap" id="storyCap"></div>
+  <div class="navzone navL" onclick="storyNav(-1)"></div>
+  <div class="navzone navR" onclick="storyNav(1)"></div>
 </div>
 
 <div id="toast"></div>
@@ -676,6 +723,7 @@ async function loadUserData(){
     rotinaPlano:    g('rotina:plano', {dias:{}, padrao:''}),   // plano por dia + padrão
     config:         g('config', {editMode:false, tryHard:false, notif:false}),
     datas:          g('datas', []),   // aniversários + datas importantes
+    recordacoes:    g('recordacoes', []),   // memórias: mídia por data (treino/alim/estudo)
   };
   if(!S.treinoWeeks){ S.treinoWeeks = [{ id:uid(), startISO:todayISO(), exec:{} }]; await save('treino:weeks'); }
   currentUser = u.username;
@@ -688,7 +736,7 @@ async function saveProfile(){
   catch(e){ console.error(e); }
 }
 async function save(k){ await Store.set(k, S[cameMap(k)]); }
-function cameMap(k){ return ({'treino:tpl':'treinoTemplate','treino:weeks':'treinoWeeks','treino:logs':'treinoLogs','treino:recordes':'recordes','estudo:materias':'materias','estudo:semana':'estudoSemana','estudo:logs':'estudoLogs','alim:semana':'alimSemana','alim:pesos':'pesos','alim:agua':'agua','rotina':'rotina','rotina:hist':'rotinaHist','rotina:plano':'rotinaPlano','config':'config','datas':'datas'})[k]; }
+function cameMap(k){ return ({'treino:tpl':'treinoTemplate','treino:weeks':'treinoWeeks','treino:logs':'treinoLogs','treino:recordes':'recordes','estudo:materias':'materias','estudo:semana':'estudoSemana','estudo:logs':'estudoLogs','alim:semana':'alimSemana','alim:pesos':'pesos','alim:agua':'agua','rotina':'rotina','rotina:hist':'rotinaHist','rotina:plano':'rotinaPlano','config':'config','datas':'datas','recordacoes':'recordacoes'})[k]; }
 
 /* XP total do usuário = soma de logs + bônus, menos punições. Recalcula. */
 function computeXP(){
@@ -860,11 +908,12 @@ const TABS = [
   {id:'alimentacao', ico:'🍽️', label:'Alimentação'},
   {id:'estudos', ico:'📚', label:'Estudos'},
   {id:'rotina', ico:'⏰', label:'Rotina'},
+  {id:'recordacoes', ico:'🖼️', label:'Memórias'},
   {id:'batalha', ico:'⚔️', label:'Batalha'},
   {id:'perfil', ico:'🎖️', label:'Perfil'},
 ];
 let activeTab='inicio';
-const NAV_ICO = {inicio:'i-home', treinos:'i-treino', alimentacao:'i-alim', estudos:'i-estudo', rotina:'i-rotina', batalha:'i-batalha', perfil:'i-perfil'};
+const NAV_ICO = {inicio:'i-home', treinos:'i-treino', alimentacao:'i-alim', estudos:'i-estudo', rotina:'i-rotina', recordacoes:'i-fotos', batalha:'i-batalha', perfil:'i-perfil'};
 function svgIcon(id){ return `<svg viewBox="0 0 24 24"><use href="#${id}"/></svg>`; }
 
 function renderNav(){
@@ -878,7 +927,7 @@ function go(tab){
   $$('.screen').forEach(s=>s.classList.remove('active'));
   $('#scr-'+tab).classList.add('active');
   window.scrollTo(0,0);
-  ({inicio:renderInicio, treinos:renderTreinos, alimentacao:renderAlimentacao, estudos:renderEstudos, rotina:renderRotina, batalha:renderBatalha, perfil:renderPerfil})[tab]();
+  ({inicio:renderInicio, treinos:renderTreinos, alimentacao:renderAlimentacao, estudos:renderEstudos, rotina:renderRotina, recordacoes:renderRecordacoes, batalha:renderBatalha, perfil:renderPerfil})[tab]();
 }
 
 async function enterApp(){
@@ -1505,16 +1554,21 @@ function posTreino(sess){
     </div></div>
     <p class="small muted">Envie a comprovação (foto ou vídeo) pra registrar.</p>
     <div id="provaArea"></div>
+    <label class="rowitem" style="cursor:pointer"><input type="checkbox" id="finPostar" style="width:22px;height:22px"><div class="txt"><div class="t">Postar no feed</div><div class="s">Depois de finalizar, escolhe legenda e público/privado.</div></div></label>
     <button class="btn ok" id="finTreino" disabled>✅ Marcar treino como concluído</button>
   `);
   let prova=null;
+  const nomeEx=S.treinoTemplate[sess.dia]?.find(x=>x.id===sess.refId)?.nome||'Treino';
   renderProvaPicker($('#provaArea'), (dataUrl,kind)=>{ prova={dataUrl,kind}; $('#finTreino').disabled=false; });
   $('#finTreino').onclick=()=>{
-    S.treinoLogs.push({ exId:sess.refId, nome:S.treinoTemplate[sess.dia]?.find(x=>x.id===sess.refId)?.nome||'Treino', dia:sess.dia, dateISO:todayISO(), ativoMs:sess.ativoMs, pausaMs:sess.pausedMs, prova:prova?.dataUrl, provaTipo:prova?.kind });
+    S.treinoLogs.push({ exId:sess.refId, nome:nomeEx, dia:sess.dia, dateISO:todayISO(), ativoMs:sess.ativoMs, pausaMs:sess.pausedMs, prova:prova?.dataUrl, provaTipo:prova?.kind });
     save('treino:logs'); reportXP();
-    // marca no calendário da semana atual
     const wi=currentWeekIndex(); if(S.treinoWeeks[wi]){ S.treinoWeeks[wi].exec[sess.dia]={done:true, at:Date.now(), prova:prova?.dataUrl}; save('treino:weeks'); }
+    let rec=null;
+    if(prova){ addRecordacao({tipo:'treino', url:prova.dataUrl, midiaTipo:prova.kind==='video'?'video':'image', texto:`Treino: ${nomeEx}`}); rec=S.recordacoes[0]; }
+    const postar=$('#finPostar')?.checked;
     closeSheet(); toast('Treino registrado. XP creditado, recruta.'); renderTreinos();
+    if(postar && rec) setTimeout(()=>compartilharNoFeedSheet(rec), 300);
   };
 }
 
@@ -1812,15 +1866,26 @@ function renderAlimDia(){
   list.forEach(r=>{
     const done = r.done===todayISO();
     const q = qualidadeAuto(r);
+    const mem = (S.recordacoes||[]).find(x=>x.tipo==='alim' && x.dateISO===todayISO() && x.texto===r.nome);
+    const dir = edit ? `<button class="pencil" data-edref="${r.id}">✏️</button><button class="pencil" data-delref="${r.id}">🗑️</button>`
+      : (mem ? `<div class="rec-cell" data-vermem="${mem.id}" style="width:46px;height:46px;flex:0 0 46px;aspect-ratio:auto">${mem.midiaTipo==='video'?`<video src="${mem.url}" muted></video>`:`<img src="${mem.url}">`}</div>`
+             : `<button class="btn sm ghost" data-fotoref="${r.id}" style="padding:8px 11px">📷</button>`);
     h+=`<div class="rowitem ${done?'done':''}">
       <div class="chk" data-toggleref="${r.id}">${done?'✓':''}</div>
       <div class="txt"><div class="t">${esc(r.nome)}</div><div class="s">${q?`<span class="chip ${q}">${q}</span> `:''}${esc(r.desc||'')}</div></div>
-      ${edit?`<button class="pencil" data-edref="${r.id}">✏️</button><button class="pencil" data-delref="${r.id}">🗑️</button>`:''}
+      ${dir}
     </div>`;
   });
   h+=`</div>`;
   $('#alimDia').innerHTML=h;
   $$('#alimDia [data-toggleref]').forEach(b=>b.onclick=()=>{ const r=S.alimSemana[d].find(x=>x.id===b.dataset.toggleref); r.done = r.done===todayISO()?null:todayISO(); save('alim:semana'); renderAlimDia(); renderAlimAnalise(); });
+  $$('#alimDia [data-vermem]').forEach(b=>b.onclick=()=>verRecordacao(b.dataset.vermem));
+  $$('#alimDia [data-fotoref]').forEach(b=>b.onclick=async()=>{
+    const r=S.alimSemana[d].find(x=>x.id===b.dataset.fotoref); if(!r) return;
+    const f=await escolherMidia(); if(!f) return; toast('Enviando…');
+    try{ const up=await uploadMedia(f); addRecordacao({tipo:'alim', url:up.url, midiaTipo:up.tipo||(f.type.startsWith('video')?'video':'image'), texto:r.nome}); toast('Refeição registrada 📸'); renderAlimDia(); }
+    catch(e){ toast('Falha ao enviar.'); }
+  });
   if(edit){
     $('#addRefeicao').onclick=()=>editRefeicaoSheet(d,null);
     $$('#alimDia [data-edref]').forEach(b=>b.onclick=()=>editRefeicaoSheet(d,b.dataset.edref));
@@ -2027,6 +2092,116 @@ function timeago(iso){ const s=Math.floor((Date.now()-new Date(iso).getTime())/1
   if(s<60) return 'agora'; if(s<3600) return Math.floor(s/60)+'min'; if(s<86400) return Math.floor(s/3600)+'h';
   if(s<604800) return Math.floor(s/86400)+'d'; return new Date(iso).toLocaleDateString('pt-BR'); }
 let _buscaT=null;
+/* =========================================================================
+   RECORDAÇÕES — álbum de memórias (mídia por data), estilo Google Fotos
+========================================================================= */
+const REC_TIPOS={treino:'🏋️ Treino', alim:'🍽️ Alimentação', estudo:'📚 Estudo', rotina:'⏰ Rotina', outro:'📌 Momento'};
+let recFiltro='tudo';
+function addRecordacao(rec){
+  if(!S.recordacoes) S.recordacoes=[];
+  const now=brasiliaNow();
+  S.recordacoes.unshift({ id:uid(), tipo:rec.tipo||'outro', url:rec.url, midiaTipo:rec.midiaTipo||'image', texto:rec.texto||'', dateISO:todayISO(), at:now.toISOString() });
+  save('recordacoes');
+}
+function escolherMidia(accept='image/*,video/*'){ return new Promise(res=>{ const inp=document.createElement('input'); inp.type='file'; inp.accept=accept; inp.onchange=()=>res(inp.files[0]||null); inp.click(); }); }
+async function adicionarMemoria(tipo='outro'){
+  const f=await escolherMidia(); if(!f) return;
+  toast('Enviando mídia…');
+  try{ const up=await uploadMedia(f); addRecordacao({tipo, url:up.url, midiaTipo: up.tipo || (f.type.startsWith('video')?'video':'image')}); toast('Memória guardada. 📸'); if(activeTab==='recordacoes') renderRecordacoes(); }
+  catch(e){ toast('Falha ao enviar a mídia.'); }
+}
+function renderRecordacoes(){
+  const list=[...(S.recordacoes||[])].sort((a,b)=>String(b.at).localeCompare(String(a.at)));
+  const filt = recFiltro==='tudo'?list:list.filter(r=>r.tipo===recFiltro);
+  const chips=['tudo','treino','alim','estudo','rotina'].map(f=>`<button class="chipf ${recFiltro===f?'on':''}" data-recf="${f}">${f==='tudo'?'Tudo':REC_TIPOS[f]}</button>`).join('');
+  const grupos={}; filt.forEach(r=>{ (grupos[r.dateISO]=grupos[r.dateISO]||[]).push(r); });
+  let body='';
+  Object.keys(grupos).sort((a,b)=>b.localeCompare(a)).forEach(iso=>{
+    const d=new Date(iso+'T00:00:00');
+    body+=`<div class="rec-datehead">${d.toLocaleDateString('pt-BR',{weekday:'short',day:'2-digit',month:'long',year:'numeric'})}</div>
+      <div class="rec-grid">${grupos[iso].map(r=>`<div class="rec-cell" data-rec="${r.id}">${r.midiaTipo==='video'?`<video src="${r.url}" muted playsinline></video><span class="rec-play">▶</span>`:`<img src="${r.url}" alt="" loading="lazy">`}<span class="rec-badge">${(REC_TIPOS[r.tipo]||'📌').split(' ')[0]}</span></div>`).join('')}</div>`;
+  });
+  $('#scr-recordacoes').innerHTML=`
+    ${topbar('MEMÓRIAS')}
+    <div style="display:flex;justify-content:space-between;align-items:center;margin:2px 2px 8px">
+      <p class="small muted" style="margin:0;flex:1">Seu álbum de treino, comida e estudo — por data e horário.</p>
+      <button class="btn sm" id="addMemoria">＋ Adicionar</button>
+    </div>
+    <div class="recfilt">${chips}</div>
+    ${filt.length?body:'<p class="muted small" style="margin-top:20px">Ainda sem memórias. Registre um treino/refeição com foto ou vídeo (ou toque em ＋ Adicionar) que aparece aqui.</p>'}`;
+  $('#addMemoria').onclick=()=>adicionarMemoria('outro');
+  $$('#scr-recordacoes [data-recf]').forEach(b=>b.onclick=()=>{ recFiltro=b.dataset.recf; renderRecordacoes(); });
+  $$('#scr-recordacoes [data-rec]').forEach(c=>c.onclick=()=>verRecordacao(c.dataset.rec));
+}
+function verRecordacao(id){
+  const r=(S.recordacoes||[]).find(x=>x.id===id); if(!r) return;
+  const dt=new Date(r.at);
+  openSheet(`<h3>${REC_TIPOS[r.tipo]||'Memória'}</h3>
+    <p class="small muted">${dt.toLocaleDateString('pt-BR')} · ${dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</p>
+    <div style="border-radius:14px;overflow:hidden;background:#000">${r.midiaTipo==='video'?`<video src="${r.url}" controls playsinline style="width:100%;max-height:60vh"></video>`:`<img src="${r.url}" style="width:100%;max-height:60vh;object-fit:contain">`}</div>
+    ${r.texto?`<p class="small" style="margin-top:8px">${esc(r.texto)}</p>`:''}
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <a class="btn sm" href="${r.url}" download="redzone-${r.id}.${r.midiaTipo==='video'?'mp4':'jpg'}" style="flex:1;text-decoration:none;text-align:center">⬇️ Baixar</a>
+      <button class="btn sm ghost" id="recPost" style="flex:1">📣 Postar no feed</button>
+    </div>
+    <button class="btn ghost" id="recDel" style="margin-top:8px;color:#ff6b6b">🗑️ Excluir memória</button>`);
+  $('#recPost').onclick=()=>compartilharNoFeedSheet(r);
+  $('#recDel').onclick=async()=>{ S.recordacoes=S.recordacoes.filter(x=>x.id!==id); await save('recordacoes'); closeSheet(); toast('Memória removida.'); renderRecordacoes(); };
+}
+function compartilharNoFeedSheet(r){
+  openSheet(`<h3>Postar no feed</h3>
+    <div style="border-radius:12px;overflow:hidden;background:#000;max-height:230px">${r.midiaTipo==='video'?`<video src="${r.url}" controls style="width:100%;max-height:230px"></video>`:`<img src="${r.url}" style="width:100%;max-height:230px;object-fit:contain">`}</div>
+    <div class="field" style="margin-top:10px"><label>Legenda (opcional)</label><textarea id="cpTxt" class="auto" placeholder="Escreve algo — ou deixa em branco e só envia."></textarea></div>
+    <label class="rowitem" style="cursor:pointer"><input type="checkbox" id="cpPriv" style="width:22px;height:22px"><div class="txt"><div class="t">Publicação privada 🔒</div><div class="s">Só quem te segue vê. Dá pra mudar depois.</div></div></label>
+    <button class="btn" id="cpEnviar">Publicar</button>`);
+  const ta=$('#cpTxt'); autoGrow(ta); ta.oninput=()=>autoGrow(ta);
+  $('#cpEnviar').onclick=async()=>{
+    try{ await api('/batalha/feed',{method:'POST',body:{texto:$('#cpTxt').value.trim(), midiaUrl:r.url, midiaTipo:(r.midiaTipo==='video'?'video':'foto'), tipo:'manual', privado:$('#cpPriv').checked}}); closeSheet(); toast('Publicado, soldado! 📣'); if(activeTab==='batalha') renderBatalha(); }
+    catch(e){ toast('Falha ao publicar.'); }
+  };
+}
+
+/* ---------- STORIES (topo do feed, estilo Instagram) ---------- */
+function storiesHTML(){
+  const list=[...(S.recordacoes||[])].sort((a,b)=>String(b.at).localeCompare(String(a.at)));
+  const porDia={}; list.forEach(r=>{ (porDia[r.dateISO]=porDia[r.dateISO]||[]).push(r); });
+  const dias=Object.keys(porDia).sort((a,b)=>b.localeCompare(a)).slice(0,12);
+  const add=`<div class="story add" data-storyadd><div class="ring2"><div>＋</div></div><div class="slbl">Adicionar</div></div>`;
+  const bubbles=dias.map(iso=>{ const arr=porDia[iso]; const capa=arr[0]; const hoje=iso===todayISO();
+    const lbl=hoje?'Hoje':new Date(iso+'T00:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
+    return `<div class="story" data-storyday="${iso}"><div class="ring2">${capa.midiaTipo==='video'?`<video src="${capa.url}" muted playsinline></video>`:`<img src="${capa.url}">`}</div><div class="slbl">${lbl}</div></div>`;
+  }).join('');
+  return `<div class="stories">${add}${bubbles}</div>`;
+}
+function bindStories(){
+  const list=[...(S.recordacoes||[])].sort((a,b)=>String(b.at).localeCompare(String(a.at)));
+  const porDia={}; list.forEach(r=>{ (porDia[r.dateISO]=porDia[r.dateISO]||[]).push(r); });
+  $$('#scr-batalha [data-storyadd]').forEach(el=>el.onclick=()=>adicionarMemoria('outro'));
+  $$('#scr-batalha [data-storyday]').forEach(el=>el.onclick=()=>{ const arr=(porDia[el.dataset.storyday]||[]).slice().reverse(); abrirStories(arr,0); });
+}
+let _story={items:[], i:0, timer:null};
+function abrirStories(items, startIdx=0){
+  if(!items||!items.length) return;
+  _story.items=items; _story.i=startIdx||0;
+  $('#storyview').classList.add('on'); storyShow();
+}
+function storyShow(){
+  const r=_story.items[_story.i]; if(!r){ fecharStories(); return; }
+  clearTimeout(_story.timer);
+  $('#storyBars').innerHTML=_story.items.map((x,k)=>`<i><b style="width:${k<_story.i?100:0}%" ${k===_story.i?'id="storyBarActive"':''}></b></i>`).join('');
+  const isVideo=r.midiaTipo==='video';
+  $('#storyMedia').innerHTML = isVideo ? `<video src="${r.url}" autoplay playsinline id="storyVid"></video>` : `<img src="${r.url}">`;
+  $('#storyCap').textContent = r.texto || (REC_TIPOS[r.tipo]||'');
+  const dur = isVideo ? 15000 : 7000;
+  const bar=$('#storyBarActive');
+  if(bar){ bar.style.transition='none'; bar.style.width='0%'; requestAnimationFrame(()=>{ bar.style.transition=`width ${dur}ms linear`; bar.style.width='100%'; }); }
+  _story.timer=setTimeout(()=>storyNav(1), dur);
+}
+function storyNav(dir){ _story.i+=dir; if(_story.i>=_story.items.length){ fecharStories(); return; } if(_story.i<0) _story.i=0; storyShow(); }
+function fecharStories(){ clearTimeout(_story.timer); $('#storyview').classList.remove('on'); $('#storyMedia').innerHTML=''; }
+document.addEventListener('keydown',(e)=>{ if(!$('#storyview').classList.contains('on')) return; if(e.key==='ArrowRight'||e.key===' ') storyNav(1); else if(e.key==='ArrowLeft') storyNav(-1); else if(e.key==='Escape') fecharStories(); });
+window.fecharStories=fecharStories; window.storyNav=storyNav;
+
 // Atualizar feed (botão ↻ e puxar-pra-baixo). Avisa se não há nada novo.
 async function pullRefreshFeed(){
   const antes = $('#feed') ? $('#feed').getAttribute('data-top') : '0';
@@ -2058,6 +2233,7 @@ async function renderBatalha(){
         <button class="icobtn" id="dmBtn">${svgIcon('i-dm')}${dmBadge}</button>
         <button class="icobtn" id="sinoBtn">${svgIcon('i-sino')}${badge}</button>${homeClockHTML()}
       </div></div>
+    ${storiesHTML()}
     <button class="btn ghost" id="abrirBusca" style="margin:4px 0 12px">🔎 Buscar / adicionar pessoas</button>
     <div style="display:flex;gap:8px">
       <button class="btn" id="novoPost" style="flex:1">＋ Nova publicação</button>
@@ -2079,6 +2255,7 @@ async function renderBatalha(){
   $('#sinoBtn').onclick=abrirNotificacoes;
   $('#dmBtn').onclick=abrirDMs;
   $('#abrirBusca').onclick=buscarPessoasSheet;
+  bindStories();
   bindFeedActions();
 }
 async function abrirDMs(){
@@ -2124,7 +2301,7 @@ function feedPostHTML(post){
   return `<div class="post" data-post="${post.id}">
     <div class="post-top">
       <span class="who-link" data-perfil="${esc(un)}">${avatarHTML(prof,'avatar xs')}<div><div class="n">${esc(prof.nome)}</div><div class="t">@${esc(un)} · ${timeago(post.criadoEm)}</div></div></span>
-      ${meu?`<button class="post-menu" data-menu="${post.id}" data-off="${post.comentariosOff?1:0}">⋯</button>`:''}
+      ${meu?`<button class="post-menu" data-menu="${post.id}" data-off="${post.comentariosOff?1:0}" data-priv="${post.privado?1:0}">⋯</button>`:''}
     </div>
     ${media}
     ${post.texto?`<div class="post-body">${esc(post.texto)}</div>`:''}
@@ -2138,12 +2315,14 @@ function bindFeedActions(){
   $$('#feed [data-like]').forEach(el=>el.onclick=async()=>{ try{ await api('/batalha/feed/'+el.dataset.like+'/like',{method:'POST'}); renderBatalha(); }catch(e){ toast('Falha ao curtir.'); } });
   $$('#feed [data-comment]').forEach(el=>el.onclick=()=>openComentarios(el.dataset.comment));
   $$('#feed [data-perfil], #ranking [data-perfil]').forEach(el=>el.onclick=()=>abrirPerfil(el.dataset.perfil));
-  $$('#feed [data-menu]').forEach(el=>el.onclick=()=>postMenu(el.dataset.menu, el.dataset.off==='1'));
+  $$('#feed [data-menu]').forEach(el=>el.onclick=()=>postMenu(el.dataset.menu, el.dataset.off==='1', el.dataset.priv==='1'));
 }
-function postMenu(id, off){
+function postMenu(id, off, priv){
   openSheet(`<h3>Publicação</h3>
-    <button class="btn ghost" id="pmToggle">${off?'💬 Ativar comentários':'🚫 Desativar comentários'}</button>
+    <button class="btn ghost" id="pmPriv">${priv?'🌎 Tornar pública':'🔒 Tornar privada (só eu)'}</button>
+    <button class="btn ghost" id="pmToggle" style="margin-top:8px">${off?'💬 Ativar comentários':'🚫 Desativar comentários'}</button>
     <button class="btn" id="pmDel" style="margin-top:10px;background:linear-gradient(135deg,#b3241f,#e0342b)">🗑️ Excluir publicação</button>`);
+  $('#pmPriv').onclick=async()=>{ try{ await api('/batalha/feed/'+id,{method:'PATCH',body:{privado:!priv}}); closeSheet(); toast(priv?'Publicação agora é pública.':'Publicação agora é privada.'); renderBatalha(); }catch(e){ toast('Falha.'); } };
   $('#pmToggle').onclick=async()=>{ try{ await api('/batalha/feed/'+id,{method:'PATCH',body:{comentariosOff:!off}}); closeSheet(); toast(off?'Comentários ativados.':'Comentários desativados.'); renderBatalha(); }catch(e){ toast('Falha.'); } };
   $('#pmDel').onclick=async()=>{ try{ await api('/batalha/feed/'+id,{method:'DELETE'}); closeSheet(); toast('Publicação excluída.'); renderBatalha(); }catch(e){ toast('Falha ao excluir.'); } };
 }
@@ -2283,13 +2462,32 @@ function composePost(prefill=''){
   };
 }
 async function gerarPublicacaoDoDia(){
-  const dia=DIAS[(new Date().getDay()+6)%7];
-  const treinos=S.treinoLogs.filter(l=>l.dateISO===todayISO()).length;
-  const estudoMin=Math.round(S.estudoLogs.filter(l=>l.dateISO===todayISO()).reduce((a,l)=>a+(l.ativoMs||0)/60000,0));
-  const rotinaFeita=S.rotina.filter(r=>r.done===todayISO()).length;
-  const aguaHoje=S.agua[todayISO()]||0;
-  const txt=`Relatório de hoje 🪖\n• Treinos: ${treinos}\n• Estudo: ${estudoMin} min\n• Rotina: ${rotinaFeita}/${S.rotina.length}\n• Água: ${aguaHoje}ml\nRumo à ESA. Sem desculpa.`;
-  composePost(txt);
+  const hoje=todayISO();
+  const itens=[];
+  const exNames={}; Object.values(S.treinoTemplate||{}).flat().forEach(ex=>{ exNames[ex.id]=ex.nome; });
+  S.treinoLogs.filter(l=>l.dateISO===hoje).forEach(l=>{ const m=Math.round((l.ativoMs||0)/60000); itens.push({txt:`🏋️ Treinei ${exNames[l.exId]||'treino'} — ${m} min`}); });
+  S.estudoLogs.filter(l=>l.dateISO===hoje).forEach(l=>{ const m=Math.round((l.ativoMs||0)/60000); const c=l.conteudos?.length||0; itens.push({txt:`📚 Estudei ${l.materia||'matéria'} — ${m} min${c?` (${c} conteúdo(s))`:''}`}); });
+  const rFeita=S.rotina.filter(r=>r.done===hoje); if(rFeita.length) itens.push({txt:`⏰ Cumpri ${rFeita.length}/${S.rotina.length} hábitos do dia`});
+  const agua=S.agua[hoje]||0; if(agua) itens.push({txt:`💧 Bebi ${agua}ml de água`});
+  const midiasHoje=(S.recordacoes||[]).filter(r=>r.dateISO===hoje);
+  if(!itens.length && !midiasHoje.length){ return toast('Nada registrado hoje ainda. Treina/estuda e volta pra gerar.'); }
+  openSheet(`<h3>Gerar publicação do dia</h3>
+    <p class="small muted">Só o que você REALMENTE fez hoje. Marque o que quer mostrar.</p>
+    ${itens.length?itens.map((it,i)=>`<label class="rowitem" style="cursor:pointer"><input type="checkbox" data-gi="${i}" checked style="width:22px;height:22px"><div class="txt"><div class="t" style="font-size:14px">${esc(it.txt)}</div></div></label>`).join(''):'<p class="muted small">Sem atividades de texto hoje.</p>'}
+    ${midiasHoje.length?`<div class="section-title" style="margin-top:12px">Anexar uma mídia (opcional)</div>
+      <div class="rec-grid" id="giMidias">${midiasHoje.map((m,i)=>`<div class="rec-cell" data-gm="${i}">${m.midiaTipo==='video'?`<video src="${m.url}" muted playsinline></video>`:`<img src="${m.url}">`}<span class="rec-badge" style="right:4px;left:auto">○</span></div>`).join('')}</div>`:''}
+    <label class="rowitem" style="cursor:pointer;margin-top:10px"><input type="checkbox" id="giPriv" style="width:22px;height:22px"><div class="txt"><div class="t">Publicação privada 🔒</div></div></label>
+    <button class="btn" id="giGerar" style="margin-top:10px">Publicar no feed</button>`);
+  let midiaSel=-1;
+  $$('#giMidias [data-gm]').forEach(c=>c.onclick=()=>{ midiaSel = (midiaSel===+c.dataset.gm)?-1:+c.dataset.gm; $$('#giMidias .rec-cell').forEach(x=>{ const on=(+x.dataset.gm===midiaSel); x.querySelector('.rec-badge').textContent=on?'●':'○'; x.style.outline=on?'3px solid var(--accent)':'none'; }); });
+  $('#giGerar').onclick=async()=>{
+    const linhas=itens.filter((it,i)=>$(`[data-gi="${i}"]`)?.checked).map(it=>it.txt);
+    const texto = linhas.length?('Relatório de hoje 🪖\n'+linhas.join('\n')+'\n\nRumo à ESA. Sem desculpa.'):'';
+    const m = midiaSel>=0?midiasHoje[midiaSel]:null;
+    if(!texto && !m){ return toast('Marque pelo menos uma coisa.'); }
+    try{ await api('/batalha/feed',{method:'POST',body:{texto, midiaUrl:m?m.url:null, midiaTipo:m?(m.midiaTipo==='video'?'video':'foto'):null, tipo:'manual', privado:$('#giPriv').checked}}); closeSheet(); toast('Publicado! 📣'); renderBatalha(); }
+    catch(e){ toast('Falha ao publicar.'); }
+  };
 }
 
 /* =========================================================================
