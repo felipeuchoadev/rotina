@@ -9,7 +9,7 @@ import { enviarPush } from '../lib/push.js';
 export const batalhaRouter = Router();
 batalhaRouter.use(exigirAuth);
 
-const pubSel = { id: true, username: true, nomeGuerra: true, fotoUrl: true, privado: true, xp: true };
+const pubSel = { id: true, username: true, nomeGuerra: true, fotoUrl: true, genero: true, privado: true, xp: true };
 
 async function notificar(usuarioId, tipo, texto, deUsername) {
   if (!usuarioId) return;
