@@ -15,6 +15,7 @@ import { dmRouter } from './routes/dm.js';
 import { pushRouter } from './routes/push.js';
 import { uploadRouter } from './routes/upload.js';
 import { initRealtime } from './realtime.js';
+import { iniciarAgenda } from './lib/agenda.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const app = express();
@@ -55,4 +56,5 @@ initRealtime(server, CORS_ORIGINS.length ? CORS_ORIGINS : true);
 
 server.listen(PORT, () => {
   console.log(`DISCIPLINA API no ar em http://localhost:${PORT} (CORS: ${CORS_ORIGINS.join(', ') || '*'})`);
+  iniciarAgenda(); // avisos programados de aniversários/datas
 });

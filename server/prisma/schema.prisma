@@ -109,6 +109,13 @@ model Notificacao {
   @@map("notificacoes")
 }
 
+// Estado interno do servidor (chave→valor). Ex.: última execução da agenda de avisos.
+model Kv {
+  chave String @id
+  valor Json
+  @@map("kv")
+}
+
 // Blobs de dados pessoais do usuário (treino, estudo, alimentação, rotina, config…)
 model UserState {
   usuario   Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)

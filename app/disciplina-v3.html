@@ -261,6 +261,17 @@ textarea.auto{resize:none; overflow:hidden; min-height:48px;}
 .callegend span{display:inline-flex; align-items:center; gap:4px;}
 .callegend i{display:inline-block; width:12px; height:12px; border-radius:3px;}
 .callegend .lok{background:#37d67a;} .callegend .lfail{background:#ff5a5a;} .callegend .lfut{background:#e4e8ec;}
+/* Agenda (Início): calendário grande navegável + banner de aniversário */
+.calbig{padding:16px;}
+.calbig .calc{font-size:15px; border-radius:11px;}
+.calnav{display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; gap:8px;}
+.calnav button{background:#e8ecef; border:1px solid #d7dde2; color:#1a1d22; width:38px; height:38px; border-radius:10px; font-size:22px; font-weight:800; line-height:1; cursor:pointer;}
+.calnav button:active{background:#dbe1e6;}
+.calc{position:relative;}
+.calc.mark{cursor:pointer; font-weight:800; background:#fff; color:#1a1d22; box-shadow:inset 0 0 0 2px var(--accent);}
+.calc .cdot{position:absolute; bottom:4px; left:50%; transform:translateX(-50%); width:6px; height:6px; border-radius:50%; background:var(--accent);}
+.bday{background:linear-gradient(135deg,#ffb703,#fb8500); color:#3a1d00; border-radius:16px; padding:16px 18px; margin:14px 0 4px; font-weight:800; font-size:17px; text-align:center; line-height:1.35; box-shadow:0 8px 24px rgba(251,133,0,.28);}
+.bday span{font-weight:600; font-size:13px; opacity:.9;}
 
 /* Batalha social */
 .icobtn{background:rgba(255,255,255,.06); border:1px solid var(--line); color:var(--text); width:40px; height:40px; border-radius:12px; font-size:18px; position:relative; display:flex; align-items:center; justify-content:center;}
@@ -626,6 +637,7 @@ async function loadUserData(){
     rotina:         g('rotina', []),
     rotinaHist:     g('rotina:hist', {}),
     config:         g('config', {editMode:false, tryHard:false, notif:false}),
+    datas:          g('datas', []),   // aniversários + datas importantes
   };
   if(!S.treinoWeeks){ S.treinoWeeks = [{ id:uid(), startISO:todayISO(), exec:{} }]; await save('treino:weeks'); }
   currentUser = u.username;
@@ -638,7 +650,7 @@ async function saveProfile(){
   catch(e){ console.error(e); }
 }
 async function save(k){ await Store.set(k, S[cameMap(k)]); }
-function cameMap(k){ return ({'treino:tpl':'treinoTemplate','treino:weeks':'treinoWeeks','treino:logs':'treinoLogs','treino:recordes':'recordes','estudo:materias':'materias','estudo:semana':'estudoSemana','estudo:logs':'estudoLogs','alim:semana':'alimSemana','alim:pesos':'pesos','alim:agua':'agua','rotina':'rotina','rotina:hist':'rotinaHist','config':'config'})[k]; }
+function cameMap(k){ return ({'treino:tpl':'treinoTemplate','treino:weeks':'treinoWeeks','treino:logs':'treinoLogs','treino:recordes':'recordes','estudo:materias':'materias','estudo:semana':'estudoSemana','estudo:logs':'estudoLogs','alim:semana':'alimSemana','alim:pesos':'pesos','alim:agua':'agua','rotina':'rotina','rotina:hist':'rotinaHist','config':'config','datas':'datas'})[k]; }
 
 /* XP total do usuário = soma de logs + bônus, menos punições. Recalcula. */
 function computeXP(){
@@ -848,18 +860,159 @@ function renderInicio(){
       </div>
     </div>
 
+    ${bdayBannerHTML()}
+
     <div class="section-title">Resumo de hoje</div>
     ${resumoHojeHTML()}
 
-    <div class="card">
-      <div class="h">Publicação automática <button class="btn sm" id="genPost">Gerar</button></div>
-      <p class="small muted">Gera um post com tudo que você fez hoje e manda pro feed da Batalha.</p>
+    <div class="section-title" style="display:flex;align-items:center;justify-content:space-between">
+      <span>Datas &amp; aniversários</span>
+      <button class="btn sm" id="addData">＋ Adicionar</button>
     </div>
+    <div id="agendaBox"></div>
   `;
-  $('#genPost').onclick=gerarPublicacaoDoDia;
   $('#patenteBtn').onclick=patenteSheet;
+  $('#addData').onclick=()=>dataSheet(null);
   $$('#scr-inicio [data-detalhe]').forEach(c=>c.onclick=()=>resumoDetalheSheet(c.dataset.detalhe));
+  renderAgenda();
 }
+
+/* ---------- AGENDA: aniversários + datas importantes ---------- */
+let agViewY=null, agViewM=null;   // mês/ano em exibição no calendário grande
+const MESES_NOME=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+
+// próxima ocorrência (Date à meia-noite Brasília). Recorrente = mesmo dia/mês todo ano.
+function proximaOcorrencia(item){
+  const [Y,M,D]=String(item.data).split('-').map(Number);
+  if(!M||!D) return null;
+  const h=brasiliaNow(); h.setHours(0,0,0,0);
+  if(item.recorrente===false){ const o=new Date(Y,M-1,D); o.setHours(0,0,0,0); return o; }
+  let o=new Date(h.getFullYear(),M-1,D); o.setHours(0,0,0,0);
+  if(o<h) o=new Date(h.getFullYear()+1,M-1,D);
+  return o;
+}
+function diasAte(date){ const h=brasiliaNow(); h.setHours(0,0,0,0); return Math.round((date-h)/86400000); }
+function contagemTxt(n){ return n===0?'HOJE 🎉' : n===1?'amanhã' : `em ${n} dias`; }
+
+// banner de parabéns no aniversário do próprio usuário
+function bdayBannerHTML(){
+  if(!aniversarioHoje(S.profile.dataNasc)) return '';
+  const idade=idadeDe(S.profile.dataNasc);
+  return `<div class="bday">🎂 Feliz aniversário, ${esc(S.profile.nome)}!${idade!=null?` ${idade} anos de guerra.`:''}<br><span>Continua firme na missão, soldado. O app te deve um salve.</span></div>`;
+}
+
+function renderAgenda(){
+  const box=$('#agendaBox'); if(!box) return;
+  const now=brasiliaNow();
+  if(agViewY==null){ agViewY=now.getFullYear(); agViewM=now.getMonth(); }
+  const datas=S.datas||[];
+
+  // dias marcados no mês em exibição -> id da data
+  const marks={}; // dia -> [itens]
+  const dim=new Date(agViewY,agViewM+1,0).getDate();
+  datas.forEach(it=>{
+    const [Y,M,D]=String(it.data).split('-').map(Number);
+    if(!M||!D) return;
+    if(it.recorrente===false){ if(Y===agViewY && M-1===agViewM){ (marks[D]=marks[D]||[]).push(it); } }
+    else if(M-1===agViewM){ (marks[D]=marks[D]||[]).push(it); }
+  });
+
+  const startDow=new Date(agViewY,agViewM,1).getDay();
+  const hojeISO=todayISO();
+  let cells='';
+  for(let i=0;i<startDow;i++) cells+='<div class="calc empty"></div>';
+  for(let d=1; d<=dim; d++){
+    const iso=`${agViewY}-${String(agViewM+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const tem=marks[d]&&marks[d].length;
+    let cls='sem'; if(tem) cls='mark';
+    if(iso===hojeISO) cls+=' hoje';
+    cells+=`<div class="calc ${cls}" ${tem?`data-agday="${d}"`:''}>${d}${tem?'<i class="cdot"></i>':''}</div>`;
+  }
+
+  // próximas datas (ordenadas pela proximidade)
+  const prox=datas.map(it=>({it, o:proximaOcorrencia(it)})).filter(x=>x.o)
+    .map(x=>({...x, d:diasAte(x.o)})).sort((a,b)=>a.d-b.d);
+  const listHTML = prox.length ? prox.map(x=>{
+    const it=x.it; const ico=it.tipo==='evento'?'📌':'🎂';
+    const idadeF = x.o.getFullYear()-it.anoBase;
+    const anos = (it.tipo!=='evento' && it.recorrente!==false && it.anoBase && idadeF>0 && idadeF<130) ? ` · fará ${idadeF}` : '';
+    return `<div class="rowitem" data-agedit="${it.id}" style="cursor:pointer">
+      <div style="font-size:22px;width:34px;text-align:center">${ico}</div>
+      <div class="txt"><div class="t">${esc(it.nome)}</div>
+        <div class="s">${x.o.toLocaleDateString('pt-BR',{day:'2-digit',month:'long'})}${anos} · <b style="color:var(--accent)">${contagemTxt(x.d)}</b></div></div>
+    </div>`;
+  }).join('') : `<p class="muted small" style="margin:6px 2px">Nenhuma data marcada. Toque em <b>＋ Adicionar</b> pra registrar aniversários e datas importantes — o app te avisa 1 mês, 1 semana, 1 dia antes e no dia.</p>`;
+
+  box.innerHTML=`
+    <div class="calbox calbig">
+      <div class="calnav">
+        <button id="agPrev" aria-label="Anterior">‹</button>
+        <div class="calhead" style="margin:0">${MESES_NOME[agViewM]} ${agViewY}</div>
+        <button id="agNext" aria-label="Próximo">›</button>
+      </div>
+      <div class="calgrid caldow">${['D','S','T','Q','Q','S','S'].map(x=>`<div class="caldw">${x}</div>`).join('')}</div>
+      <div class="calgrid">${cells}</div>
+    </div>
+    <div style="margin-top:14px">${listHTML}</div>`;
+
+  $('#agPrev').onclick=()=>{ agViewM--; if(agViewM<0){ agViewM=11; agViewY--; } renderAgenda(); };
+  $('#agNext').onclick=()=>{ agViewM++; if(agViewM>11){ agViewM=0; agViewY++; } renderAgenda(); };
+  $$('#agendaBox [data-agday]').forEach(c=>c.onclick=()=>{
+    const list=marks[c.dataset.agday]||[]; if(list.length===1) dataSheet(list[0].id); else if(list.length) diaSheet(list);
+  });
+  $$('#agendaBox [data-agedit]').forEach(r=>r.onclick=()=>dataSheet(r.dataset.agedit));
+}
+
+// quando um dia tem várias datas, escolhe qual editar
+function diaSheet(list){
+  openSheet(`<h3>Datas do dia</h3>${list.map(it=>`<div class="rowitem" data-pick="${it.id}" style="cursor:pointer"><div style="font-size:20px;width:30px;text-align:center">${it.tipo==='evento'?'📌':'🎂'}</div><div class="txt"><div class="t">${esc(it.nome)}</div></div></div>`).join('')}`);
+  $$('#sheet [data-pick]').forEach(r=>r.onclick=()=>dataSheet(r.dataset.pick));
+}
+
+// adicionar / editar uma data
+function dataSheet(id){
+  const edit = id!=null;
+  const it = edit ? (S.datas.find(x=>x.id===id)||{}) : { tipo:'aniversario', recorrente:true, data:'', avisos:{m:true,s:true,d:true,dia:true} };
+  const av=it.avisos||{m:true,s:true,d:true,dia:true};
+  openSheet(`<h3>${edit?'Editar data':'Nova data'}</h3>
+    <div class="field"><label>Nome</label><input id="dtNome" placeholder="Ex: Aniversário da mãe" value="${esc(it.nome||'')}"></div>
+    <div class="field"><label>Tipo</label>
+      <select id="dtTipo">
+        <option value="aniversario" ${it.tipo!=='evento'?'selected':''}>🎂 Aniversário</option>
+        <option value="evento" ${it.tipo==='evento'?'selected':''}>📌 Data importante</option>
+      </select></div>
+    <div class="field"><label>Data</label><input id="dtData" type="date" value="${esc(it.data||'')}"></div>
+    <label class="rowitem" style="cursor:pointer"><input type="checkbox" id="dtRec" ${it.recorrente!==false?'checked':''} style="width:22px;height:22px"><div class="txt"><div class="t">Repete todo ano</div><div class="s">Aniversários e datas anuais.</div></div></label>
+    <div class="section-title" style="margin-top:14px">Me avise</div>
+    <label class="rowitem" style="cursor:pointer"><input type="checkbox" id="avM" ${av.m!==false?'checked':''} style="width:22px;height:22px"><div class="txt"><div class="t">1 mês antes</div></div></label>
+    <label class="rowitem" style="cursor:pointer"><input type="checkbox" id="avS" ${av.s!==false?'checked':''} style="width:22px;height:22px"><div class="txt"><div class="t">1 semana antes</div></div></label>
+    <label class="rowitem" style="cursor:pointer"><input type="checkbox" id="avD" ${av.d!==false?'checked':''} style="width:22px;height:22px"><div class="txt"><div class="t">1 dia antes</div></div></label>
+    <label class="rowitem" style="cursor:pointer"><input type="checkbox" id="avDia" ${av.dia!==false?'checked':''} style="width:22px;height:22px"><div class="txt"><div class="t">No dia</div></div></label>
+    <p class="small muted" style="margin-top:8px">As notificações chegam mesmo com o app fechado (se você ativou as notificações no Perfil).</p>
+    <button class="btn" id="dtSalvar" style="margin-top:12px">${edit?'Salvar':'Adicionar'}</button>
+    ${edit?`<button class="btn ghost" id="dtDel" style="margin-top:8px;color:#e0342b">🗑️ Excluir</button>`:''}`);
+
+  $('#dtSalvar').onclick=async()=>{
+    const nome=$('#dtNome').value.trim();
+    const data=$('#dtData').value;
+    if(!nome) return toast('Dá um nome pra data.');
+    if(!data) return toast('Escolhe a data.');
+    const rec=$('#dtRec').checked;
+    const obj={
+      id: edit?id:uid(),
+      nome, tipo:$('#dtTipo').value, data, recorrente:rec,
+      anoBase: Number(String(data).split('-')[0])||null,
+      avisos:{ m:$('#avM').checked, s:$('#avS').checked, d:$('#avD').checked, dia:$('#avDia').checked },
+    };
+    if(edit){ const i=S.datas.findIndex(x=>x.id===id); if(i>=0) S.datas[i]=obj; else S.datas.push(obj); }
+    else S.datas.push(obj);
+    await save('datas'); closeSheet(); toast('Data salva.'); renderAgenda();
+  };
+  if(edit) $('#dtDel').onclick=async()=>{
+    S.datas=S.datas.filter(x=>x.id!==id); await save('datas'); closeSheet(); toast('Data removida.'); renderAgenda();
+  };
+}
+
 function patenteSheet(){
   const xp=computeXP(); const atual=rankOf(xp);
   const desc={
