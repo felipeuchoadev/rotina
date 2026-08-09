@@ -60,14 +60,22 @@ a{color:var(--accent2);}
 
 /* Cabeçalho do Início — hero card com anel de progresso */
 .home-top{padding:16px 4px 4px;}
-.home-topline{display:flex; align-items:center; justify-content:space-between;}
-.herocard{display:flex; gap:16px; align-items:center; background:linear-gradient(150deg,var(--surface2),var(--surface)); border-radius:22px; padding:18px; margin-top:12px; border:1px solid var(--line); box-shadow:0 16px 36px -18px rgba(0,0,0,.7);}
-.ring{width:86px; height:86px; flex:0 0 86px; border-radius:50%; display:grid; place-items:center;}
+.home-topline{display:flex; align-items:center; justify-content:space-between; gap:12px;}
+/* Relógio + data integrados (só no Início) */
+.homeclock{text-align:right; line-height:1;}
+.homeclock .hc-time{font-weight:800; font-size:26px; font-variant-numeric:tabular-nums; letter-spacing:-.02em; color:var(--text); line-height:1;}
+.homeclock .hc-time small{font-size:12px; font-weight:700; color:var(--accent2); margin-left:3px; vertical-align:top;}
+.homeclock .hc-date{font-size:11.5px; font-weight:700; color:var(--text-dim); text-transform:capitalize; margin-top:4px; letter-spacing:.01em;}
+.herocard{position:relative; display:flex; gap:16px; align-items:center; background:linear-gradient(150deg,var(--surface2),var(--surface)); border-radius:22px; padding:18px; margin-top:12px; border:1px solid var(--line); box-shadow:0 16px 36px -18px rgba(0,0,0,.7); overflow:hidden;}
+.herocard::before{content:''; position:absolute; top:-40%; right:-15%; width:180px; height:180px; border-radius:50%; background:radial-gradient(circle, color-mix(in srgb,var(--accent) 26%, transparent), transparent 70%); pointer-events:none;}
+.herocard::after{content:''; position:absolute; left:0; right:0; top:0; height:1px; background:linear-gradient(90deg, transparent, color-mix(in srgb,var(--accent) 55%, transparent), transparent);}
+.ring{position:relative; z-index:1; width:86px; height:86px; flex:0 0 86px; border-radius:50%; display:grid; place-items:center; box-shadow:0 0 0 1px color-mix(in srgb,var(--accent) 30%, transparent), 0 10px 26px -12px color-mix(in srgb,var(--accent) 70%, transparent);}
 .ring .ring-inner{width:72px; height:72px; border-radius:50%; overflow:hidden; background:var(--surface); display:grid; place-items:center; font-weight:800; font-size:27px;}
 .ring .ring-inner img{width:100%; height:100%; object-fit:cover;}
+.herocard>div:last-child{position:relative; z-index:1;}
 .hero-name{font-weight:800; font-size:23px; line-height:1; letter-spacing:-.01em;}
 .hero-user{color:var(--text-dim); font-size:13px; margin-top:5px;}
-.pill{display:inline-flex; align-items:center; gap:6px; margin-top:11px; background:color-mix(in srgb,var(--accent) 16%, transparent); color:var(--accent2); font-size:12px; font-weight:700; padding:5px 12px; border-radius:999px;}
+.pill{display:inline-flex; align-items:center; gap:6px; margin-top:11px; background:color-mix(in srgb,var(--accent) 18%, transparent); color:var(--accent2); font-size:12px; font-weight:800; padding:6px 13px; border-radius:999px; border:1px solid color-mix(in srgb,var(--accent) 30%, transparent);}
 .biorow{display:flex; gap:10px; margin:14px 0 2px;}
 .biocard{flex:1; background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:13px 8px; text-align:center;}
 .biocard b{font-size:19px; font-weight:800; display:block;}
@@ -847,7 +855,17 @@ async function enterApp(){
 function brasiliaNow(){ return new Date(new Date().toLocaleString('en-US',{timeZone:'America/Sao_Paulo'})); }
 function clockHTML(){ const d=brasiliaNow(); const hh=String(d.getHours()).padStart(2,'0'), mm=String(d.getMinutes()).padStart(2,'0'), ss=String(d.getSeconds()).padStart(2,'0');
   return `<div class="clock">${hh}:${mm}<small>${ss}s</small></div>`; }
-function startClock(){ clearInterval(window._clk); window._clk=setInterval(()=>{ $$('.clock').forEach(c=>{ const d=brasiliaNow(); c.innerHTML=`${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}<small>${String(d.getSeconds()).padStart(2,'0')}s</small>`; }); },1000); }
+function fmtDataLonga(d){ return d.toLocaleDateString('pt-BR',{weekday:'short', day:'2-digit', month:'long'}).replace('.',''); }
+// relógio + data integrados, só no Início
+function homeClockHTML(){ const d=brasiliaNow(); const hh=String(d.getHours()).padStart(2,'0'), mm=String(d.getMinutes()).padStart(2,'0'), ss=String(d.getSeconds()).padStart(2,'0');
+  return `<div class="homeclock"><div class="hc-time">${hh}:${mm}<small>${ss}</small></div><div class="hc-date">${fmtDataLonga(d)}</div></div>`; }
+function startClock(){ clearInterval(window._clk); window._clk=setInterval(()=>{
+  const d=brasiliaNow();
+  const hh=String(d.getHours()).padStart(2,'0'), mm=String(d.getMinutes()).padStart(2,'0'), ss=String(d.getSeconds()).padStart(2,'0');
+  $$('.clock').forEach(c=>{ c.innerHTML=`${hh}:${mm}<small>${ss}s</small>`; });
+  $$('.homeclock .hc-time').forEach(c=>{ c.innerHTML=`${hh}:${mm}<small>${ss}</small>`; });
+  $$('.homeclock .hc-date').forEach(c=>{ c.textContent=fmtDataLonga(d); });
+},1000); }
 
 /* ---------- INÍCIO ---------- */
 function renderInicio(){
@@ -860,7 +878,7 @@ function renderInicio(){
     <div class="home-top">
       <div class="home-topline">
         <div class="brand">DISCI<span class="dot">PLINA</span></div>
-        ${clockHTML()}
+        ${homeClockHTML()}
       </div>
       <div class="herocard">
         <div class="ring" style="background:conic-gradient(var(--accent) 0deg ${deg}deg, rgba(255,255,255,.08) ${deg}deg 360deg)">
