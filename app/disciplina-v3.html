@@ -892,11 +892,11 @@ function renderTreinoDia(){
       ${feito?'<div class="chk">✓</div>':''}
       <div class="txt"><div class="t">${esc(ex.nome)}</div>
         ${ex.desc?`<div class="s">${esc(ex.desc)}</div>`:''}
-        ${feito?`<div class="s" style="color:var(--ok)">✅ Feito hoje · ${mins} min — toque em ↻ pra registrar outra série</div>`:''}
+        ${feito?`<div class="s" style="color:var(--ok)">✅ Feito hoje · ${mins} min</div>`:''}
         ${ex.videoUrl?`<video src="${ex.videoUrl}" controls playsinline style="border-radius:10px;margin-top:8px;max-height:200px;width:100%"></video>`:''}
       </div>
-      ${edit?`<button class="pencil" data-edex="${ex.id}">✏️</button><button class="pencil" data-delex="${ex.id}">🗑️</button>`
-             :`<button class="btn sm ${feito?'ghost':''}" data-startex="${ex.id}">${feito?'↻':'▶'}</button>`}
+      ${edit ? `<button class="pencil" data-edex="${ex.id}">✏️</button><button class="pencil" data-delex="${ex.id}">🗑️</button>`
+             : (feito ? '' : `<button class="btn sm" data-startex="${ex.id}">▶</button>`)}
     </div>`;
   });
   h+=`</div>`;
@@ -1101,12 +1101,14 @@ function renderEstudoDia(){
       <div class="txt"><div class="t">${esc(m.nome)}</div>
         <div class="s">${prox?('Próximo: '+esc(prox.nome)):'✅ Tudo concluído'} — ${m.conteudos.filter(c=>c.done).length}/${m.conteudos.length}</div>
         ${feito?`<div class="s" style="color:var(--ok)">✅ Estudado hoje · ${mins} min</div>`:''}</div>
-      <button class="btn sm ${feito?'ghost':''}" data-startmat="${m.id}">${feito?'↻':'▶'} Estudar</button>
+      ${edit ? `<button class="pencil" data-redomat="${m.id}">↻</button>`
+             : (feito ? '' : `<button class="btn sm" data-startmat="${m.id}">▶ Estudar</button>`)}
     </div>`;
   });
   h+=`</div>`;
   $('#estDia').innerHTML=h;
-  if(edit) $('#setDayMat').onclick=()=>setDayMateriasSheet(d);
+  if(edit){ $('#setDayMat').onclick=()=>setDayMateriasSheet(d);
+    $$('#estDia [data-redomat]').forEach(b=>b.onclick=()=>startSession('estudo', d, b.dataset.redomat)); }
   $$('#estDia [data-startmat]').forEach(b=>b.onclick=()=>startSession('estudo', d, b.dataset.startmat));
 }
 function setDayMateriasSheet(d){
@@ -1250,44 +1252,55 @@ function renderAlimentacao(){
   renderAlimRelatorio();
 }
 function renderAlimDia(){
+  const edit=S.config.editMode;
   const d=alimDiaSel; const list=S.alimSemana[d]||[];
-  let h=`<div class="card"><div class="h">${DIAS_NOME[d]} <button class="btn sm" id="addRefeicao">＋ refeição</button></div>`;
-  if(!list.length) h+=`<p class="muted small">Sem refeições. Adicione (ex: Café da manhã).</p>`;
+  let h=`<div class="card"><div class="h">${DIAS_NOME[d]} ${edit?`<button class="btn sm" id="addRefeicao">＋ refeição</button>`:''}</div>`;
+  if(!list.length) h+=`<p class="muted small">Sem refeições. ${edit?'Adicione (ex: Café da manhã).':'Ative o modo edição pra montar a semana.'}</p>`;
   list.forEach(r=>{
     const done = r.done===todayISO();
+    const q = qualidadeAuto(r);
     h+=`<div class="rowitem ${done?'done':''}">
       <div class="chk" data-toggleref="${r.id}">${done?'✓':''}</div>
-      <div class="txt"><div class="t">${esc(r.nome)}</div><div class="s"><span class="chip ${r.tipo}">${r.tipo}</span> ${esc(r.desc||'')}</div></div>
-      <button class="pencil" data-edref="${r.id}">✏️</button><button class="pencil" data-delref="${r.id}">🗑️</button>
+      <div class="txt"><div class="t">${esc(r.nome)}</div><div class="s">${q?`<span class="chip ${q}">${q}</span> `:''}${esc(r.desc||'')}</div></div>
+      ${edit?`<button class="pencil" data-edref="${r.id}">✏️</button><button class="pencil" data-delref="${r.id}">🗑️</button>`:''}
     </div>`;
   });
   h+=`</div>`;
   $('#alimDia').innerHTML=h;
-  $('#addRefeicao').onclick=()=>editRefeicaoSheet(d,null);
   $$('#alimDia [data-toggleref]').forEach(b=>b.onclick=()=>{ const r=S.alimSemana[d].find(x=>x.id===b.dataset.toggleref); r.done = r.done===todayISO()?null:todayISO(); save('alim:semana'); renderAlimDia(); renderAlimAnalise(); });
-  $$('#alimDia [data-edref]').forEach(b=>b.onclick=()=>editRefeicaoSheet(d,b.dataset.edref));
-  $$('#alimDia [data-delref]').forEach(b=>b.onclick=()=>{ S.alimSemana[d]=S.alimSemana[d].filter(x=>x.id!==b.dataset.delref); save('alim:semana'); renderAlimDia(); });
+  if(edit){
+    $('#addRefeicao').onclick=()=>editRefeicaoSheet(d,null);
+    $$('#alimDia [data-edref]').forEach(b=>b.onclick=()=>editRefeicaoSheet(d,b.dataset.edref));
+    $$('#alimDia [data-delref]').forEach(b=>b.onclick=()=>{ S.alimSemana[d]=S.alimSemana[d].filter(x=>x.id!==b.dataset.delref); save('alim:semana'); renderAlimDia(); });
+  }
+}
+/* Análise automática da refeição pela descrição (o app julga, não o usuário) */
+function qualidadeAuto(r){
+  const t = ((r.nome||'')+' '+(r.desc||'')).toLowerCase();
+  if(!t.trim()) return '';
+  const ruim=['fast food','fast-food','hamburg','hambúrg','fritura','batata frita','refrigerante','coca-cola','pizza','sorvete','biscoito recheado','salgadinho','cerveja','bacon','nuggets','miojo','lámen','lamen','pastel','coxinha','frito','fritas'];
+  const bom=['frango','ovo','ovos','salada','legume','verdura','arroz integral','feijão','feijao','batata doce','aveia','fruta','banana','maçã','maca','peito','peixe','atum','iogurte','whey','proteína','proteina','brócolis','brocolis','integral','grelhad','cozid'];
+  const has=(arr)=>arr.some(w=>t.includes(w));
+  if(has(ruim)) return 'ruim';
+  if(has(bom)) return 'bom';
+  return 'neutro';
 }
 function editRefeicaoSheet(d, id){
   const r = id ? S.alimSemana[d].find(x=>x.id===id) : {nome:'',tipo:'neutro',desc:''};
   openSheet(`<h3>${id?'Editar':'Nova'} refeição — ${DIAS_NOME[d]}</h3>
     <div class="field"><label>Nome</label><input id="refNome" value="${esc(r.nome)}" placeholder="Ex: Almoço"></div>
-    <div class="field"><label>O que comeu</label><textarea id="refDesc" class="auto">${esc(r.desc||'')}</textarea></div>
-    <div class="field"><label>Qualidade</label><select id="refTipo">
-      <option value="bom" ${r.tipo==='bom'?'selected':''}>Saudável</option>
-      <option value="neutro" ${r.tipo==='neutro'?'selected':''}>Neutro</option>
-      <option value="ruim" ${r.tipo==='ruim'?'selected':''}>Ruim / fast-food</option>
-    </select></div>
-    <button class="btn" id="refSave">Salvar</button>`);
+    <div class="field"><label>O que comeu</label><textarea id="refDesc" class="auto" placeholder="Ex: arroz, feijão, frango grelhado e salada">${esc(r.desc||'')}</textarea></div>
+    <p class="small muted">O app analisa sozinho se a refeição é saudável pela descrição — você não precisa dizer.</p>
+    <button class="btn" id="refSave" style="margin-top:10px">Salvar</button>`);
   const ta=$('#refDesc'); autoGrow(ta); ta.oninput=()=>autoGrow(ta);
   $('#refSave').onclick=()=>{ const nome=$('#refNome').value.trim(); if(!nome) return toast('Nome da refeição?');
-    const tipo=$('#refTipo').value, desc=$('#refDesc').value.trim();
-    if(id){ r.nome=nome; r.tipo=tipo; r.desc=desc; } else S.alimSemana[d].push({id:uid(),nome,tipo,desc,done:null});
+    const desc=$('#refDesc').value.trim();
+    if(id){ r.nome=nome; r.desc=desc; } else S.alimSemana[d].push({id:uid(),nome,desc,done:null});
     save('alim:semana'); closeSheet(); renderAlimDia(); renderAlimAnalise(); };
 }
 function renderAlimAnalise(){
   let bom=0,ruim=0,neutro=0,total=0;
-  DIAS.forEach(d=>(S.alimSemana[d]||[]).forEach(r=>{ total++; if(r.tipo==='bom')bom++; else if(r.tipo==='ruim')ruim++; else neutro++; }));
+  DIAS.forEach(d=>(S.alimSemana[d]||[]).forEach(r=>{ total++; const q=qualidadeAuto(r); if(q==='bom')bom++; else if(q==='ruim')ruim++; else neutro++; }));
   let msg;
   if(total===0) msg='Cadastre suas refeições da semana pra eu analisar.';
   else {
@@ -1332,26 +1345,32 @@ function renderAlimRelatorio(){
    ROTINA (hábitos com horário + notificação)
 ========================================================================= */
 function renderRotina(){
+  const edit=S.config.editMode;
   $('#scr-rotina').innerHTML=`
     ${topbar('ROTINA')}
-    <h2 class="section-title">Hábitos diários <button class="btn sm" id="addHabito">＋</button></h2>
-    <p class="small muted">Marque ✅ ao cumprir. Com notificações ligadas, o app te lembra no horário.</p>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin:4px 2px">
+      <h2 class="section-title" style="margin:0">Hábitos diários ${edit?`<button class="btn sm" id="addHabito">＋</button>`:''}</h2>${editToggleHint()}
+    </div>
+    <p class="small muted">Marque ✅ ao cumprir. ${edit?'Toque no lápis pra editar.':'Edite só no Modo de Edição (Perfil → Configurações).'}</p>
     <div id="rotinaList"></div>`;
-  $('#addHabito').onclick=()=>editHabitoSheet(null);
+  if(edit) $('#addHabito').onclick=()=>editHabitoSheet(null);
   renderRotinaList();
 }
 function renderRotinaList(){
+  const edit=S.config.editMode;
   const list=[...S.rotina].sort((a,b)=>(a.hora||'').localeCompare(b.hora||''));
   $('#rotinaList').innerHTML = list.length? list.map(r=>{
     const done=r.done===todayISO();
     return `<div class="rowitem ${done?'done':''}">
       <div class="chk" data-togh="${r.id}">${done?'✓':''}</div>
       <div class="txt"><div class="t">${esc(r.nome)}</div><div class="s mono">${r.hora||'--:--'}</div></div>
-      <button class="pencil" data-edh="${r.id}">✏️</button><button class="pencil" data-delh="${r.id}">🗑️</button>
-    </div>`; }).join('') : '<p class="muted small">Sem hábitos. Adicione (ex: Tomar banho 06:30).</p>';
+      ${edit?`<button class="pencil" data-edh="${r.id}">✏️</button><button class="pencil" data-delh="${r.id}">🗑️</button>`:''}
+    </div>`; }).join('') : `<p class="muted small">Sem hábitos. ${edit?'Adicione (ex: Tomar banho 06:30).':'Ative o modo edição pra montar.'}</p>`;
   $$('#rotinaList [data-togh]').forEach(b=>b.onclick=()=>{ const r=S.rotina.find(x=>x.id===b.dataset.togh); r.done=r.done===todayISO()?null:todayISO(); save('rotina'); renderRotinaList(); });
-  $$('#rotinaList [data-edh]').forEach(b=>b.onclick=()=>editHabitoSheet(b.dataset.edh));
-  $$('#rotinaList [data-delh]').forEach(b=>b.onclick=()=>{ S.rotina=S.rotina.filter(x=>x.id!==b.dataset.delh); save('rotina'); renderRotinaList(); });
+  if(edit){
+    $$('#rotinaList [data-edh]').forEach(b=>b.onclick=()=>editHabitoSheet(b.dataset.edh));
+    $$('#rotinaList [data-delh]').forEach(b=>b.onclick=()=>{ S.rotina=S.rotina.filter(x=>x.id!==b.dataset.delh); save('rotina'); renderRotinaList(); });
+  }
 }
 function editHabitoSheet(id){
   const r=id?S.rotina.find(x=>x.id===id):{nome:'',hora:'06:30'};
