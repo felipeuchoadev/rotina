@@ -11,9 +11,10 @@ const cadastroSchema = z.object({
   senha: z.string().min(6),
   username: z.string().regex(/^[a-z0-9_]{3,20}$/),
   nomeGuerra: z.string().min(1).max(40),
-  idade: z.number().int().min(10).max(90),
-  pesoKg: z.number().min(30).max(250),
-  alturaCm: z.number().int().min(120).max(230),
+  idade: z.number().int().min(5).max(100).optional(),
+  dataNasc: z.string().optional().nullable(),
+  pesoKg: z.number().min(1).max(500),
+  alturaCm: z.number().int().min(50).max(260),
 });
 
 // Cadastro (etapa 1 e 2 do front chegam juntas aqui: conta + dados pessoais)
@@ -33,7 +34,8 @@ authRouter.post('/cadastro', async (req, res) => {
   const usuario = await prisma.usuario.create({
     data: {
       email: d.email, senhaHash, username: d.username, nomeGuerra: d.nomeGuerra,
-      idade: d.idade, pesoKg: d.pesoKg, alturaCm: d.alturaCm, metaAgua: Math.round(d.pesoKg * 35),
+      idade: d.idade, dataNasc: d.dataNasc ? new Date(d.dataNasc) : null,
+      pesoKg: d.pesoKg, alturaCm: d.alturaCm, metaAgua: Math.round(d.pesoKg * 35),
     },
   });
   const token = assinarToken(usuario);
@@ -74,7 +76,7 @@ authRouter.get('/me', exigirAuth, async (req, res) => {
 function publico(u) {
   return {
     id: u.id, email: u.email, username: u.username, nomeGuerra: u.nomeGuerra,
-    fotoUrl: u.fotoUrl, idade: u.idade, pesoKg: u.pesoKg, alturaCm: u.alturaCm,
+    fotoUrl: u.fotoUrl, idade: u.idade, dataNasc: u.dataNasc, pesoKg: u.pesoKg, alturaCm: u.alturaCm,
     metaAgua: u.metaAgua, tema: u.tema, xp: u.xp, privado: u.privado, criadoEm: u.criadoEm,
   };
 }

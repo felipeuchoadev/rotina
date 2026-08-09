@@ -10,9 +10,10 @@ perfilRouter.use(exigirAuth);
 const editSchema = z.object({
   nomeGuerra: z.string().min(1).max(40).optional(),
   username: z.string().regex(/^[a-z0-9_]{3,20}$/).optional(),
-  idade: z.number().int().min(10).max(90).optional(),
-  pesoKg: z.number().min(30).max(250).optional(),
-  alturaCm: z.number().int().min(120).max(230).optional(),
+  idade: z.number().int().min(5).max(100).optional(),
+  dataNasc: z.string().nullable().optional(),
+  pesoKg: z.number().min(1).max(500).optional(),
+  alturaCm: z.number().int().min(50).max(260).optional(),
   fotoUrl: z.string().nullable().optional(),
   tema: z.string().max(30).optional(),
   xp: z.number().int().min(0).optional(),        // XP auto-reportado (ranking)
@@ -31,6 +32,7 @@ perfilRouter.patch('/', async (req, res) => {
     if (outro && outro.id !== req.userId) return res.status(409).json({ erro: 'Username já existe.' });
   }
   const data = { ...d };
+  if (d.dataNasc !== undefined) data.dataNasc = d.dataNasc ? new Date(d.dataNasc) : null;
   if (d.pesoKg != null) data.metaAgua = Math.round(d.pesoKg * 35);
 
   const usuario = await prisma.usuario.update({ where: { id: req.userId }, data });

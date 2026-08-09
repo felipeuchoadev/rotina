@@ -21,6 +21,7 @@ model Usuario {
   nomeGuerra String
   fotoUrl    String?  // dataURL ou URL de upload
   idade      Int?
+  dataNasc   DateTime?
   pesoKg     Float?
   alturaCm   Int?
   metaAgua   Int      @default(2500)

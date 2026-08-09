@@ -180,8 +180,8 @@ textarea.auto{resize:none; overflow:hidden; min-height:48px;}
 .nav{position:fixed; bottom:0; left:0; right:0; z-index:40; background:rgba(14,16,19,.92); backdrop-filter:blur(14px);
   border-top:1px solid var(--line); padding:8px 0 calc(8px + env(safe-area-inset-bottom));}
 .nav-inner{max-width:520px; margin:0 auto; display:flex; justify-content:space-between; padding:0 6px;}
-.nav button{background:none; border:none; color:var(--text-dim); flex:1; padding:7px 2px; display:flex; flex-direction:column; align-items:center; gap:4px; font-size:9.5px; font-weight:700; border-radius:12px;}
-.nav button svg{width:22px; height:22px; stroke:currentColor; fill:none; stroke-width:1.8;}
+.nav button{background:none; border:none; color:var(--text-dim); flex:1; min-width:0; padding:7px 1px; display:flex; flex-direction:column; align-items:center; gap:4px; font-size:8.8px; font-weight:700; letter-spacing:-.01em; white-space:nowrap; border-radius:12px;}
+.nav button svg{width:21px; height:21px; stroke:currentColor; fill:none; stroke-width:1.8;}
 .nav button.active{color:var(--accent);}
 
 /* Overlay genérico (sheet) */
@@ -264,6 +264,7 @@ textarea.auto{resize:none; overflow:hidden; min-height:48px;}
 
 /* Batalha social */
 .icobtn{background:rgba(255,255,255,.06); border:1px solid var(--line); color:var(--text); width:40px; height:40px; border-radius:12px; font-size:18px; position:relative; display:flex; align-items:center; justify-content:center;}
+.icobtn svg{width:20px; height:20px; stroke:currentColor; fill:none; stroke-width:1.9; stroke-linecap:round; stroke-linejoin:round;}
 .notif-badge{position:absolute; top:-5px; right:-5px; background:var(--accent); color:#fff; font-size:10px; font-weight:800; min-width:18px; height:18px; border-radius:9px; display:flex; align-items:center; justify-content:center; padding:0 4px;}
 .post-top .who-link{display:flex; align-items:center; gap:10px; cursor:pointer; flex:1; min-width:0;}
 .post-menu{background:none; border:none; color:var(--text-dim); font-size:22px; line-height:1; padding:4px 8px; border-radius:8px;}
@@ -313,8 +314,10 @@ textarea.auto{resize:none; overflow:hidden; min-height:48px;}
  <symbol id="i-alim" viewBox="0 0 24 24"><path d="M6 3v8a2 2 0 004 0V3M8 11v10M18 3c-2 0-3 3-3 6s1 4 3 4v8"/></symbol>
  <symbol id="i-estudo" viewBox="0 0 24 24"><path d="M4 5a2 2 0 012-2h13v16H6a2 2 0 00-2 2zM19 3v18"/></symbol>
  <symbol id="i-rotina" viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/></symbol>
- <symbol id="i-batalha" viewBox="0 0 24 24"><path d="M14 3l7 7-3 3-7-7zM10 21l-7-7 3-3 7 7zM5 19l2 2M16 5l3-3"/></symbol>
+ <symbol id="i-batalha" viewBox="0 0 24 24"><path d="M4 4 L20 20 M20 4 L4 20 M3 6 L6 3 M18 3 L21 6 M6 21 L3 18 M21 18 L18 21"/></symbol>
  <symbol id="i-perfil" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></symbol>
+ <symbol id="i-dm" viewBox="0 0 24 24"><path d="M4 6a2 2 0 012-2h12a2 2 0 012 2v8a2 2 0 01-2 2H9l-5 4z"/></symbol>
+ <symbol id="i-sino" viewBox="0 0 24 24"><path d="M6 9a6 6 0 0112 0c0 5 2 6 2 6H4s2-1 2-6M10 20a2 2 0 004 0"/></symbol>
 </svg>
 
 <!-- ===================== AUTH ===================== -->
@@ -422,6 +425,16 @@ function todayISO(){ const d=brasiliaNow(); return `${d.getFullYear()}-${String(
 function hojeDia(){ return DIAS[(brasiliaNow().getDay()+6)%7]; }
 // lê número aceitando vírgula (89,50 -> 89.5). Retorna NaN se vazio/invalido.
 function numBR(v){ if(v==null) return NaN; const s=String(v).trim().replace(/\s/g,'').replace(',','.'); return s===''?NaN:Number(s); }
+// peso: aceita com/sem vírgula. Sem separador e >300 => trata os 2 últimos dígitos como decimais (8895 -> 88,95).
+function parsePeso(v){ const raw=String(v??'').trim(); if(/[.,]/.test(raw)) return numBR(raw); const n=Number(raw); if(!isFinite(n)) return NaN; return n>300 ? n/100 : n; }
+// altura: aceita cm (176) ou metros (1,76 -> 176)
+function parseAltura(v){ let a=numBR(v); if(a>0&&a<3) a=a*100; return Math.round(a); }
+// formata número pra exibição em pt-BR com 2 casas (89.5 -> "89,50")
+function fmtPeso(n){ return (n==null||isNaN(n))?'' : Number(n).toFixed(2).replace('.',','); }
+// idade a partir da data de nascimento (YYYY-MM-DD)
+function idadeDe(dataNasc){ if(!dataNasc) return null; const d=new Date(dataNasc); if(isNaN(d)) return null; const h=brasiliaNow(); let a=h.getFullYear()-d.getFullYear(); const m=h.getMonth()-d.getMonth(); if(m<0||(m===0&&h.getDate()<d.getDate())) a--; return a; }
+// é aniversário hoje?
+function aniversarioHoje(dataNasc){ if(!dataNasc) return false; const d=new Date(dataNasc); const h=brasiliaNow(); return d.getMonth()===h.getMonth() && d.getDate()===h.getDate(); }
 function treinoFeitoHoje(exId){ return S.treinoLogs.some(l=>l.exId===exId && l.dateISO===todayISO()); }
 function estudoFeitoHoje(materiaId){ return S.estudoLogs.some(l=>String(l.materiaId)===String(materiaId) && l.dateISO===todayISO()); }
 function minsHojeItem(logs, campo, val){ return Math.round(logs.filter(l=>l.dateISO===todayISO() && String(l[campo])===String(val)).reduce((a,l)=>a+(l.ativoMs||0)/60000,0)); }
@@ -529,11 +542,20 @@ const ESC_TREINO = [
 ];
 
 /* Frases motivacionais (modo try hard notifica) */
+// Try Hard: porrada e pancadaria, tom de instrutor de quartel
 const TRYHARD = [
-  'RECRUTA! Você tem tarefa atrasada. MEXA-SE.',
-  'A vaga da ESA não é sua ainda. Cumpra o que ficou pra trás.',
-  'Disciplina é fazer mesmo sem vontade. Volta pro app AGORA.',
-  'Seu concorrente não parou. Por que você parou?',
+  'AQUI O BICHO PEGA, RECRUTA! LEVANTA E CUMPRE SUA OBRIGAÇÃO AGORA!',
+  'TÁ DE BRINCADEIRA?! TAREFA ATRASADA É COVARDIA. MEXA ESSE CORPO!',
+  'A ESA NÃO FORMA MOLE! ENQUANTO VOCÊ ENROLA, SUA VAGA TÁ INDO EMBORA!',
+  'SEM CHORO! DE PÉ, CARA DE GUERRA. FAZ O QUE TEM QUE SER FEITO!',
+  'VOCÊ JUROU DISCIPLINA E TÁ FURANDO?! VOLTA PRA MISSÃO, JÁ!',
+  'PREGUIÇA É INIMIGA DA FARDA. ACORDA E EXECUTA, SOLDADO!',
+];
+// Modo normal: cobra, mas 50% (mais leve)
+const COBRANCA = [
+  'Ei, recruta — você tem coisa pra fazer hoje. Não deixa pra depois.',
+  'Falta cumprir umas tarefas. Bora, um passo de cada vez.',
+  'Disciplina é constância. Volta e termina o que começou.',
 ];
 
 /* 20 TEMAS com gradiente de fundo completo */
@@ -590,7 +612,7 @@ async function loadUserData(){
   const g = (k,d)=> st[k]!==undefined && st[k]!==null ? st[k] : d;
   S = {
     profile: { id:u.id, nome:u.nomeGuerra, username:u.username, email:u.email, foto:u.fotoUrl,
-               idade:u.idade, peso:u.pesoKg, altura:u.alturaCm, metaAgua:u.metaAgua, tema:u.tema, privado:u.privado, xpBonus:0 },
+               idade:u.idade, dataNasc:(u.dataNasc?String(u.dataNasc).slice(0,10):null), peso:u.pesoKg, altura:u.alturaCm, metaAgua:u.metaAgua, tema:u.tema, privado:u.privado, xpBonus:0 },
     treinoTemplate: g('treino:tpl', DEFAULT_TREINO_TEMPLATE()),
     treinoWeeks:    g('treino:weeks', null),
     treinoLogs:     g('treino:logs', []),
@@ -645,15 +667,15 @@ function renderAuth(){
       <div class="field"><label>E-mail</label><input id="lgEmail" type="email" placeholder="voce@gmail.com" autocomplete="email"></div>
       <div class="field"><label>Senha</label><input id="lgPass" type="password" placeholder="••••••••" autocomplete="current-password"></div>
       <div class="err" id="lgErr"></div>
-      <button class="btn" id="lgBtn">Entrar na caserna</button>
-      <p class="auth-sub" style="margin-top:16px">Sem "entrar com Google". Só e-mail e senha, de verdade.</p>`;
+      <button class="btn" id="lgBtn">Entrar na caserna</button>`;
     $('#toSignup').onclick=()=>{ authMode='signup'; signupStep=1; signupDraft={}; renderAuth(); };
     $('#lgBtn').onclick=doLogin;
+    $('#lgEmail').onkeydown=e=>{ if(e.key==='Enter') $('#lgPass').focus(); };
     $('#lgPass').onkeydown=e=>{ if(e.key==='Enter') doLogin(); };
   } else {
     inner.innerHTML = `
       ${emblemaESA()}
-      <div class="auth-title">Alistamento</div>
+      <div class="auth-title">Cadastro</div>
       <div class="stepper">
         <div class="dotstep ${signupStep===1?'on':''}">1</div><span>Conta</span>
         <div style="width:24px;height:1px;background:var(--line)"></div>
@@ -663,14 +685,19 @@ function renderAuth(){
       <div class="err" id="suErr"></div>
       <div style="margin-top:6px">${signupStep===1
         ? `<button class="btn" id="suNext">Próximo → dados pessoais</button>`
-        : `<button class="btn" id="suFinish">Concluir alistamento</button>
+        : `<button class="btn" id="suFinish">Criar conta</button>
            <button class="btn ghost" id="suBack" style="margin-top:8px">Voltar</button>`}
       </div>
       <p class="auth-sub" style="margin-top:14px"><a id="toLogin">Já tenho conta — entrar</a></p>`;
     renderSignupStep();
     $('#toLogin').onclick=()=>{ authMode='login'; renderAuth(); };
-    if(signupStep===1) $('#suNext').onclick=signupNext;
-    else { $('#suFinish').onclick=signupFinish; $('#suBack').onclick=()=>{ signupStep=1; renderAuth(); }; }
+    if(signupStep===1){ $('#suNext').onclick=signupNext;
+      $('#suPass2').onkeydown=e=>{ if(e.key==='Enter') signupNext(); };
+      $('#suEmail').onkeydown=e=>{ if(e.key==='Enter') $('#suPass').focus(); };
+      $('#suPass').onkeydown=e=>{ if(e.key==='Enter') $('#suPass2').focus(); };
+    } else { $('#suFinish').onclick=signupFinish; $('#suBack').onclick=()=>{ signupStep=1; renderAuth(); };
+      $('#suAltura').onkeydown=e=>{ if(e.key==='Enter') signupFinish(); };
+    }
   }
 }
 function renderSignupStep(){
@@ -684,11 +711,11 @@ function renderSignupStep(){
     b.innerHTML = `
       <div class="field"><label>Nome de guerra</label><input id="suNome" placeholder="Ex: FLIP" value="${esc(signupDraft.nome||'')}"></div>
       <div class="field"><label>Username (único)</label><input id="suUser" placeholder="ex: flip_esa" value="${esc(signupDraft.username||'')}"></div>
+      <div class="field"><label>Data de nascimento</label><input id="suNasc" type="date" value="${esc(signupDraft.dataNasc||'')}"></div>
       <div class="grid2">
-        <div class="field"><label>Idade</label><input id="suIdade" type="number" inputmode="numeric" placeholder="anos"></div>
         <div class="field"><label>Peso (kg)</label><input id="suPeso" type="text" inputmode="decimal" placeholder="ex: 88,50"></div>
+        <div class="field"><label>Altura (cm ou m)</label><input id="suAltura" type="text" inputmode="decimal" placeholder="176 ou 1,76"></div>
       </div>
-      <div class="field"><label>Altura (cm ou metros)</label><input id="suAltura" type="text" inputmode="decimal" placeholder="176 ou 1,76"></div>
       <div class="field"><label>Foto de perfil (opcional)</label><input id="suFoto" type="file" accept="image/*"></div>`;
   }
 }
@@ -708,23 +735,21 @@ async function signupNext(){
 async function signupFinish(){
   const err=$('#suErr');
   const nome=$('#suNome').value.trim(), username=$('#suUser').value.trim().toLowerCase().replace(/\s+/g,'_');
-  const idade=Math.round(numBR($('#suIdade').value)); const peso=numBR($('#suPeso').value); let altura=numBR($('#suAltura').value);
-  if(altura>0 && altura<3) altura=Math.round(altura*100);   // metros -> cm
-  altura=Math.round(altura);
+  const dataNasc=$('#suNasc').value; const idade=idadeDe(dataNasc); const peso=parsePeso($('#suPeso').value); const altura=parseAltura($('#suAltura').value);
   if(!nome) return err.textContent='Informe o nome de guerra.';
   if(!/^[a-z0-9_]{3,20}$/.test(username)) return err.textContent='Username: 3–20 caracteres, letras/números/_';
-  if(!(idade>=10&&idade<=90)) return err.textContent='Idade inválida (10–90).';
-  if(!(peso>=30&&peso<=250)) return err.textContent='Peso inválido (30–250 kg). Use vírgula, ex: 89,50.';
-  if(!(altura>=120&&altura<=230)) return err.textContent='Altura inválida. Use cm (176) ou metros (1,76).';
-  const btn=$('#suFinish'); if(btn){ btn.disabled=true; btn.textContent='Alistando…'; }
+  if(!dataNasc || idade==null || idade<5 || idade>100) return err.textContent='Informe uma data de nascimento válida.';
+  if(!(peso>0)) return err.textContent='Informe o peso (ex: 88,50).';
+  if(!(altura>0)) return err.textContent='Informe a altura (ex: 176 ou 1,76).';
+  const btn=$('#suFinish'); if(btn){ btn.disabled=true; btn.textContent='Criando…'; }
   try{
-    const r = await api('/auth/cadastro',{auth:false, method:'POST', body:{ email:signupDraft.email, senha:signupDraft.pass, username, nomeGuerra:nome, idade, pesoKg:peso, alturaCm:altura }});
+    const r = await api('/auth/cadastro',{auth:false, method:'POST', body:{ email:signupDraft.email, senha:signupDraft.pass, username, nomeGuerra:nome, idade, dataNasc, pesoKg:peso, alturaCm:altura }});
     setToken(r.token);
     const f=$('#suFoto').files[0];
     if(f){ try{ const up=await uploadMedia(f); await api('/perfil',{method:'PATCH',body:{fotoUrl:up.url}}); }catch(e){} }
-    toast('Alistamento concluído. Bem-vindo à caserna, '+nome+'.');
+    toast('Conta criada. Bem-vindo à caserna, '+nome+'.');
     await enterApp();
-  }catch(e){ if(btn){ btn.disabled=false; btn.textContent='Concluir alistamento'; }
+  }catch(e){ if(btn){ btn.disabled=false; btn.textContent='Criar conta'; }
     err.textContent = e.status===409 ? (e.data?.erro||'E-mail ou username já cadastrado.') : (e.data?.erro||'Falha no cadastro. Sem conexão?'); }
 }
 async function doLogin(){
@@ -745,7 +770,7 @@ async function logout(){ setToken(null); location.reload(); }
 const TABS = [
   {id:'inicio', ico:'🏠', label:'Início'},
   {id:'treinos', ico:'🏋️', label:'Treinos'},
-  {id:'alimentacao', ico:'🍽️', label:'Alim.'},
+  {id:'alimentacao', ico:'🍽️', label:'Alimentação'},
   {id:'estudos', ico:'📚', label:'Estudos'},
   {id:'rotina', ico:'⏰', label:'Rotina'},
   {id:'batalha', ico:'⚔️', label:'Batalha'},
@@ -808,8 +833,8 @@ function renderInicio(){
         </div>
       </div>
       <div class="biorow">
-        <div class="biocard"><b>${p.idade}</b><s>anos</s></div>
-        <div class="biocard"><b>${(+p.peso).toFixed(2).replace('.',',')}</b><s>kg</s></div>
+        <div class="biocard"><b>${idadeDe(p.dataNasc) ?? p.idade ?? '—'}</b><s>anos</s></div>
+        <div class="biocard"><b>${fmtPeso(p.peso)}</b><s>kg</s></div>
         <div class="biocard"><b>${p.altura}</b><s>altura (cm)</s></div>
       </div>
     </div>
@@ -1581,8 +1606,8 @@ async function renderBatalha(){
   $('#scr-batalha').innerHTML=`
     <div class="topbar"><div class="brand">BATALHA</div>
       <div style="display:flex;align-items:center;gap:10px">
-        <button class="icobtn" id="dmBtn">✉️${dmBadge}</button>
-        <button class="icobtn" id="sinoBtn">🔔${badge}</button>${clockHTML()}
+        <button class="icobtn" id="dmBtn">${svgIcon('i-dm')}${dmBadge}</button>
+        <button class="icobtn" id="sinoBtn">${svgIcon('i-sino')}${badge}</button>${clockHTML()}
       </div></div>
     <div style="position:relative;margin:4px 0 12px">
       <input id="buscaUser" placeholder="🔎 Buscar pessoas (nome ou @usuário)" style="width:100%;background:#0c0d11;border:1.5px solid var(--line);border-radius:14px;padding:13px;color:var(--text)">
@@ -1818,11 +1843,11 @@ function renderPerfilConta(){
       <div class="field"><label>Nome de guerra</label><input id="pfNome" value="${esc(p.nome)}"></div>
       <div class="field"><label>Username (único)</label><input id="pfUser" value="${esc(p.username)}"></div>
       <div class="field"><label>E-mail</label><input value="${esc(p.email)}" disabled></div>
+      <div class="field"><label>Data de nascimento</label><input id="pfNasc" type="date" value="${esc(p.dataNasc||'')}"></div>
       <div class="grid2">
-        <div class="field"><label>Idade</label><input id="pfIdade" type="number" value="${p.idade}"></div>
-        <div class="field"><label>Peso (kg)</label><input id="pfPeso" type="text" inputmode="decimal" value="${p.peso!=null?String(p.peso).replace('.',','):''}"></div>
+        <div class="field"><label>Peso (kg)</label><input id="pfPeso" type="text" inputmode="decimal" value="${fmtPeso(p.peso)}"></div>
+        <div class="field"><label>Altura (cm ou m)</label><input id="pfAltura" type="text" inputmode="decimal" value="${p.altura??''}" placeholder="176 ou 1,76"></div>
       </div>
-      <div class="field"><label>Altura (cm ou metros)</label><input id="pfAltura" type="text" inputmode="decimal" value="${p.altura??''}" placeholder="176 ou 1,76"></div>
       <div class="err" id="pfErr"></div>
       <button class="btn" id="pfSave">Salvar alterações</button>
     </div>`;
@@ -1833,17 +1858,15 @@ function renderPerfilConta(){
   $('#pfSave').onclick=async()=>{
     const err=$('#pfErr'); const nome=$('#pfNome').value.trim();
     const username=$('#pfUser').value.trim().toLowerCase().replace(/\s+/g,'_');
-    const idade=Math.round(numBR($('#pfIdade').value)); const peso=numBR($('#pfPeso').value); let altura=numBR($('#pfAltura').value);
-    if(altura>0 && altura<3) altura=Math.round(altura*100);   // digitou em metros (1,76) -> 176 cm
-    altura=Math.round(altura);
+    const dataNasc=$('#pfNasc').value; const idade=idadeDe(dataNasc); const peso=parsePeso($('#pfPeso').value); const altura=parseAltura($('#pfAltura').value);
     if(!nome) return err.textContent='Nome de guerra vazio.';
     if(!/^[a-z0-9_]{3,20}$/.test(username)) return err.textContent='Username inválido.';
-    if(!(idade>=10&&idade<=90)) return err.textContent='Idade inválida (10–90).';
-    if(!(peso>=30&&peso<=250)) return err.textContent='Peso inválido (30–250 kg). Use vírgula pros decimais, ex: 89,50.';
-    if(!(altura>=120&&altura<=230)) return err.textContent='Altura inválida. Use cm (ex: 176) ou metros (ex: 1,76).';
+    if(!dataNasc || idade==null || idade<5 || idade>100) return err.textContent='Data de nascimento inválida.';
+    if(!(peso>0)) return err.textContent='Peso inválido (ex: 89,50).';
+    if(!(altura>0)) return err.textContent='Altura inválida (ex: 176 ou 1,76).';
     try{
-      await api('/perfil',{method:'PATCH',body:{ nomeGuerra:nome, username, idade, pesoKg:peso, alturaCm:altura, metaAgua:Math.round(peso*35) }});
-      p.nome=nome; p.username=username; p.idade=idade; p.peso=peso; p.altura=altura; p.metaAgua=Math.round(peso*35); currentUser=username;
+      await api('/perfil',{method:'PATCH',body:{ nomeGuerra:nome, username, idade, dataNasc, pesoKg:peso, alturaCm:altura, metaAgua:Math.round(peso*35) }});
+      p.nome=nome; p.username=username; p.idade=idade; p.dataNasc=dataNasc; p.peso=peso; p.altura=altura; p.metaAgua=Math.round(peso*35); currentUser=username;
       err.textContent=''; toast('Dados atualizados.'); renderPerfil();
     }catch(e){ err.textContent = e.status===409 ? 'Esse username já existe.' : (e.data?.erro||'Falha ao salvar.'); }
   };
@@ -1862,8 +1885,7 @@ function renderPerfilConfig(){
     <div class="card">
       <div class="h">Notificações & Modo Try Hard</div>
       <label class="rowitem"><input type="checkbox" id="cfNotif" ${c.notif?'checked':''} style="width:24px;height:24px"><div class="txt"><div class="t">Permitir notificações</div><div class="s">Lembretes no horário dos hábitos.</div></div></label>
-      <label class="rowitem"><input type="checkbox" id="cfTry" ${c.tryHard?'checked':''} style="width:24px;height:24px"><div class="txt"><div class="t">Modo Try Hard 🔥</div><div class="s">Se você atrasar, o app floda notificação até você agir. Nível ESA.</div></div></label>
-      <p class="small muted" style="margin-top:6px">⚠️ Notificação só dispara com o app aberto (limite do navegador). Notificar com o app fechado exige Web Push + servidor — fase futura.</p>
+      <label class="rowitem"><input type="checkbox" id="cfTry" ${c.tryHard?'checked':''} style="width:24px;height:24px"><div class="txt"><div class="t">Modo Try Hard 🔥</div><div class="s">Aqui o bicho pega: o app floda notificação e alarme SEM PARAR até você cumprir. Desligado, ele ainda cobra — só que na metade da intensidade.</div></div></label>
     </div>`;
   $('#cfEdit').onchange=e=>{ S.config.editMode=e.target.checked; save('config'); toast(e.target.checked?'Modo edição ON':'Modo edição OFF'); };
   $('#cfPriv').onchange=async e=>{ S.profile.privado=e.target.checked; try{ await api('/perfil',{method:'PATCH',body:{privado:e.target.checked}}); toast(e.target.checked?'Perfil agora é privado.':'Perfil agora é público.'); }catch(err){ toast('Falha ao salvar.'); } };
@@ -1885,19 +1907,25 @@ function renderPerfilTemas(){
    NOTIFICAÇÕES / TRY HARD
 ========================================================================= */
 function notify(title,body){ if('Notification' in window && Notification.permission==='granted'){ try{ new Notification(title,{body, icon:'icon-192.png'}); }catch(e){} } }
+function beep(){ try{ const c=new (window.AudioContext||window.webkitAudioContext)(); const o=c.createOscillator(); const g=c.createGain(); o.connect(g); g.connect(c.destination); o.type='square'; o.frequency.value=880; g.gain.value=0.06; o.start(); setTimeout(()=>{o.stop(); c.close();},220); }catch(e){} }
+let _tryTick=0;
 function startTryHard(){
   clearInterval(window._tryTimer);
   window._tryTimer=setInterval(()=>{
     if(!S) return;
     const now=brasiliaNow(); const hhmm=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
     // lembrete de hábito no horário exato
-    S.rotina.forEach(r=>{ if(r.hora===hhmm && r.done!==todayISO()){ notify('DISCIPLINA — '+r.nome, 'Está no horário. Cumpra agora, recruta.'); } });
-    // try hard: hábitos atrasados
+    S.rotina.forEach(r=>{ if(r.hora===hhmm && r.done!==todayISO()){ notify('DISCIPLINA — '+r.nome, 'Está no horário. Cumpra agora, recruta.'); if(navigator.vibrate) navigator.vibrate(150); } });
+    const atrasados=S.rotina.filter(r=>r.hora && r.hora<hhmm && r.done!==todayISO());
+    if(!atrasados.length) return;
+    _tryTick++;
     if(S.config.tryHard){
-      const atrasados=S.rotina.filter(r=>r.hora && r.hora<hhmm && r.done!==todayISO());
-      if(atrasados.length){ notify('🔥 MODO TRY HARD', TRYHARD[Math.floor(now.getMinutes()%TRYHARD.length)]+' ('+atrasados.length+' tarefa(s) atrasada(s))'); }
+      notify('🔥 MODO TRY HARD', TRYHARD[_tryTick%TRYHARD.length]+' ('+atrasados.length+' pendente(s))');
+      beep(); if(navigator.vibrate) navigator.vibrate([220,90,220]);
+    } else if(S.config.notif && _tryTick%3===0){   // normal: cobra ~50% (bem mais leve)
+      notify('DISCIPLINA', COBRANCA[_tryTick%COBRANCA.length]+' ('+atrasados.length+' pendente(s))');
     }
-  }, 60000);
+  }, 20000);
 }
 
 /* =========================================================================
