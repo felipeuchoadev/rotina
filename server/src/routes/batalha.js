@@ -204,8 +204,13 @@ batalhaRouter.post('/bloquear/:username', async (req, res) => {
 // ---- Notificações (sininho) ----
 batalhaRouter.get('/notificacoes', async (req, res) => {
   const ns = await prisma.notificacao.findMany({ where: { usuarioId: req.userId }, orderBy: { criadoEm: 'desc' }, take: 50 });
+  // anexa nome de guerra + foto + gênero de quem gerou a notificação
+  const usernames = [...new Set(ns.map(n => n.deUsername).filter(Boolean))];
+  const users = usernames.length ? await prisma.usuario.findMany({ where: { username: { in: usernames } }, select: { username: true, nomeGuerra: true, fotoUrl: true, genero: true } }) : [];
+  const mapa = Object.fromEntries(users.map(u => [u.username, u]));
+  const enriched = ns.map(n => ({ ...n, de: n.deUsername ? (mapa[n.deUsername] || null) : null }));
   const naoLidas = ns.filter(n => !n.lida).length;
-  res.json({ notificacoes: ns, naoLidas });
+  res.json({ notificacoes: enriched, naoLidas });
 });
 batalhaRouter.post('/notificacoes/lidas', async (req, res) => {
   await prisma.notificacao.updateMany({ where: { usuarioId: req.userId, lida: false }, data: { lida: true } });

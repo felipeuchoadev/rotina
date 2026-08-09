@@ -659,7 +659,7 @@ async function loadUserData(){
   const u = me.usuario;
   const g = (k,d)=> st[k]!==undefined && st[k]!==null ? st[k] : d;
   S = {
-    profile: { id:u.id, nome:u.nomeGuerra, username:u.username, email:u.email, foto:u.fotoUrl,
+    profile: { id:u.id, nome:u.nomeGuerra, username:u.username, email:u.email, foto:u.fotoUrl, genero:u.genero,
                idade:u.idade, dataNasc:(u.dataNasc?String(u.dataNasc).slice(0,10):null), peso:u.pesoKg, altura:u.alturaCm, metaAgua:u.metaAgua, tema:u.tema, privado:u.privado, xpBonus:0 },
     treinoTemplate: g('treino:tpl', DEFAULT_TREINO_TEMPLATE()),
     treinoWeeks:    g('treino:weeks', null),
@@ -717,9 +717,11 @@ function renderAuth(){
       <div class="field"><label>E-mail</label><input id="lgEmail" type="email" placeholder="voce@gmail.com" autocomplete="email"></div>
       <div class="field"><label>Senha</label><input id="lgPass" type="password" placeholder="••••••••" autocomplete="current-password"></div>
       <div class="err" id="lgErr"></div>
-      <button class="btn" id="lgBtn">Voltar à Batalha</button>`;
+      <button class="btn" id="lgBtn">Voltar à Batalha</button>
+      <p class="auth-sub" style="margin-top:12px"><a id="toEsqueci" style="cursor:pointer">Esqueci minha senha</a></p>`;
     $('#toSignup').onclick=()=>{ authMode='signup'; signupStep=1; signupDraft={}; renderAuth(); };
     $('#lgBtn').onclick=doLogin;
+    $('#toEsqueci').onclick=esqueciSenhaSheet;
     $('#lgEmail').onkeydown=e=>{ if(e.key==='Enter') $('#lgPass').focus(); };
     $('#lgPass').onkeydown=e=>{ if(e.key==='Enter') doLogin(); };
   } else {
@@ -762,6 +764,11 @@ function renderSignupStep(){
       <div class="field"><label>Nome de guerra</label><input id="suNome" placeholder="Ex: FLIP" value="${esc(signupDraft.nome||'')}"></div>
       <div class="field"><label>Username (único)</label><input id="suUser" placeholder="ex: flip_esa" value="${esc(signupDraft.username||'')}"></div>
       <div class="field"><label>Data de nascimento</label><input id="suNasc" type="date" value="${esc(signupDraft.dataNasc||'')}"></div>
+      <div class="field"><label>Gênero</label>
+        <select id="suGenero">
+          <option value="m" ${signupDraft.genero==='f'?'':'selected'}>Masculino</option>
+          <option value="f" ${signupDraft.genero==='f'?'selected':''}>Feminino</option>
+        </select></div>
       <div class="grid2">
         <div class="field"><label>Peso (kg)</label><input id="suPeso" type="text" inputmode="decimal" placeholder="ex: 88,50"></div>
         <div class="field"><label>Altura (cm ou m)</label><input id="suAltura" type="text" inputmode="decimal" placeholder="176 ou 1,76"></div>
@@ -786,6 +793,7 @@ async function signupFinish(){
   const err=$('#suErr');
   const nome=$('#suNome').value.trim(), username=$('#suUser').value.trim().toLowerCase().replace(/\s+/g,'_');
   const dataNasc=$('#suNasc').value; const idade=idadeDe(dataNasc); const peso=parsePeso($('#suPeso').value); const altura=parseAltura($('#suAltura').value);
+  const genero=$('#suGenero')?.value||'m';
   if(!nome) return err.textContent='Informe o nome de guerra.';
   if(!/^[a-z0-9_]{3,20}$/.test(username)) return err.textContent='Username: 3–20 caracteres, letras/números/_';
   if(!dataNasc || idade==null || idade<5 || idade>100) return err.textContent='Informe uma data de nascimento válida.';
@@ -793,7 +801,7 @@ async function signupFinish(){
   if(!(altura>0)) return err.textContent='Informe a altura (ex: 176 ou 1,76).';
   const btn=$('#suFinish'); if(btn){ btn.disabled=true; btn.textContent='Criando…'; }
   try{
-    const r = await api('/auth/cadastro',{auth:false, method:'POST', body:{ email:signupDraft.email, senha:signupDraft.pass, username, nomeGuerra:nome, idade, dataNasc, pesoKg:peso, alturaCm:altura }});
+    const r = await api('/auth/cadastro',{auth:false, method:'POST', body:{ email:signupDraft.email, senha:signupDraft.pass, username, nomeGuerra:nome, idade, dataNasc, genero, pesoKg:peso, alturaCm:altura }});
     setToken(r.token);
     const f=$('#suFoto').files[0];
     if(f){ try{ const up=await uploadMedia(f); await api('/perfil',{method:'PATCH',body:{fotoUrl:up.url}}); }catch(e){} }
@@ -813,6 +821,35 @@ async function doLogin(){
     err.textContent = e.status===401 ? 'E-mail ou senha incorretos.' : (e.data?.erro || 'Falha no login. Sem conexão?'); }
 }
 async function logout(){ setToken(null); location.reload(); }
+function esqueciSenhaSheet(){
+  openSheet(`<h3>Recuperar senha</h3>
+    <p class="small muted">Digite seu e-mail. Se existir conta, enviamos um link pra criar uma nova senha (vale 1h).</p>
+    <div class="field"><label>E-mail</label><input id="esEmail" type="email" placeholder="voce@gmail.com"></div>
+    <div class="err" id="esErr"></div>
+    <button class="btn" id="esEnviar">Enviar link de recuperação</button>`);
+  $('#esEnviar').onclick=async()=>{
+    const email=$('#esEmail').value.trim().toLowerCase();
+    if(!validEmail(email)) return $('#esErr').textContent='E-mail inválido.';
+    try{ const r=await api('/auth/esqueci',{auth:false,method:'POST',body:{email}}); closeSheet();
+      toast(r.mailAtivo ? 'Se o e-mail existir, o link foi enviado. Confira sua caixa.' : 'Pedido registrado. (Envio de e-mail ainda não configurado no servidor.)');
+    }catch(e){ $('#esErr').textContent='Falha ao enviar. Tenta de novo.'; }
+  };
+}
+function resetarSenhaSheet(token){
+  openSheet(`<h3>Nova senha</h3>
+    <p class="small muted">Crie uma nova senha pra sua conta.</p>
+    <div class="field"><label>Nova senha</label><input id="rsSenha" type="password" placeholder="mínimo 6"></div>
+    <div class="field"><label>Confirmar</label><input id="rsSenha2" type="password" placeholder="repita"></div>
+    <div class="err" id="rsErr"></div>
+    <button class="btn" id="rsSalvar">Salvar nova senha</button>`);
+  $('#rsSalvar').onclick=async()=>{
+    const s=$('#rsSenha').value, s2=$('#rsSenha2').value;
+    if(s.length<6) return $('#rsErr').textContent='Senha muito curta (mínimo 6).';
+    if(s!==s2) return $('#rsErr').textContent='As senhas não conferem.';
+    try{ await api('/auth/resetar',{auth:false,method:'POST',body:{token,senha:s}}); closeSheet(); toast('Senha redefinida! Agora é só entrar.'); history.replaceState(null,'',location.pathname+location.search); }
+    catch(e){ $('#rsErr').textContent = e.data?.erro||'Link inválido ou expirado.'; }
+  };
+}
 
 /* =========================================================================
    APP / ROUTER
@@ -877,7 +914,7 @@ function renderInicio(){
   const p=S.profile;
   const prog = nx ? Math.min(100, Math.round((xp-r.min)/(nx.min-r.min)*100)) : 100;
   const deg = Math.round(prog*3.6);
-  const inner = p.foto ? `<img src="${p.foto}" alt="">` : esc((p.nome||'?')[0].toUpperCase());
+  const inner = p.foto ? `<img src="${p.foto}" alt="">` : (avatarPadrao(p.genero) ? `<img src="${avatarPadrao(p.genero)}" alt="">` : esc((p.nome||'?')[0].toUpperCase()));
   $('#scr-inicio').innerHTML = `
     <div class="home-top">
       <div class="home-topline">
@@ -1145,8 +1182,11 @@ function patenteSheet(){
       <p class="small muted" style="margin-top:8px">Em breve: pontuação diária (dia 100% cumprido rende bônus; dia furado tira pontos — pra manter patente exigir constância de verdade).</p>
     </div>`);
 }
+function avatarPadrao(genero){ return (genero==='f'||genero==='m') ? `avatar-${genero==='f'?'fem':'masc'}.png` : null; }
 function avatarHTML(p, cls){
   if(p.foto) return `<img class="${cls}" src="${p.foto}" alt="">`;
+  const ap=avatarPadrao(p.genero);
+  if(ap) return `<img class="${cls}" src="${ap}" alt="" style="object-fit:cover;background:#0c0d11">`;
   const fs = cls==='avatar'?30:(cls.includes('sm')?16:14);
   return `<div class="${cls}" style="display:flex;align-items:center;justify-content:center;font-weight:800;font-size:${fs}px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff">${esc((p.nome||'?')[0].toUpperCase())}</div>`;
 }
@@ -2142,11 +2182,14 @@ async function abrirNotificacoes(){
   let d; try{ d=await api('/batalha/notificacoes'); }catch(e){ d={notificacoes:[]}; }
   const nots=d.notificacoes||[];
   openSheet(`<h3>Notificações</h3>
-    ${nots.length ? nots.map((n,i)=>`
-      <div class="notif-item ${n.lida?'':'nova'}" data-noti="${i}" style="cursor:pointer">
-        <div style="flex:1"><div style="font-size:14px">${esc(n.texto)}</div><div class="s muted" style="font-size:12px">${timeago(n.criadoEm)}</div></div>
+    ${nots.length ? nots.map((n,i)=>{
+      const de=n.de; const av = de ? avatarHTML({foto:de.fotoUrl, genero:de.genero, nome:de.nomeGuerra},'avatar xs') : '';
+      const nome = de ? `<b>${esc(de.nomeGuerra)}</b> ` : '';
+      return `<div class="notif-item ${n.lida?'':'nova'}" data-noti="${i}" style="cursor:pointer">
+        ${av}
+        <div style="flex:1"><div style="font-size:14px">${nome}${esc(n.texto)}</div><div class="s muted" style="font-size:12px">${timeago(n.criadoEm)}</div></div>
         ${n.deUsername||n.tipo==='aviso'?`<span class="muted" style="font-size:22px">›</span>`:''}
-      </div>`).join('') : '<p class="muted small">Sem notificações ainda. Quando alguém te seguir, curtir ou comentar, aparece aqui.</p>'}`);
+      </div>`;}).join('') : '<p class="muted small">Sem notificações ainda. Quando alguém te seguir, curtir ou comentar, aparece aqui.</p>'}`);
   api('/batalha/notificacoes/lidas',{method:'POST'}).catch(()=>{});
   $$('#sheet [data-noti]').forEach(el=>el.onclick=()=>abrirNotifAlvo(nots[+el.dataset.noti]));
 }
@@ -2163,6 +2206,7 @@ function handleDeepLink(){
   const h=location.hash||''; if(h.length<2) return;
   const parts=Object.fromEntries(h.slice(1).split('&').map(kv=>{ const [k,v]=kv.split('='); return [k, decodeURIComponent(v||'')]; }));
   try{
+    if(parts.reset){ resetarSenhaSheet(parts.reset); return; }
     if(parts.u){ go('batalha'); abrirPerfil(parts.u); }
     else if(parts.dm){ go('batalha'); abrirChat(parts.dm); }
     else if(parts.noti!==undefined){ go('batalha'); setTimeout(abrirNotificacoes,250); }
@@ -2255,6 +2299,7 @@ function renderPerfilConta(){
       <div class="field"><label>Username (único)</label><input id="pfUser" value="${esc(p.username)}"></div>
       <div class="field"><label>E-mail</label><input value="${esc(p.email)}" disabled></div>
       <div class="field"><label>Data de nascimento</label><input id="pfNasc" type="date" value="${esc(p.dataNasc||'')}"></div>
+      <div class="field"><label>Gênero</label><select id="pfGenero"><option value="m" ${p.genero==='f'?'':'selected'}>Masculino</option><option value="f" ${p.genero==='f'?'selected':''}>Feminino</option></select></div>
       <div class="grid2">
         <div class="field"><label>Peso (kg)</label><input id="pfPeso" type="text" inputmode="decimal" value="${fmtPeso(p.peso)}"></div>
         <div class="field"><label>Altura (cm ou m)</label><input id="pfAltura" type="text" inputmode="decimal" value="${p.altura??''}" placeholder="176 ou 1,76"></div>
@@ -2270,14 +2315,15 @@ function renderPerfilConta(){
     const err=$('#pfErr'); const nome=$('#pfNome').value.trim();
     const username=$('#pfUser').value.trim().toLowerCase().replace(/\s+/g,'_');
     const dataNasc=$('#pfNasc').value; const idade=idadeDe(dataNasc); const peso=parsePeso($('#pfPeso').value); const altura=parseAltura($('#pfAltura').value);
+    const genero=$('#pfGenero')?.value||p.genero||'m';
     if(!nome) return err.textContent='Nome de guerra vazio.';
     if(!/^[a-z0-9_]{3,20}$/.test(username)) return err.textContent='Username inválido.';
     if(!dataNasc || idade==null || idade<5 || idade>100) return err.textContent='Data de nascimento inválida.';
     if(!(peso>0)) return err.textContent='Peso inválido (ex: 89,50).';
     if(!(altura>0)) return err.textContent='Altura inválida (ex: 176 ou 1,76).';
     try{
-      await api('/perfil',{method:'PATCH',body:{ nomeGuerra:nome, username, idade, dataNasc, pesoKg:peso, alturaCm:altura, metaAgua:Math.round(peso*35) }});
-      p.nome=nome; p.username=username; p.idade=idade; p.dataNasc=dataNasc; p.peso=peso; p.altura=altura; p.metaAgua=Math.round(peso*35); currentUser=username;
+      await api('/perfil',{method:'PATCH',body:{ nomeGuerra:nome, username, idade, dataNasc, genero, pesoKg:peso, alturaCm:altura, metaAgua:Math.round(peso*35) }});
+      p.nome=nome; p.username=username; p.idade=idade; p.dataNasc=dataNasc; p.genero=genero; p.peso=peso; p.altura=altura; p.metaAgua=Math.round(peso*35); currentUser=username;
       err.textContent=''; toast('Dados atualizados.'); renderPerfil();
     }catch(e){ err.textContent = e.status===409 ? 'Esse username já existe.' : (e.data?.erro||'Falha ao salvar.'); }
   };
@@ -2297,11 +2343,64 @@ function renderPerfilConfig(){
       <div class="h">Notificações & Modo Try Hard</div>
       <label class="rowitem"><input type="checkbox" id="cfNotif" ${c.notif?'checked':''} style="width:24px;height:24px"><div class="txt"><div class="t">Permitir notificações</div><div class="s">Lembretes no horário dos hábitos.</div></div></label>
       <label class="rowitem"><input type="checkbox" id="cfTry" ${c.tryHard?'checked':''} style="width:24px;height:24px"><div class="txt"><div class="t">Modo Try Hard 🔥</div><div class="s">Aqui o bicho pega: o app floda notificação e alarme SEM PARAR até você cumprir. Desligado, ele ainda cobra — só que na metade da intensidade.</div></div></label>
+      <div class="rowitem" id="cfTryOpts" style="cursor:pointer"><div class="txt"><div class="t">⚙️ Opções do Try Hard</div><div class="s">Som do alarme, vibração, intervalo, tempo de trégua…</div></div><span class="muted" style="font-size:20px">›</span></div>
+    </div>
+    <div class="card">
+      <div class="h">Conta</div>
+      <div class="rowitem" id="cfEmail" style="cursor:pointer"><div class="txt"><div class="t">✉️ Trocar e-mail</div><div class="s">${esc(S.profile.email||'')}</div></div><span class="muted" style="font-size:20px">›</span></div>
+      <div class="rowitem" id="cfSenha" style="cursor:pointer"><div class="txt"><div class="t">🔑 Trocar senha</div><div class="s">Define uma nova senha.</div></div><span class="muted" style="font-size:20px">›</span></div>
+      <div class="rowitem" id="cfDel" style="cursor:pointer;border-color:color-mix(in srgb,var(--accent) 50%, var(--line))"><div class="txt"><div class="t" style="color:#ff6b6b">🗑️ Excluir minha conta</div><div class="s">Apaga tudo do banco, sem volta. Pede a senha.</div></div><span class="muted" style="font-size:20px">›</span></div>
     </div>`;
   $('#cfEdit').onchange=e=>{ S.config.editMode=e.target.checked; save('config'); toast(e.target.checked?'Modo edição ON':'Modo edição OFF'); };
   $('#cfPriv').onchange=async e=>{ S.profile.privado=e.target.checked; try{ await api('/perfil',{method:'PATCH',body:{privado:e.target.checked}}); toast(e.target.checked?'Perfil agora é privado.':'Perfil agora é público.'); }catch(err){ toast('Falha ao salvar.'); } };
   $('#cfNotif').onchange=async e=>{ S.config.notif=e.target.checked; save('config'); if(e.target.checked && 'Notification' in window){ const perm=await Notification.requestPermission(); if(perm!=='granted'){ toast('Permissão de notificação negada no navegador.'); } else { subscribePush(); toast('Notificações ligadas — chegam até com o app fechado.'); } } };
   $('#cfTry').onchange=e=>{ S.config.tryHard=e.target.checked; save('config'); startTryHard(); };
+  $('#cfTryOpts').onclick=tryHardOpcoesSheet;
+  $('#cfEmail').onclick=trocarEmailSheet;
+  $('#cfSenha').onclick=trocarSenhaSheet;
+  $('#cfDel').onclick=excluirContaSheet;
+}
+function trocarEmailSheet(){
+  openSheet(`<h3>Trocar e-mail</h3>
+    <p class="small muted">Atual: ${esc(S.profile.email||'')}</p>
+    <div class="field"><label>Novo e-mail</label><input id="teEmail" type="email" placeholder="novo@gmail.com"></div>
+    <div class="field"><label>Sua senha (confirmação)</label><input id="teSenha" type="password" placeholder="••••••••"></div>
+    <div class="err" id="teErr"></div>
+    <button class="btn" id="teSalvar">Salvar novo e-mail</button>`);
+  $('#teSalvar').onclick=async()=>{
+    const novoEmail=$('#teEmail').value.trim().toLowerCase(), senha=$('#teSenha').value;
+    if(!validEmail(novoEmail)) return $('#teErr').textContent='E-mail inválido.';
+    if(!senha) return $('#teErr').textContent='Confirme com sua senha.';
+    try{ const r=await api('/auth/trocar-email',{method:'POST',body:{novoEmail,senha}}); S.profile.email=r.email; closeSheet(); toast('E-mail atualizado.'); renderPerfil(); }
+    catch(e){ $('#teErr').textContent = e.status===401?'Senha incorreta.' : e.status===409?'Esse e-mail já está em uso.' : (e.data?.erro||'Falha.'); }
+  };
+}
+function trocarSenhaSheet(){
+  openSheet(`<h3>Trocar senha</h3>
+    <p class="small muted">Isso te desconecta dos outros aparelhos por segurança.</p>
+    <div class="field"><label>Senha atual</label><input id="tsAtual" type="password" placeholder="••••••••"></div>
+    <div class="field"><label>Nova senha</label><input id="tsNova" type="password" placeholder="mínimo 6"></div>
+    <div class="err" id="tsErr"></div>
+    <button class="btn" id="tsSalvar">Salvar nova senha</button>`);
+  $('#tsSalvar').onclick=async()=>{
+    const atual=$('#tsAtual').value, nova=$('#tsNova').value;
+    if(nova.length<6) return $('#tsErr').textContent='Nova senha muito curta (mínimo 6).';
+    try{ await api('/auth/trocar-senha',{method:'POST',body:{senhaAtual:atual, novaSenha:nova}}); closeSheet(); toast('Senha atualizada.'); }
+    catch(e){ $('#tsErr').textContent = e.status===401?'Senha atual incorreta.':(e.data?.erro||'Falha ao trocar a senha.'); }
+  };
+}
+function excluirContaSheet(){
+  openSheet(`<h3 style="color:#ff6b6b">Excluir conta</h3>
+    <p class="small">Isso apaga <b>TUDO</b>: perfil, treinos, estudos, posts, mensagens, seguidores — sem volta. Digite sua senha pra confirmar.</p>
+    <div class="field"><label>Senha</label><input id="dcSenha" type="password" placeholder="••••••••"></div>
+    <div class="err" id="dcErr"></div>
+    <button class="btn" id="dcConfirm" style="background:linear-gradient(135deg,#b3241f,#e0342b)">Apagar minha conta pra sempre</button>`);
+  $('#dcConfirm').onclick=async()=>{
+    const senha=$('#dcSenha').value;
+    if(!senha) return $('#dcErr').textContent='Digite a senha.';
+    try{ await api('/auth/conta',{method:'DELETE',body:{senha}}); toast('Conta excluída. Até mais, recruta.'); setToken(null); setTimeout(()=>location.reload(),800); }
+    catch(e){ $('#dcErr').textContent = e.status===401?'Senha incorreta.':(e.data?.erro||'Falha ao excluir.'); }
+  };
 }
 function renderPerfilTemas(){
   $('#perfilBody').innerHTML=`<div class="card"><div class="h">${THEMES.length} temas — muda o fundo inteiro</div>
@@ -2318,25 +2417,70 @@ function renderPerfilTemas(){
    NOTIFICAÇÕES / TRY HARD
 ========================================================================= */
 function notify(title,body){ if('Notification' in window && Notification.permission==='granted'){ try{ new Notification(title,{body, icon:'icon-192.png'}); }catch(e){} } }
-function beep(){ try{ const c=new (window.AudioContext||window.webkitAudioContext)(); const o=c.createOscillator(); const g=c.createGain(); o.connect(g); g.connect(c.destination); o.type='square'; o.frequency.value=880; g.gain.value=0.06; o.start(); setTimeout(()=>{o.stop(); c.close();},220); }catch(e){} }
+function tryOpts(){ if(!S.config.tryOpts) S.config.tryOpts={som:'alarme', vibrar:true, intervaloS:20, treguaS:60, somNotif:true}; return S.config.tryOpts; }
+// motor de som (WebAudio) — sons diferentes; 'alarme' é a sirene chata do Try Hard
+let _actx=null; function audioCtx(){ try{ _actx=_actx||new (window.AudioContext||window.webkitAudioContext)(); if(_actx.state==='suspended') _actx.resume(); return _actx; }catch(e){ return null; } }
+function tocarSom(tipo){
+  const c=audioCtx(); if(!c) return;
+  const beeps = tipo==='alarme' ? [ [880,0,.14],[660,.16,.14],[990,.32,.14],[660,.48,.14],[1046,.64,.2] ]
+             : tipo==='sino' ? [ [1318,0,.5] ]
+             : tipo==='sirene' ? [ [700,0,.5],[1100,.25,.5] ]
+             : [ [880,0,.16] ]; // apito
+  const gainV = tipo==='alarme'||tipo==='sirene' ? 0.14 : 0.08;
+  beeps.forEach(([f,t,d])=>{ const o=c.createOscillator(), g=c.createGain(); o.type= tipo==='sino'?'sine':'square'; o.frequency.value=f; g.gain.value=gainV; o.connect(g); g.connect(c.destination); o.start(c.currentTime+t); o.stop(c.currentTime+t+d); });
+}
+function beep(){ tocarSom('apito'); } // compat
+// quanto tempo o usuário está continuamente DENTRO do app (pra dar trégua no Try Hard)
+let _appActiveSince=Date.now();
+document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') _appActiveSince=Date.now(); });
+window.addEventListener('focus',()=>{ _appActiveSince=Date.now(); });
+function segsNoApp(){ return document.visibilityState==='visible' ? (Date.now()-_appActiveSince)/1000 : 0; }
 let _tryTick=0;
 function startTryHard(){
   clearInterval(window._tryTimer);
+  const o=tryOpts();
   window._tryTimer=setInterval(()=>{
     if(!S) return;
     const now=brasiliaNow(); const hhmm=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
-    // lembrete de hábito no horário exato
-    S.rotina.forEach(r=>{ if(r.hora===hhmm && r.done!==todayISO()){ notify('REDZONE — '+r.nome, 'Está no horário. Cumpra agora, recruta.'); if(navigator.vibrate) navigator.vibrate(150); } });
+    // lembrete de hábito no horário exato (alarme vinculado ao horário)
+    S.rotina.forEach(r=>{ if(r.hora===hhmm && r.done!==todayISO()){ notify('REDZONE — '+r.nome, 'Está no horário. Cumpra agora, recruta.'); if(S.config.tryHard||S.config.notif){ tocarSom(o.som); if(o.vibrar&&navigator.vibrate) navigator.vibrate(200); } } });
     const atrasados=S.rotina.filter(r=>r.hora && r.hora<hhmm && r.done!==todayISO());
     if(!atrasados.length) return;
     _tryTick++;
+    // TRÉGUA: se o cara já passou o tempo definido (1 min padrão) dentro do app, para de encher o saco
+    if(S.config.tryHard && segsNoApp() >= (o.treguaS||60)) return;
     if(S.config.tryHard){
       notify('🔥 MODO TRY HARD', TRYHARD[_tryTick%TRYHARD.length]+' ('+atrasados.length+' pendente(s))');
-      beep(); if(navigator.vibrate) navigator.vibrate([220,90,220]);
+      tocarSom(o.som); if(o.vibrar && navigator.vibrate) navigator.vibrate([300,120,300,120,300]);
     } else if(S.config.notif && _tryTick%3===0){   // normal: cobra ~50% (bem mais leve)
       notify('REDZONE', COBRANCA[_tryTick%COBRANCA.length]+' ('+atrasados.length+' pendente(s))');
+      if(o.somNotif) tocarSom('apito');
     }
-  }, 20000);
+  }, Math.max(5,(o.intervaloS||20))*1000);
+}
+function tryHardOpcoesSheet(){
+  const o=tryOpts();
+  openSheet(`<h3>⚙️ Opções do Try Hard</h3>
+    <p class="small muted">Aqui o bicho pega. Ajuste como o app te cobra.</p>
+    <div class="field"><label>Som do alarme <button class="btn sm ghost" id="thTest" style="margin-left:8px">▶ testar</button></label>
+      <select id="thSom">
+        <option value="alarme" ${o.som==='alarme'?'selected':''}>Alarme (sirene chata)</option>
+        <option value="sirene" ${o.som==='sirene'?'selected':''}>Sirene</option>
+        <option value="apito" ${o.som==='apito'?'selected':''}>Apito curto</option>
+        <option value="sino" ${o.som==='sino'?'selected':''}>Sino</option>
+      </select></div>
+    <label class="rowitem" style="cursor:pointer"><input type="checkbox" id="thVibrar" ${o.vibrar!==false?'checked':''} style="width:22px;height:22px"><div class="txt"><div class="t">Vibrar junto</div></div></label>
+    <label class="rowitem" style="cursor:pointer"><input type="checkbox" id="thSomNotif" ${o.somNotif!==false?'checked':''} style="width:22px;height:22px"><div class="txt"><div class="t">Som em toda notificação</div><div class="s">No Try Hard fica mais insuportável.</div></div></label>
+    <div class="field"><label>Intervalo da cobrança: <b id="thIntLbl">${o.intervaloS||20}s</b></label>
+      <input id="thInt" type="range" min="5" max="120" step="5" value="${o.intervaloS||20}" style="width:100%"></div>
+    <div class="field"><label>Trégua depois de <b id="thTregLbl">${o.treguaS||60}s</b> no app</label>
+      <input id="thTreg" type="range" min="30" max="300" step="15" value="${o.treguaS||60}" style="width:100%">
+      <div class="s muted" style="font-size:12px">Passou esse tempo dentro do app (estudando/treinando), ele te dá um tempo.</div></div>
+    <button class="btn" id="thSalvar">Salvar opções</button>`);
+  $('#thInt').oninput=e=>$('#thIntLbl').textContent=e.target.value+'s';
+  $('#thTreg').oninput=e=>$('#thTregLbl').textContent=e.target.value+'s';
+  $('#thTest').onclick=(e)=>{ e.preventDefault(); tocarSom($('#thSom').value); };
+  $('#thSalvar').onclick=()=>{ S.config.tryOpts={ som:$('#thSom').value, vibrar:$('#thVibrar').checked, somNotif:$('#thSomNotif').checked, intervaloS:+$('#thInt').value, treguaS:+$('#thTreg').value }; save('config'); startTryHard(); closeSheet(); toast('Opções salvas.'); };
 }
 
 /* =========================================================================
@@ -2346,6 +2490,19 @@ function openSheet(html){ $('#sheet').innerHTML=`<button class="sheet-close" onc
 function closeSheet(){ $('#overlay').classList.remove('show'); }
 $('#overlay').addEventListener('click',e=>{ if(e.target.id==='overlay') closeSheet(); });
 window.closeSheet=closeSheet;
+/* ENTER global: confirma/envia. Em <input> dentro de um sheet, dispara o botão principal.
+   Em textarea, Enter pula linha (Ctrl/Cmd+Enter confirma). Login/cadastro têm o próprio. */
+document.addEventListener('keydown', (e)=>{
+  if(e.key!=='Enter' || e.isComposing) return;
+  const t=e.target; if(!t) return;
+  const inSheet = $('#overlay').classList.contains('show') && $('#sheet') && $('#sheet').contains(t);
+  const primary = ()=> $('#sheet') && ($('#sheet').querySelector('.btn:not(.ghost)') || $('#sheet').querySelector('.btn'));
+  if(t.tagName==='TEXTAREA'){
+    if((e.ctrlKey||e.metaKey) && inSheet){ const b=primary(); if(b){ e.preventDefault(); b.click(); } }
+    return; // Enter normal = quebra de linha
+  }
+  if(t.tagName==='INPUT' && inSheet && !e.shiftKey){ const b=primary(); if(b){ e.preventDefault(); b.click(); } }
+});
 
 /* =========================================================================
    TEMPO REAL (Socket.io) — feed/ranking ao vivo
@@ -2404,6 +2561,8 @@ async function subscribePush(){
     try{ await enterApp(); }
     catch(e){ setToken(null); $('#auth').classList.remove('hidden'); renderAuth(); }
   } else { $('#auth').classList.remove('hidden'); renderAuth(); }
+  // link de reset de senha (#reset=token) — funciona logado ou não
+  try{ const h=location.hash||''; if(h.includes('reset=')){ const t=new URLSearchParams(h.slice(1)).get('reset'); if(t) resetarSenhaSheet(t); } }catch(e){}
   // registra service worker (só funciona em https/host real; ignora falha local)
   if('serviceWorker' in navigator){
     navigator.serviceWorker.register('service-worker.js').catch(()=>{});

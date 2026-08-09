@@ -12,6 +12,7 @@ const editSchema = z.object({
   username: z.string().regex(/^[a-z0-9_]{3,20}$/).optional(),
   idade: z.number().int().min(5).max(100).optional(),
   dataNasc: z.string().nullable().optional(),
+  genero: z.enum(['m', 'f']).nullable().optional(),
   pesoKg: z.number().min(1).max(500).optional(),
   alturaCm: z.number().int().min(50).max(260).optional(),
   fotoUrl: z.string().nullable().optional(),

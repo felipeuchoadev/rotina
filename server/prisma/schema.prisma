@@ -22,6 +22,9 @@ model Usuario {
   fotoUrl    String?  // dataURL ou URL de upload
   idade      Int?
   dataNasc   DateTime?
+  genero     String?  // 'm' | 'f' — define avatar padrão
+  resetToken String?  // reset de senha por e-mail (hash do token)
+  resetExp   DateTime?
   pesoKg     Float?
   alturaCm   Int?
   metaAgua   Int      @default(2500)
