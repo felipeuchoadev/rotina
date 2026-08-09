@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>DISCIPLINA — treino, estudo e rotina rumo à ESA</title>
+<title>REDZONE — treino, estudo e rotina rumo à ESA</title>
 <meta name="description" content="App de disciplina militar: treinos, estudos, alimentação, rotina, rede social de constância e lembretes. Instale no celular, tablet, desktop ou TV.">
 <meta name="theme-color" content="#0a0a0d">
 <link rel="manifest" href="manifest.json">
@@ -85,8 +85,8 @@
 <body>
 
   <header class="hero">
-    <img class="logo" src="logo-esa.png" alt="DISCIPLINA">
-    <div class="brand cond">DISCI<span class="hot">PLINA</span></div>
+    <img class="logo" src="redzone-logo.png" alt="REDZONE" style="border-radius:22px">
+    <div class="brand cond">RED<span class="hot">ZONE</span></div>
     <p class="tagline">Treino, estudo, alimentação e rotina num app só. Disciplina de quartel na palma da mão — rumo à Escola de Sargentos das Armas.</p>
     <div class="cta">
       <button class="btn" id="instalar">📲 Instalar o app</button>
@@ -158,17 +158,17 @@
   </section>
 
   <footer>
-    DISCIPLINA · app de treino, estudo e rotina rumo à ESA · feito com disciplina.
+    REDZONE · app de treino, estudo e rotina rumo à ESA · feito com disciplina.
   </footer>
 
   <div class="modal" id="instModal">
     <div class="box">
-      <h3 class="cond">Instalar o DISCIPLINA</h3>
+      <h3 class="cond">Instalar o REDZONE</h3>
       <p style="color:var(--muted);font-size:14.5px">Seu navegador não abriu o instalador automático. É rápido no manual:</p>
       <ol>
         <li><b>Android (Chrome):</b> menu ⋮ → “Adicionar à tela inicial” / “Instalar app”.</li>
         <li><b>iPhone (Safari):</b> botão Compartilhar → “Adicionar à Tela de Início”.</li>
-        <li><b>Desktop (Chrome/Edge):</b> ícone de instalar na barra de endereço, ou menu → “Instalar DISCIPLINA”.</li>
+        <li><b>Desktop (Chrome/Edge):</b> ícone de instalar na barra de endereço, ou menu → “Instalar REDZONE”.</li>
       </ol>
       <button class="btn" id="modalOk">Entendi</button>
     </div>
@@ -189,7 +189,7 @@
     e.preventDefault(); deferredPrompt = e;
     if (hint) hint.textContent = 'Pronto pra instalar no seu aparelho. Toque em “Instalar o app”.';
   });
-  window.addEventListener('appinstalled', () => { if (hint) hint.textContent = '✅ Instalado! Abra o DISCIPLINA pela tela inicial.'; });
+  window.addEventListener('appinstalled', () => { if (hint) hint.textContent = '✅ Instalado! Abra o REDZONE pela tela inicial.'; });
 
   const modal = document.getElementById('instModal');
   function instalar() {
