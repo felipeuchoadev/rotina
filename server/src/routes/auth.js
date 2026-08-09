@@ -75,7 +75,7 @@ function publico(u) {
   return {
     id: u.id, email: u.email, username: u.username, nomeGuerra: u.nomeGuerra,
     fotoUrl: u.fotoUrl, idade: u.idade, pesoKg: u.pesoKg, alturaCm: u.alturaCm,
-    metaAgua: u.metaAgua, tema: u.tema, xp: u.xp, criadoEm: u.criadoEm,
+    metaAgua: u.metaAgua, tema: u.tema, xp: u.xp, privado: u.privado, criadoEm: u.criadoEm,
   };
 }
 export { publico };

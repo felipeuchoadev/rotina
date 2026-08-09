@@ -17,6 +17,7 @@ const editSchema = z.object({
   tema: z.string().max(30).optional(),
   xp: z.number().int().min(0).optional(),        // XP auto-reportado (ranking)
   metaAgua: z.number().int().min(500).max(8000).optional(),
+  privado: z.boolean().optional(),
 });
 
 perfilRouter.patch('/', async (req, res) => {

@@ -26,14 +26,56 @@ model Usuario {
   metaAgua   Int      @default(2500)
   tema       String   @default("red")
   xp         Int      @default(0) // auto-reportado pelo cliente, usado no ranking
+  privado    Boolean  @default(false)
   criadoEm   DateTime @default(now())
 
   states      UserState[]
   posts       FeedPost[]
   likes       FeedLike[]
   comentarios FeedComment[]
+  seguindo    Follow[]      @relation("seguidor")
+  seguidores  Follow[]      @relation("seguido")
+  bloqueados  Block[]       @relation("bloqueador")
+  bloqueadoPor Block[]      @relation("bloqueado")
+  notificacoes Notificacao[] @relation("destinatario")
 
   @@map("usuarios")
+}
+
+model Follow {
+  seguidor    Usuario  @relation("seguidor", fields: [seguidorId], references: [id], onDelete: Cascade)
+  seguidorId  String
+  seguido     Usuario  @relation("seguido", fields: [seguidoId], references: [id], onDelete: Cascade)
+  seguidoId   String
+  criadoEm    DateTime @default(now())
+
+  @@id([seguidorId, seguidoId])
+  @@map("follows")
+}
+
+model Block {
+  bloqueador   Usuario  @relation("bloqueador", fields: [usuarioId], references: [id], onDelete: Cascade)
+  usuarioId    String
+  bloqueado    Usuario  @relation("bloqueado", fields: [bloqueadoId], references: [id], onDelete: Cascade)
+  bloqueadoId  String
+  criadoEm     DateTime @default(now())
+
+  @@id([usuarioId, bloqueadoId])
+  @@map("blocks")
+}
+
+model Notificacao {
+  id           Int      @id @default(autoincrement())
+  destinatario Usuario  @relation("destinatario", fields: [usuarioId], references: [id], onDelete: Cascade)
+  usuarioId    String
+  tipo         String   // 'seguidor' | 'curtida' | 'comentario' | 'aviso'
+  texto        String
+  deUsername   String?
+  lida         Boolean  @default(false)
+  criadoEm     DateTime @default(now())
+
+  @@index([usuarioId, lida])
+  @@map("notificacoes")
 }
 
 // Blobs de dados pessoais do usuário (treino, estudo, alimentação, rotina, config…)
@@ -55,6 +97,7 @@ model FeedPost {
   texto       String?
   midiaUrl    String?
   midiaTipo   String?
+  comentariosOff Boolean    @default(false)
   criadoEm    DateTime      @default(now())
   likes       FeedLike[]
   comentarios FeedComment[]
