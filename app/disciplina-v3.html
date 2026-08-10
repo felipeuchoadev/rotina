@@ -769,6 +769,7 @@ async function loadUserData(){
     estudoLogs:     g('estudo:logs', []),
     alimSemana:     g('alim:semana', DEFAULT_TREINO_TEMPLATE()),
     pesos:          g('alim:pesos', []),
+    alimHist:       g('alim:hist', {ref:null, hist:[]}),   // análises semanais arquivadas
     agua:           g('alim:agua', {}),
     rotina:         g('rotina', []),
     rotinaHist:     g('rotina:hist', {}),
@@ -789,7 +790,7 @@ async function saveProfile(){
   catch(e){ console.error(e); }
 }
 async function save(k){ await Store.set(k, S[cameMap(k)]); }
-function cameMap(k){ return ({'treino:tpl':'treinoTemplate','treino:weeks':'treinoWeeks','treino:logs':'treinoLogs','treino:recordes':'recordes','estudo:materias':'materias','estudo:semana':'estudoSemana','estudo:logs':'estudoLogs','alim:semana':'alimSemana','alim:pesos':'pesos','alim:agua':'agua','rotina':'rotina','rotina:hist':'rotinaHist','rotina:plano':'rotinaPlano','rotina:dias':'rotinaDias','config':'config','datas':'datas','recordacoes':'recordacoes'})[k]; }
+function cameMap(k){ return ({'treino:tpl':'treinoTemplate','treino:weeks':'treinoWeeks','treino:logs':'treinoLogs','treino:recordes':'recordes','estudo:materias':'materias','estudo:semana':'estudoSemana','estudo:logs':'estudoLogs','alim:semana':'alimSemana','alim:pesos':'pesos','alim:agua':'agua','alim:hist':'alimHist','rotina':'rotina','rotina:hist':'rotinaHist','rotina:plano':'rotinaPlano','rotina:dias':'rotinaDias','config':'config','datas':'datas','recordacoes':'recordacoes'})[k]; }
 
 /* XP total do usuário = soma de logs + bônus, menos punições. Recalcula. */
 function computeXP(){
@@ -1967,17 +1968,44 @@ function renderRelatorio(elId, tipo){
    ALIMENTAÇÃO
 ========================================================================= */
 let alimDiaSel = DIAS[(new Date().getDay()+6)%7];
+let alimPrecisaFechar=false;
+function weekLabel(iso){ const s=new Date(iso+'T00:00:00'); const e=new Date(s); e.setDate(e.getDate()+6); return `${s.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})}–${e.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})}`; }
+function analiseAlimAtual(){ let bom=0,ruim=0,neutro=0,total=0; DIAS.forEach(d=>(S.alimSemana[d]||[]).forEach(r=>{ total++; const q=qualidadeAuto(r); if(q==='bom')bom++; else if(q==='ruim')ruim++; else neutro++; })); return {total,bom,ruim,neutro,pctBom:total?Math.round(bom/total*100):0,pctRuim:total?Math.round(ruim/total*100):0}; }
+function checarSemanaAlim(){ const wk=weekStartISO(); if(!S.alimHist) S.alimHist={ref:null,hist:[]};
+  if(!S.alimHist.ref){ S.alimHist.ref=wk; save('alim:hist'); alimPrecisaFechar=false; return; }
+  alimPrecisaFechar = (S.alimHist.ref!==wk) && (analiseAlimAtual().total>0);
+}
+function fecharSemanaAlim(){
+  const a=analiseAlimAtual();
+  openSheet(`<h3>Fechar a semana</h3>
+    <p class="small muted">Vou guardar a análise dessa semana no gráfico e <b>zerar as refeições</b> pra você registrar a próxima do zero.</p>
+    <div class="card"><p style="margin:0">Semana: <b>${a.total}</b> refeições · <b style="color:var(--ok)">${a.pctBom}%</b> saudáveis · <b style="color:#ff6b6b">${a.pctRuim}%</b> ruins</p></div>
+    <button class="btn" id="fsConfirm">Fechar semana e começar nova</button>`);
+  $('#fsConfirm').onclick=async()=>{
+    if(a.total>0) S.alimHist.hist.push({weekStartISO:(S.alimHist.ref||weekStartISO()), ...a});
+    S.alimSemana=DEFAULT_TREINO_TEMPLATE(); S.alimHist.ref=weekStartISO(); alimPrecisaFechar=false;
+    await save('alim:semana'); await save('alim:hist'); closeSheet(); toast('Semana fechada. Bora pra próxima!'); renderAlimentacao();
+  };
+}
 function renderAlimentacao(){
   const edit=S.config.editMode; const p=S.profile;
   const aguaHoje=S.agua[todayISO()]||0;
+  checarSemanaAlim();
   $('#scr-alimentacao').innerHTML=`
     ${topbar('ALIMENTAÇÃO')}
-    <h2 class="section-title">Refeições da semana</h2>
+    ${alimPrecisaFechar?`<div class="card" style="border-color:var(--accent)"><div class="h">📅 Semana nova começou</div><p class="small" style="margin:0 0 10px">Feche a semana ${weekLabel(S.alimHist.ref)} pra guardar a análise no gráfico e zerar as refeições.</p><button class="btn sm" id="fecharSemBtn">Fechar semana passada</button></div>`:''}
+    <div style="display:flex;justify-content:space-between;align-items:center;margin:4px 2px">
+      <h2 class="section-title" style="margin:0">Refeições da semana</h2>
+      <button class="btn sm ghost" id="finSemBtn" style="padding:6px 11px">Finalizar semana</button>
+    </div>
     <div class="days" id="alimDays">${DIAS.map(d=>dayChip(d,alimDiaSel)).join('')}</div>
     <div id="alimDia"></div>
 
     <h2 class="section-title">Análise da semana</h2>
     <div id="alimAnalise"></div>
+
+    <h2 class="section-title">Evolução alimentar (por semana)</h2>
+    <div id="alimHistGraf"></div>
 
     <h2 class="section-title">Meta de água</h2>
     <div class="card">
@@ -2017,8 +2045,19 @@ function renderAlimentacao(){
   $('#aguaMenos').onclick=()=>{ const q=qtd(); if(!(q>0)) return toast('Digite a quantidade em ml.'); setAgua(cur()-q); };
   $('#aguaDefinir').onclick=()=>{ const q=qtd(); if(!(q>=0)) return toast('Digite a quantidade em ml.'); setAgua(q); };
   $('#aguaZerar').onclick=()=>{ delete S.agua[todayISO()]; save('alim:agua'); toast('Água de hoje zerada.'); renderAlimentacao(); };
+  if($('#finSemBtn')) $('#finSemBtn').onclick=fecharSemanaAlim;
+  if($('#fecharSemBtn')) $('#fecharSemBtn').onclick=fecharSemanaAlim;
   renderAlimDia(); renderAlimAnalise(); renderAlimPeso();
-  renderAlimRelatorio();
+  renderAlimHistGrafico(); renderAlimRelatorio();
+}
+function renderAlimHistGrafico(){
+  const box=$('#alimHistGraf'); if(!box) return;
+  const hist=(S.alimHist&&S.alimHist.hist)||[];
+  if(!hist.length){ box.innerHTML='<p class="muted small">Feche sua primeira semana pra começar o histórico de alimentação saudável × ruim.</p>'; return; }
+  const ult=hist.slice(-10);
+  box.innerHTML=`<div class="card"><div class="h">% de refeições saudáveis por semana</div>
+    <div class="report-bars" style="height:130px">${ult.map(w=>`<div class="bar" style="height:${Math.round((w.pctBom||0)/100*110)+3}px;background:linear-gradient(180deg,var(--ok),#1f9e57)"><b>${w.pctBom||0}%</b><span>${weekLabel(w.weekStartISO)}</span></div>`).join('')}</div>
+    <p class="small muted" style="margin-top:20px">${ult.length} semana(s) registrada(s). Cada barra = quanto da semana foi saudável.</p></div>`;
 }
 function renderAlimDia(){
   const edit=S.config.editMode;
