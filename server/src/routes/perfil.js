@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '../lib/db.js';
 import { exigirAuth } from '../lib/auth.js';
 import { publico } from './auth.js';
+import { emitToUser } from '../realtime.js';
 
 export const perfilRouter = Router();
 perfilRouter.use(exigirAuth);
@@ -37,6 +38,8 @@ perfilRouter.patch('/', async (req, res) => {
   if (d.pesoKg != null) data.metaAgua = Math.round(d.pesoKg * 35);
 
   const usuario = await prisma.usuario.update({ where: { id: req.userId }, data });
+  // sync ao vivo do perfil (nome/foto/tema/etc.) nos outros aparelhos do usuário
+  emitToUser(req.userId, 'profile:changed', { usuario: publico(usuario), src: req.body?.clientId || null });
   res.json({ usuario: publico(usuario) });
 });
 

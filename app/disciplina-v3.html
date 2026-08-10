@@ -562,20 +562,34 @@ async function flushQueue(){
 }
 window.addEventListener('online', ()=>{ flushQueue(); });
 
+/* id único DESTE aparelho/aba — usado pra não ecoar de volta a própria escrita no sync ao vivo */
+const CLIENT_ID = (Math.random().toString(36).slice(2)+'-'+Date.now().toString(36));
+// evita re-render que rouba o foco enquanto a pessoa digita (o dado já foi aplicado em S de qualquer forma)
+function _syncPodeRender(){ const a=document.activeElement; return !(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||'')); }
 /* ---------- STORE: dados pessoais por usuário (backend + offline) ---------- */
 const Store = {
   async get(key){ try{ return await api('/state/'+encodeURIComponent(key)); }catch(e){ return null; } },
   async set(key,val){
     try{ localStorage.setItem('disc:local:'+key, JSON.stringify(val)); }catch{}   // espelho local
-    try{ await api('/state/'+encodeURIComponent(key),{method:'PUT',body:{valor:val}}); return true; }
+    try{ await api('/state/'+encodeURIComponent(key),{method:'PUT',body:{valor:val, clientId:CLIENT_ID}}); return true; }
     catch(e){
       const q=offQueue().filter(i=>i.chave!==key); q.push({chave:key, valor:val}); setQueue(q);  // enfileira (última escrita vence)
       toast('📴 Offline — salvo no aparelho, sincroniza quando a internet voltar.');
       return true;
     }
   },
-  async del(key){ try{ await api('/state/'+encodeURIComponent(key),{method:'DELETE'}); }catch(e){} },
+  async del(key){ try{ await api('/state/'+encodeURIComponent(key)+'?src='+encodeURIComponent(CLIENT_ID),{method:'DELETE'}); }catch(e){} },
 };
+// aplica uma mudança de estado vinda de OUTRO aparelho do mesmo usuário (sync ao vivo)
+function applyRemoteState(chave, valor){
+  if(!S) return; const prop=cameMap(chave); if(!prop) return;
+  if(valor===null || valor===undefined) return;   // delete: ignora (raro; próximo load resolve)
+  S[prop]=valor;
+  try{ localStorage.setItem('disc:local:'+chave, JSON.stringify(valor)); }catch{}
+  // atualiza o cache do estado completo pra ficar consistente offline
+  try{ const c=JSON.parse(localStorage.getItem('disc:cache:st')||'{}'); c[chave]=valor; localStorage.setItem('disc:cache:st', JSON.stringify(c)); }catch{}
+  if(activeTab && _syncPodeRender()){ try{ go(activeTab); }catch(e){} }
+}
 
 /* ---------- HELPERS ---------- */
 const $ = (s,root=document)=>root.querySelector(s);
@@ -829,8 +843,26 @@ async function loadUserData(){
 async function saveProfile(){
   const p=S.profile;
   try{ await api('/perfil',{method:'PATCH',body:{ nomeGuerra:p.nome, username:p.username, idade:p.idade,
-    pesoKg:p.peso, alturaCm:p.altura, fotoUrl:p.foto, tema:p.tema, metaAgua:p.metaAgua, xp:computeXP() }}); }
+    pesoKg:p.peso, alturaCm:p.altura, fotoUrl:p.foto, tema:p.tema, metaAgua:p.metaAgua, xp:computeXP(), clientId:CLIENT_ID }}); }
   catch(e){ console.error(e); }
+}
+// aplica mudança de PERFIL vinda de outro aparelho (nome/foto/tema/gênero…) — sync ao vivo
+function applyRemoteProfile(u){
+  if(!S||!u) return;
+  const before=JSON.stringify(S.profile);
+  S.profile.nome=u.nomeGuerra ?? S.profile.nome;
+  S.profile.username=u.username ?? S.profile.username;
+  S.profile.foto=(u.fotoUrl!==undefined)?u.fotoUrl:S.profile.foto;
+  S.profile.genero=u.genero ?? S.profile.genero;
+  S.profile.tema=u.tema ?? S.profile.tema;
+  S.profile.peso=u.pesoKg ?? S.profile.peso;
+  S.profile.altura=u.alturaCm ?? S.profile.altura;
+  S.profile.metaAgua=u.metaAgua ?? S.profile.metaAgua;
+  S.profile.privado=(u.privado!==undefined)?u.privado:S.profile.privado;
+  if(JSON.stringify(S.profile)===before) return;   // nada mudou de verdade
+  applyTheme(S.profile.tema||'red');
+  try{ const c=JSON.parse(localStorage.getItem('disc:cache:me')||'{}'); if(c.usuario){ c.usuario={...c.usuario, ...u}; localStorage.setItem('disc:cache:me', JSON.stringify(c)); } }catch{}
+  if(activeTab && _syncPodeRender()){ try{ go(activeTab); }catch(e){} }
 }
 async function save(k){ await Store.set(k, S[cameMap(k)]); }
 function cameMap(k){ return ({'treino:tpl':'treinoTemplate','treino:weeks':'treinoWeeks','treino:logs':'treinoLogs','treino:recordes':'recordes','estudo:materias':'materias','estudo:semana':'estudoSemana','estudo:logs':'estudoLogs','alim:semana':'alimSemana','alim:pesos':'pesos','alim:agua':'agua','alim:hist':'alimHist','rotina':'rotina','rotina:hist':'rotinaHist','rotina:plano':'rotinaPlano','rotina:dias':'rotinaDias','config':'config','datas':'datas','recordacoes':'recordacoes'})[k]; }
@@ -3331,6 +3363,9 @@ function connectSocket(){
     _socket.on('post:novo', refresh);
     _socket.on('post:like', refresh);
     _socket.on('post:comentario', refresh);
+    // SYNC AO VIVO ponta a ponta: mudou num aparelho → reflete nos outros na hora (sem F5)
+    _socket.on('state:changed', (d)=>{ if(!d || d.src===CLIENT_ID) return; applyRemoteState(d.chave, d.valor); });
+    _socket.on('profile:changed', (d)=>{ if(!d || d.src===CLIENT_ID) return; applyRemoteProfile(d.usuario); });
     _socket.on('dm:nova', (m)=>{
       const nome=m.de?.nomeGuerra||'Alguém';
       if(_chatUser && m.de && m.de.username===_chatUser && $('#chatMsgs')){

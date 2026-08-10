@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { prisma } from '../lib/db.js';
 import { exigirAuth } from '../lib/auth.js';
+import { emitToUser } from '../realtime.js';
 
 // Armazenamento chave-valor por usuário (dados pessoais do app).
 export const stateRouter = Router();
@@ -30,11 +31,14 @@ stateRouter.put('/:chave', async (req, res) => {
     update: { valor },
     create: { usuarioId: req.userId, chave: req.params.chave, valor },
   });
+  // sync ao vivo: avisa os OUTROS aparelhos do mesmo usuário (src = quem escreveu, pra não ecoar nele)
+  emitToUser(req.userId, 'state:changed', { chave: req.params.chave, valor, src: req.body?.clientId || null });
   res.json({ ok: true });
 });
 
 stateRouter.delete('/:chave', async (req, res) => {
   await prisma.userState.deleteMany({ where: { usuarioId: req.userId, chave: req.params.chave } });
+  emitToUser(req.userId, 'state:changed', { chave: req.params.chave, valor: null, src: req.query.src || null });
   res.status(204).end();
 });
 
