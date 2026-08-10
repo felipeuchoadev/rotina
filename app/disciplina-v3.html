@@ -300,8 +300,10 @@ textarea.auto{resize:none; overflow:hidden; min-height:48px;}
 .callegend .lok{background:var(--ok);} .callegend .lfail{background:#ff6b6b;} .callegend .lfut{background:var(--line);}
 .callegend .ldot{background:var(--accent); border-radius:50%; width:8px; height:8px;}
 /* Rotina calendário editável: 100% ✅, incompleto vermelho, futuro claro */
-.calc.full{background:color-mix(in srgb,var(--ok) 24%, var(--surface)); color:var(--ok); cursor:pointer;}
-.calc.inc{background:var(--surface); color:#ff6b6b; font-weight:800; cursor:pointer;}
+.calc.full{background:color-mix(in srgb,var(--ok) 24%, var(--surface)); color:var(--ok); cursor:pointer; font-size:16px;}
+.calc.inc{background:color-mix(in srgb,var(--accent) 16%, var(--surface)); color:#ff6b6b; font-weight:800; cursor:pointer; font-size:16px;}
+.calc.futuro.plan{box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--accent) 45%, transparent);}
+.calc.selc{box-shadow:0 0 0 3px var(--accent); background:color-mix(in srgb,var(--accent) 22%, var(--surface)); color:var(--text);}
 .calc[data-caldia]{cursor:pointer;}
 /* Agenda (Início): calendário grande navegável + banner de aniversário */
 .calbig{padding:16px;}
@@ -758,7 +760,8 @@ async function loadUserData(){
     agua:           g('alim:agua', {}),
     rotina:         g('rotina', []),
     rotinaHist:     g('rotina:hist', {}),
-    rotinaPlano:    g('rotina:plano', {dias:{}, padrao:''}),   // plano por dia + padrão
+    rotinaPlano:    g('rotina:plano', {dias:{}, padrao:''}),   // (legado) plano por dia em texto
+    rotinaDias:     g('rotina:dias', {}),   // atividades por dia: {iso:[{id,nome,hora,done}]}
     config:         g('config', {editMode:false, tryHard:false, notif:false}),
     datas:          g('datas', []),   // aniversários + datas importantes
     recordacoes:    g('recordacoes', []),   // memórias: mídia por data (treino/alim/estudo)
@@ -774,7 +777,7 @@ async function saveProfile(){
   catch(e){ console.error(e); }
 }
 async function save(k){ await Store.set(k, S[cameMap(k)]); }
-function cameMap(k){ return ({'treino:tpl':'treinoTemplate','treino:weeks':'treinoWeeks','treino:logs':'treinoLogs','treino:recordes':'recordes','estudo:materias':'materias','estudo:semana':'estudoSemana','estudo:logs':'estudoLogs','alim:semana':'alimSemana','alim:pesos':'pesos','alim:agua':'agua','rotina':'rotina','rotina:hist':'rotinaHist','rotina:plano':'rotinaPlano','config':'config','datas':'datas','recordacoes':'recordacoes'})[k]; }
+function cameMap(k){ return ({'treino:tpl':'treinoTemplate','treino:weeks':'treinoWeeks','treino:logs':'treinoLogs','treino:recordes':'recordes','estudo:materias':'materias','estudo:semana':'estudoSemana','estudo:logs':'estudoLogs','alim:semana':'alimSemana','alim:pesos':'pesos','alim:agua':'agua','rotina':'rotina','rotina:hist':'rotinaHist','rotina:plano':'rotinaPlano','rotina:dias':'rotinaDias','config':'config','datas':'datas','recordacoes':'recordacoes'})[k]; }
 
 /* XP total do usuário = soma de logs + bônus, menos punições. Recalcula. */
 function computeXP(){
@@ -2087,7 +2090,7 @@ function renderAlimPeso(){
 }
 function renderAlimRelatorio(){
   // reaproveita layout de barras: refeições saudáveis por dia da semana
-  const buckets={}; DIAS.forEach(d=>{ const list=S.alimSemana[d]||[]; buckets[DIAS_AB[d]]=list.filter(r=>r.tipo==='bom').length; });
+  const buckets={}; DIAS.forEach(d=>{ const list=S.alimSemana[d]||[]; buckets[DIAS_AB[d]]=list.filter(r=>qualidadeAuto(r)==='bom').length; });
   const max=Math.max(1,...Object.values(buckets));
   $('#alimRel').innerHTML=`<div class="card"><div class="h">Refeições saudáveis por dia</div>
     <div class="report-bars">${DIAS.map(d=>`<div class="bar" style="height:${Math.round(buckets[DIAS_AB[d]]/max*110)+3}px"><b>${buckets[DIAS_AB[d]]}</b><span>${DIAS_AB[d]}</span></div>`).join('')}</div></div>`;
@@ -2096,6 +2099,7 @@ function renderAlimRelatorio(){
 /* =========================================================================
    ROTINA (hábitos com horário + notificação)
 ========================================================================= */
+let rotClearMode=false; let rotClearSel=new Set();
 function renderRotina(){
   const edit=S.config.editMode;
   $('#scr-rotina').innerHTML=`
@@ -2103,13 +2107,29 @@ function renderRotina(){
     <div style="display:flex;justify-content:space-between;align-items:center;margin:4px 2px">
       <h2 class="section-title" style="margin:0">Hábitos diários ${edit?`<button class="btn sm" id="addHabito">＋</button>`:''}</h2>${editToggleHint()}
     </div>
-    <p class="small muted">Marque ✅ ao cumprir. ${edit?'Toque no lápis pra editar.':'Edite só no Modo de Edição (Perfil → Configurações).'}</p>
+    <p class="small muted">Hábitos que se repetem todo dia. Marque ✅ ao cumprir.</p>
     <div class="rotina-wrap">
       <div class="rotina-col"><div id="rotinaList"></div></div>
-      <div class="rotina-cal"><div class="section-title" style="margin-top:0">Calendário</div><div id="rotinaCal"></div></div>
+      <div class="rotina-cal">
+        <div class="section-title" style="margin-top:0;display:flex;align-items:center;justify-content:space-between">
+          <span>Calendário — sua rotina por dia</span>
+          ${edit?`<button class="btn sm ghost" id="rotLimpar" style="padding:6px 10px">${rotClearMode?'✖ cancelar':'🗑️ limpar'}</button>`:''}
+        </div>
+        <p class="small muted" style="margin:0 2px 8px">${edit?(rotClearMode?'Toque nos dias que quer limpar e confirme.':'Toque num dia pra adicionar atividades (com horário opcional) e aplicar a vários dias.'):'Toque num dia pra ver o que tem planejado.'}</p>
+        <div id="rotinaCal"></div>
+      </div>
     </div>`;
   if(edit) $('#addHabito').onclick=()=>editHabitoSheet(null);
+  if(edit && $('#rotLimpar')) $('#rotLimpar').onclick=()=>{ rotClearMode=!rotClearMode; rotClearSel=new Set(); renderRotina(); };
   renderRotinaList(); renderCalendarioRotina();
+}
+// status de um dia: usa atividades por dia; se não houver, cai no histórico de hábitos
+function diaStatusRotina(iso){
+  const acts=(S.rotinaDias&&S.rotinaDias[iso])||[];
+  if(acts.length) return {total:acts.length, done:acts.filter(a=>a.done).length};
+  const h=(S.rotinaHist||{})[iso];
+  if(h && h.total>0) return {total:h.total, done:h.done};
+  return {total:0, done:0};
 }
 function atualizaRotinaHist(){
   const total=S.rotina.length;
@@ -2127,20 +2147,21 @@ function renderCalendarioRotina(){
   const dim=new Date(y,mo+1,0).getDate();
   const hoje=todayISO();
   const nomes=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
-  const hist=S.rotinaHist||{};
-  const plano=S.rotinaPlano||{dias:{},padrao:''};
   let cells='';
   for(let i=0;i<startDow;i++) cells+='<div class="calc empty"></div>';
   for(let d=1; d<=dim; d++){
     const iso=`${y}-${String(mo+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const st=diaStatusRotina(iso);
     let cls, content=d;
-    if(iso>hoje){ cls='futuro'; }                                   // futuro: branco
-    else { const h=hist[iso];
-      if(h && h.total>0 && h.done>=h.total){ cls='full'; content='✅'; }  // 100%: ✅
-      else if(h && h.total>0){ cls='inc'; }                         // passou incompleto: vermelho
-      else { cls='sem'; }                                           // sem dados
+    if(iso>hoje){ cls='futuro'; if(st.total>0) cls+=' plan'; }                 // futuro: cor do tema
+    else if(iso===hoje){ if(st.total>0 && st.done>=st.total){ cls='full'; content='✅'; } else cls='sem'; }
+    else { // passado
+      if(st.total>0 && st.done>=st.total){ cls='full'; content='✅'; }          // 100%: ✅
+      else if(st.total>0){ cls='inc'; content='✕'; }                            // incompleto: X
+      else { cls='sem'; }
     }
     if(iso===hoje) cls+=' hoje';
+    if(rotClearMode && rotClearSel.has(iso)) cls+=' selc';
     cells+=`<div class="calc ${cls}" data-caldia="${iso}">${content}</div>`;
   }
   $('#rotinaCal').innerHTML=`<div class="calbox">
@@ -2151,46 +2172,78 @@ function renderCalendarioRotina(){
     </div>
     <div class="calgrid caldow">${['D','S','T','Q','Q','S','S'].map(x=>`<div class="caldw">${x}</div>`).join('')}</div>
     <div class="calgrid">${cells}</div>
-    <div class="callegend"><span><i class="lok"></i>100% ✅</span><span><i class="lfail"></i>incompleto</span><span><i class="lfut"></i>futuro</span></div>
+    <div class="callegend"><span><i class="lok"></i>tudo feito ✅</span><span><i class="lfail"></i>incompleto ✕</span><span><i class="lfut"></i>futuro</span></div>
+    ${rotClearMode?`<button class="btn" id="rotLimparConfirm" style="margin-top:12px;background:linear-gradient(135deg,#b3241f,#e0342b)">🗑️ Limpar ${rotClearSel.size} dia(s) selecionado(s)</button>`:''}
   </div>`;
   $('#rotPrev').onclick=()=>{ rotCalM--; if(rotCalM<0){ rotCalM=11; rotCalY--; } renderCalendarioRotina(); };
   $('#rotNext').onclick=()=>{ rotCalM++; if(rotCalM>11){ rotCalM=0; rotCalY++; } renderCalendarioRotina(); };
-  $$('#rotinaCal [data-caldia]').forEach(c=>c.onclick=()=>diaRotinaSheet(c.dataset.caldia));
+  $$('#rotinaCal [data-caldia]').forEach(c=>c.onclick=()=>{
+    const iso=c.dataset.caldia;
+    if(rotClearMode){ if(rotClearSel.has(iso)) rotClearSel.delete(iso); else rotClearSel.add(iso); renderCalendarioRotina(); }
+    else diaRotinaSheet(iso);
+  });
+  if(rotClearMode && $('#rotLimparConfirm')) $('#rotLimparConfirm').onclick=async()=>{
+    if(!rotClearSel.size) return toast('Selecione os dias que quer limpar.');
+    if(!S.rotinaDias) S.rotinaDias={};
+    rotClearSel.forEach(iso=>{ delete S.rotinaDias[iso]; });
+    await save('rotina:dias'); const n=rotClearSel.size; rotClearMode=false; rotClearSel=new Set();
+    toast(`${n} dia(s) limpo(s).`); renderRotina();
+  };
 }
-// clicar num dia do calendário: editar plano (hoje/futuro no modo edição) ou visualizar (passado)
+function isoDeData(x){ return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`; }
+// clicar num dia: editar atividades (modo edição) ou visualizar
 function diaRotinaSheet(iso){
   const hoje=todayISO();
-  const past = iso<hoje;
-  const editable = S.config.editMode && iso>=hoje;
-  if(!S.rotinaPlano) S.rotinaPlano={dias:{},padrao:''};
-  const plano=S.rotinaPlano; if(!plano.dias) plano.dias={};
-  const h=(S.rotinaHist||{})[iso];
+  const past=iso<hoje, isToday=iso===hoje;
+  const editable=S.config.editMode;
+  if(!S.rotinaDias) S.rotinaDias={};
+  const acts=[...(S.rotinaDias[iso]||[])].sort((a,b)=>(a.hora||'~').localeCompare(b.hora||'~'));
   const dObj=new Date(iso+'T00:00:00');
   const dataLabel=dObj.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long'});
-  const txtAtual = plano.dias[iso] || (iso>=hoje ? (plano.padrao||'') : '');
-  const cem = h && h.total>0 && h.done>=h.total;
-  const histLine = h && h.total>0 ? `${h.done}/${h.total} hábitos cumpridos${cem?' · dia 100% ✅':''}` : 'Sem registro de hábitos nesse dia.';
-  if(!editable){
-    openSheet(`<h3 style="text-transform:capitalize">${dataLabel}</h3>
-      <p class="small" style="${cem?'color:var(--ok)':'color:var(--text-dim)'}">${histLine}</p>
-      ${txtAtual?`<div class="card"><div class="h">Plano do dia</div><div style="white-space:pre-wrap">${esc(txtAtual)}</div></div>`:'<p class="muted small">Sem plano anotado nesse dia.</p>'}
-      ${past?'<p class="small muted">Dias passados são só pra visualização — não dá pra reescrever o passado, recruta.</p>':(!S.config.editMode?'<p class="small muted">Ative o Modo de Edição (Perfil → Configurações) pra escrever o plano deste dia.</p>':'')}`);
-    return;
+  const st=diaStatusRotina(iso);
+  const podeMarcar = isToday || editable;   // marca ✅ hoje (ou no modo edição)
+  const linhas = acts.length ? acts.map(a=>`<div class="rowitem ${a.done?'done':''}">
+      <div class="chk" data-actchk="${a.id}" style="${podeMarcar?'':'opacity:.5'}">${a.done?'✓':''}</div>
+      <div class="txt"><div class="t">${esc(a.nome)}</div>${a.hora?`<div class="s mono">⏰ ${a.hora}</div>`:''}</div>
+      ${editable?`<button class="pencil" data-actdel="${a.id}">🗑️</button>`:''}
+    </div>`).join('') : `<p class="muted small">Nenhuma atividade nesse dia.${editable?' Adicione abaixo.':''}</p>`;
+  let sheet=`<h3 style="text-transform:capitalize">${dataLabel}</h3>
+    <p class="small" style="${st.total>0&&st.done>=st.total?'color:var(--ok)':'color:var(--text-dim)'}">${st.total>0?`${st.done}/${st.total} atividades${st.done>=st.total?' · dia 100% ✅':''}`:'Sem atividades planejadas.'}</p>
+    ${linhas}`;
+  if(editable){
+    sheet+=`<div class="section-title" style="margin-top:12px">Adicionar atividade</div>
+      <div class="field" style="margin:6px 0"><input id="actNome" placeholder="Ex: Corrida 5km, estudar Português..."></div>
+      <div class="field" style="margin:6px 0"><label>Horário (opcional)</label><input id="actHora" type="time"></div>
+      <button class="btn" id="actAdd">＋ Adicionar</button>
+      ${acts.length?`<div class="section-title" style="margin-top:14px">Repetir essas atividades em</div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap">
+        <button class="btn sm ghost" data-fill="semana">Toda a semana</button>
+        <button class="btn sm ghost" data-fill="mes">Todo o mês</button>
+        <button class="btn sm ghost" data-fill="ano">Todo o ano</button>
+        <button class="btn sm ghost" data-fill="x">Próximos X dias</button>
+      </div>`:''}`;
+  } else if(!isToday){
+    sheet+=`<p class="small muted" style="margin-top:10px">${past?'Dia passado — só visualização.':'Dia futuro — ative o Modo de Edição pra planejar.'}</p>`;
   }
-  openSheet(`<h3 style="text-transform:capitalize">${dataLabel}</h3>
-    <p class="small muted">${histLine}</p>
-    <div class="field"><label>Plano do dia — escreve tudo o que quiser</label>
-      <textarea id="planoTxt" class="auto" style="min-height:120px" placeholder="Ex: 06:00 corrida 5km · 14:00 revisar Português · 20:00 ler 10 páginas...">${esc(txtAtual)}</textarea></div>
-    ${plano.padrao?`<p class="small muted" style="margin-top:6px">📌 Há um <b>padrão</b> ativo pros dias futuros sem plano próprio.</p>`:''}
-    <button class="btn" id="planoSalvar">Salvar plano</button>
-    <button class="btn ghost" id="planoPadrao" style="margin-top:8px">📌 Deixar como padrão (dias futuros)</button>
-    ${plano.padrao?`<button class="btn ghost" id="planoReverter" style="margin-top:8px">↩️ Reverter padrão</button>`:''}
-    ${plano.dias[iso]?`<button class="btn ghost" id="planoLimpar" style="margin-top:8px;color:#e0342b">Limpar este dia</button>`:''}`);
-  const ta=$('#planoTxt'); autoGrow(ta); ta.oninput=()=>autoGrow(ta);
-  $('#planoSalvar').onclick=async()=>{ const v=$('#planoTxt').value.trim(); if(v) plano.dias[iso]=v; else delete plano.dias[iso]; await save('rotina:plano'); closeSheet(); toast('Plano salvo.'); renderCalendarioRotina(); };
-  $('#planoPadrao').onclick=async()=>{ plano.padrao=$('#planoTxt').value.trim(); await save('rotina:plano'); closeSheet(); toast('Padrão definido pros dias futuros.'); renderCalendarioRotina(); };
-  if(plano.padrao) $('#planoReverter').onclick=async()=>{ plano.padrao=''; await save('rotina:plano'); closeSheet(); toast('Padrão removido.'); renderCalendarioRotina(); };
-  if(plano.dias[iso]) $('#planoLimpar').onclick=async()=>{ delete plano.dias[iso]; await save('rotina:plano'); closeSheet(); toast('Plano do dia removido.'); renderCalendarioRotina(); };
+  openSheet(sheet);
+  $$('#sheet [data-actchk]').forEach(b=>b.onclick=()=>{ if(!podeMarcar) return; const a=(S.rotinaDias[iso]||[]).find(x=>x.id===b.dataset.actchk); if(a){ a.done=!a.done; save('rotina:dias'); diaRotinaSheet(iso); renderCalendarioRotina(); } });
+  if(editable){
+    $('#actAdd').onclick=()=>{ const nome=$('#actNome').value.trim(); if(!nome) return toast('Qual a atividade?'); const hora=$('#actHora').value||''; if(!S.rotinaDias[iso]) S.rotinaDias[iso]=[]; S.rotinaDias[iso].push({id:uid(),nome,hora,done:false}); save('rotina:dias'); diaRotinaSheet(iso); renderCalendarioRotina(); };
+    $$('#sheet [data-actdel]').forEach(b=>b.onclick=()=>{ S.rotinaDias[iso]=(S.rotinaDias[iso]||[]).filter(x=>x.id!==b.dataset.actdel); if(!S.rotinaDias[iso].length) delete S.rotinaDias[iso]; save('rotina:dias'); diaRotinaSheet(iso); renderCalendarioRotina(); });
+    $$('#sheet [data-fill]').forEach(b=>b.onclick=()=>aplicarRotinaDias(iso, b.dataset.fill));
+  }
+}
+function aplicarRotinaDias(iso, tipo){
+  const base=(S.rotinaDias[iso]||[]).map(a=>({nome:a.nome,hora:a.hora}));
+  if(!base.length) return toast('Adicione atividades nesse dia primeiro.');
+  const d0=new Date(iso+'T00:00:00'); let dias=[];
+  if(tipo==='semana'){ const off=(d0.getDay()+6)%7; const mon=new Date(d0); mon.setDate(d0.getDate()-off); for(let i=0;i<7;i++){ const x=new Date(mon); x.setDate(mon.getDate()+i); dias.push(x); } }
+  else if(tipo==='mes'){ const y=d0.getFullYear(),m=d0.getMonth(),dim=new Date(y,m+1,0).getDate(); for(let dd=1;dd<=dim;dd++) dias.push(new Date(y,m,dd)); }
+  else if(tipo==='ano'){ const y=d0.getFullYear(); for(let m=0;m<12;m++){ const dim=new Date(y,m+1,0).getDate(); for(let dd=1;dd<=dim;dd++) dias.push(new Date(y,m,dd)); } }
+  else if(tipo==='x'){ const n=parseInt(prompt('Aplicar aos próximos quantos dias?','7')||'0',10); if(!(n>0)) return; for(let i=1;i<=n;i++){ const x=new Date(d0); x.setDate(d0.getDate()+i); dias.push(x); } }
+  const hoje=todayISO(); let count=0;
+  dias.forEach(x=>{ const k=isoDeData(x); if(k<hoje) return; S.rotinaDias[k]=base.map(b=>({id:uid(),nome:b.nome,hora:b.hora,done:false})); count++; });
+  save('rotina:dias'); closeSheet(); toast(`Rotina aplicada a ${count} dia(s).`); renderCalendarioRotina();
 }
 function renderRotinaList(){
   const edit=S.config.editMode;
