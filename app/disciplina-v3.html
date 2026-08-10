@@ -331,6 +331,12 @@ textarea.auto{resize:none; overflow:hidden; min-height:48px;}
 .pcell .pnomedia{width:100%; height:100%; display:flex; align-items:center; justify-content:center; padding:8px; font-size:11px; color:var(--text-dim); background:var(--surface2); text-align:center;}
 .notif-item{display:flex; align-items:center; gap:10px; padding:12px; border:1px solid var(--line); border-radius:13px; margin:8px 0; background:var(--surface);}
 .notif-item.nova{border-color:var(--accent); background:color-mix(in srgb,var(--accent) 8%, var(--surface));}
+/* Try Hard: flash vermelho + tremor da tela inteira */
+.th-flash{position:fixed; inset:0; z-index:100; background:radial-gradient(circle,#ff2a2a,#7a0000); pointer-events:none; opacity:0;}
+.th-flash.go{animation:thflash .7s ease-out;}
+@keyframes thflash{0%{opacity:0}12%{opacity:.6}30%{opacity:.15}45%{opacity:.5}100%{opacity:0}}
+@keyframes thshake{0%,100%{transform:translate(0,0)}15%{transform:translate(-7px,4px)}30%{transform:translate(7px,-4px)}45%{transform:translate(-6px,-4px)}60%{transform:translate(6px,4px)}75%{transform:translate(-4px,2px)}}
+body.th-shake{animation:thshake .55s;}
 
 /* Recordações (memórias) */
 .recfilt{display:flex; gap:8px; overflow-x:auto; padding:2px 0 10px; scrollbar-width:none;}
@@ -454,6 +460,7 @@ textarea.auto{resize:none; overflow:hidden; min-height:48px;}
   <div class="navzone navR" onclick="storyNav(1)"></div>
 </div>
 
+<div class="th-flash" id="thFlash"></div>
 <div id="toast"></div>
 
 <!-- inputs de mídia escondidos -->
@@ -645,6 +652,11 @@ const TRYHARD = [
   'PREGUIÇA É INIMIGA DA FARDA. ACORDA E EXECUTA, SOLDADO!',
   'EU COBRO 10.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000.000% DE VOCÊ. NÃO ACEITO MENOS QUE TUDO. EXECUTA!',
   'ISSO AQUI NÃO É ACAMPAMENTO DE FÉRIAS. É PORRADA E PANCADARIA ATÉ VIRAR SARGENTO. MEXE-SE!',
+  'EU NÃO VOU CALAR A BOCA. VOU GRITAR NO SEU OUVIDO ATÉ VOCÊ LEVANTAR. CUMPRE!',
+  'ENQUANTO VOCÊ CHORA, TEM RECRUTA SUANDO SANGUE PELA SUA VAGA. LEVANTA, VERME!',
+  'DESISTIR? NEM PENSA. EU TE PERSIGO ATÉ NO SONO. FAZ O QUE TEM QUE FAZER, JÁ!',
+  'CADA SEGUNDO PARADO É UMA FACADA NA SUA APROVAÇÃO. DE PÉ, CARA DE GUERRA!',
+  'O TAF NÃO PERDOA MOLE. EU TAMBÉM NÃO. MEXE ESSE ESQUELETO AGORA!',
 ];
 // Modo normal: cobra, mas 50% (mais leve)
 const COBRANCA = [
@@ -2652,9 +2664,16 @@ function tocarSom(tipo){
   const beeps = tipo==='alarme' ? [ [880,0,.14],[660,.16,.14],[990,.32,.14],[660,.48,.14],[1046,.64,.2] ]
              : tipo==='sino' ? [ [1318,0,.5] ]
              : tipo==='sirene' ? [ [700,0,.5],[1100,.25,.5] ]
+             : tipo==='brutal' ? [ [900,0,.16],[1500,.14,.16],[700,.3,.16],[1600,.44,.16],[850,.6,.16],[1700,.74,.2],[600,.94,.26] ] // insuportável
              : [ [880,0,.16] ]; // apito
-  const gainV = tipo==='alarme'||tipo==='sirene' ? 0.14 : 0.08;
+  const gainV = tipo==='brutal' ? 0.2 : (tipo==='alarme'||tipo==='sirene' ? 0.14 : 0.08);
   beeps.forEach(([f,t,d])=>{ const o=c.createOscillator(), g=c.createGain(); o.type= tipo==='sino'?'sine':'square'; o.frequency.value=f; g.gain.value=gainV; o.connect(g); g.connect(c.destination); o.start(c.currentTime+t); o.stop(c.currentTime+t+d); });
+}
+// Try Hard: flash vermelho + tremor da tela + som brutal (2x)
+function tryHardFlash(){
+  const f=$('#thFlash'); if(f){ f.classList.remove('go'); void f.offsetWidth; f.classList.add('go'); }
+  document.body.classList.remove('th-shake'); void document.body.offsetWidth; document.body.classList.add('th-shake');
+  setTimeout(()=>document.body.classList.remove('th-shake'),600);
 }
 function beep(){ tocarSom('apito'); } // compat
 // quanto tempo o usuário está continuamente DENTRO do app (pra dar trégua no Try Hard)
@@ -2678,9 +2697,13 @@ function startTryHard(){
     if(S.config.tryHard){
       // TRÉGUA: passou o tempo definido dentro do app → para de encher o saco
       if(segsNoApp() >= (o.treguaS||60)) return;
-      notify('🔥 MODO TRY HARD', TRYHARD[_tryTick%TRYHARD.length]+' ('+atrasados.length+' pendente(s))');
-      if(o.somNotif!==false) tocarSom(o.som);
-      if(o.vibrar && navigator.vibrate) navigator.vibrate([300,120,300,120,300]);
+      const msg=TRYHARD[_tryTick%TRYHARD.length];
+      notify('🔥 MODO TRY HARD', msg+' ('+atrasados.length+' pendente(s))');
+      toast('🔥 '+msg, 4000);
+      tryHardFlash();
+      const som = o.som==='alarme' ? 'brutal' : o.som;   // no Try Hard o "alarme" vira insuportável
+      tocarSom(som); setTimeout(()=>tocarSom(som), 700);  // 2x pra ser pior
+      if(navigator.vibrate) navigator.vibrate([400,120,400,120,400,120,600]);
     } else if(S.config.notif && _tryTick%6===0){   // normal: cobrança VISUAL, sem som-spam, e bem espaçada
       notify('REDZONE', COBRANCA[_tryTick%COBRANCA.length]+' ('+atrasados.length+' pendente(s))');
     }
