@@ -2950,11 +2950,28 @@ function renderPerfil(){
   $('#logoutBtn').onclick=logout;
   ({conta:renderPerfilConta, config:renderPerfilConfig, temas:renderPerfilTemas})[perfilTab]();
 }
+// menu da foto de perfil: trocar ou remover (remover volta pro padrão do gênero)
+function fotoSheet(){
+  const temFoto=!!S.profile.foto;
+  const temPadrao=!!avatarPadrao(S.profile.genero);
+  openSheet(`<h3>Foto de perfil</h3>
+    <button class="btn" id="fsTrocar">📷 Trocar foto</button>
+    ${temFoto?`<button class="btn ghost" id="fsRemover" style="margin-top:10px">🗑️ Remover foto${temPadrao?' (volta pro padrão)':''}</button>`
+             :`<p class="small muted" style="margin-top:12px">${temPadrao?'Você está usando a foto padrão do seu gênero.':'Sem foto ainda.'}</p>`}`);
+  $('#fsTrocar').onclick=()=>{ const inp=$('#capGallery'); inp.value=''; inp.onchange=async()=>{ const f=inp.files[0]; if(!f)return;
+    toast('Enviando foto…');
+    try{ const up=await uploadMedia(f); S.profile.foto=up.url; await api('/perfil',{method:'PATCH',body:{fotoUrl:up.url}}); closeSheet(); renderPerfil(); toast('Foto atualizada.'); }
+    catch(e){ toast('Falha ao enviar a foto.'); } }; inp.click(); };
+  const rm=$('#fsRemover'); if(rm) rm.onclick=async()=>{
+    try{ S.profile.foto=null; await api('/perfil',{method:'PATCH',body:{fotoUrl:null}}); closeSheet(); renderPerfil();
+      toast(avatarPadrao(S.profile.genero)?'Foto removida — voltou pro padrão do gênero. 🪖':'Foto removida.'); }
+    catch(e){ toast('Falha ao remover a foto.'); } };
+}
 function renderPerfilConta(){
   const p=S.profile;
   $('#perfilBody').innerHTML=`
     <div class="card">
-      <div class="h">Dados pessoais <button class="pencil" id="trocarFoto">✏️ foto</button></div>
+      <div class="h">Dados pessoais <button id="trocarFoto" style="background:color-mix(in srgb,var(--accent) 20%, transparent); color:var(--accent2); border:1px solid color-mix(in srgb,var(--accent) 50%, transparent); border-radius:10px; padding:7px 13px; font-weight:800; font-size:13px; cursor:pointer">✏️ Foto</button></div>
       <div class="field"><label>Nome de guerra</label><input id="pfNome" value="${esc(p.nome)}"></div>
       <div class="field"><label>Username (único)</label><input id="pfUser" value="${esc(p.username)}"></div>
       <div class="field"><label>E-mail</label><input value="${esc(p.email)}" disabled></div>
@@ -2967,10 +2984,7 @@ function renderPerfilConta(){
       <div class="err" id="pfErr"></div>
       <button class="btn" id="pfSave">Salvar alterações</button>
     </div>`;
-  $('#trocarFoto').onclick=()=>{ const inp=$('#capGallery'); inp.value=''; inp.onchange=async()=>{ const f=inp.files[0]; if(!f)return;
-    toast('Enviando foto…');
-    try{ const up=await uploadMedia(f); S.profile.foto=up.url; await api('/perfil',{method:'PATCH',body:{fotoUrl:up.url}}); renderPerfil(); toast('Foto atualizada.'); }
-    catch(e){ toast('Falha ao enviar a foto.'); } }; inp.click(); };
+  $('#trocarFoto').onclick=fotoSheet;
   $('#pfSave').onclick=async()=>{
     const err=$('#pfErr'); const nome=$('#pfNome').value.trim();
     const username=$('#pfUser').value.trim().toLowerCase().replace(/\s+/g,'_');
