@@ -36,6 +36,11 @@ uploadRouter.post('/', upload.single('arquivo'), async (req, res) => {
       const nome = `${id}${ext}`;
       await writeFile(path.join(UPLOAD_DIR, nome), req.file.buffer);
       return res.status(201).json({ url: `${PUBLIC_BASE}/${nome}`, tipo: 'video' });
+    } else if (req.file.mimetype.startsWith('audio/')) {
+      const ext = (req.file.originalname.match(/\.[a-z0-9]+$/i) || ['.mp3'])[0];
+      const nome = `${id}${ext}`;
+      await writeFile(path.join(UPLOAD_DIR, nome), req.file.buffer);
+      return res.status(201).json({ url: `${PUBLIC_BASE}/${nome}`, tipo: 'audio' });
     }
     return res.status(415).json({ erro: 'Tipo de arquivo não suportado.' });
   } catch (e) {

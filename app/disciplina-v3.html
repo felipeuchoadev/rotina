@@ -55,7 +55,7 @@ a{color:var(--accent2);}
 }
 .brand{font-weight:800; font-size:20px; letter-spacing:-.01em;}
 .brand .dot{color:var(--accent);}
-.home-logo{height:60px; width:auto; object-fit:contain; border-radius:12px; filter:drop-shadow(0 4px 12px rgba(224,30,43,.35));}
+.home-logo{height:46px; width:46px; object-fit:cover; border-radius:11px; filter:drop-shadow(0 4px 12px rgba(224,30,43,.4));}
 .clock{font-weight:700; font-size:16px; color:var(--text-dim); font-variant-numeric:tabular-nums; text-align:right; line-height:1;}
 .clock small{color:var(--text-dim); font-size:11px; margin-left:3px; font-weight:600;}
 
@@ -983,8 +983,11 @@ function renderInicio(){
   $('#scr-inicio').innerHTML = `
     <div class="home-top">
       <div class="home-topline">
-        <img class="home-logo" src="redzone-logo.png" alt="REDZONE">
-        ${homeClockHTML()}
+        <div class="brand">RED<span class="dot">ZONE</span></div>
+        <div style="display:flex;align-items:center;gap:11px">
+          ${homeClockHTML()}
+          <img class="home-logo" src="redzone-logo.png" alt="REDZONE">
+        </div>
       </div>
       <div class="herocard">
         <div class="ring" style="background:conic-gradient(var(--accent) 0deg ${deg}deg, rgba(255,255,255,.08) ${deg}deg 360deg)">
@@ -2017,9 +2020,8 @@ function renderCalendarioRotina(){
       else if(h && h.total>0){ cls='inc'; }                         // passou incompleto: vermelho
       else { cls='sem'; }                                           // sem dados
     }
-    const temPlano = (plano.dias&&plano.dias[iso]) || (iso>=hoje && plano.padrao);
     if(iso===hoje) cls+=' hoje';
-    cells+=`<div class="calc ${cls}" data-caldia="${iso}">${content}${temPlano?'<i class="cdot"></i>':''}</div>`;
+    cells+=`<div class="calc ${cls}" data-caldia="${iso}">${content}</div>`;
   }
   $('#rotinaCal').innerHTML=`<div class="calbox">
     <div class="calnav">
@@ -2029,7 +2031,7 @@ function renderCalendarioRotina(){
     </div>
     <div class="calgrid caldow">${['D','S','T','Q','Q','S','S'].map(x=>`<div class="caldw">${x}</div>`).join('')}</div>
     <div class="calgrid">${cells}</div>
-    <div class="callegend"><span><i class="lok"></i>100% ✅</span><span><i class="lfail"></i>incompleto</span><span><i class="lfut"></i>futuro</span><span><i class="ldot"></i>tem plano</span></div>
+    <div class="callegend"><span><i class="lok"></i>100% ✅</span><span><i class="lfail"></i>incompleto</span><span><i class="lfut"></i>futuro</span></div>
   </div>`;
   $('#rotPrev').onclick=()=>{ rotCalM--; if(rotCalM<0){ rotCalM=11; rotCalY--; } renderCalendarioRotina(); };
   $('#rotNext').onclick=()=>{ rotCalM++; if(rotCalM>11){ rotCalM=0; rotCalY++; } renderCalendarioRotina(); };
@@ -2249,7 +2251,7 @@ async function renderBatalha(){
     <button class="btn ghost" id="abrirBusca" style="margin:4px 0 12px">🔎 Buscar / adicionar pessoas</button>
     <div style="display:flex;gap:8px">
       <button class="btn" id="novoPost" style="flex:1">＋ Nova publicação</button>
-      <button class="btn ghost" id="genPost" style="flex:0 0 auto">⚡ Gerar do dia</button>
+      <button class="btn ghost" id="genPost" style="flex:1">Gerar publicação</button>
     </div>
     <div class="section-title">Ranking de disciplina</div>
     <div id="ranking">${board.length?board.map((e,i)=>{
@@ -2477,8 +2479,14 @@ async function gerarPublicacaoDoDia(){
   const hoje=todayISO();
   const itens=[];
   const exNames={}; Object.values(S.treinoTemplate||{}).flat().forEach(ex=>{ exNames[ex.id]=ex.nome; });
-  S.treinoLogs.filter(l=>l.dateISO===hoje).forEach(l=>{ const m=Math.round((l.ativoMs||0)/60000); itens.push({txt:`🏋️ Treinei ${exNames[l.exId]||'treino'} — ${m} min`}); });
-  S.estudoLogs.filter(l=>l.dateISO===hoje).forEach(l=>{ const m=Math.round((l.ativoMs||0)/60000); const c=l.conteudos?.length||0; itens.push({txt:`📚 Estudei ${l.materia||'matéria'} — ${m} min${c?` (${c} conteúdo(s))`:''}`}); });
+  // agrupa treinos por exercício e soma minutos — só entra o que teve tempo de verdade
+  const treinoAgg={};
+  S.treinoLogs.filter(l=>l.dateISO===hoje).forEach(l=>{ const nome=l.nome||exNames[l.exId]||'Treino'; const m=Math.round((l.ativoMs||0)/60000); treinoAgg[nome]=(treinoAgg[nome]||0)+m; });
+  Object.entries(treinoAgg).filter(([n,m])=>m>0).forEach(([nome,m])=>{ itens.push({txt:`🏋️ Treinei ${nome} — ${m} min`}); });
+  // agrupa estudos por matéria — só entra se teve tempo OU conteúdo concluído
+  const estAgg={};
+  S.estudoLogs.filter(l=>l.dateISO===hoje).forEach(l=>{ const nome=l.materia||'Matéria'; const a=estAgg[nome]||{min:0,c:0}; a.min+=Math.round((l.ativoMs||0)/60000); a.c+=(l.conteudos?.length||0); estAgg[nome]=a; });
+  Object.entries(estAgg).filter(([n,a])=>a.min>0||a.c>0).forEach(([nome,a])=>{ itens.push({txt:`📚 Estudei ${nome} — ${a.min} min${a.c?` (${a.c} conteúdo(s))`:''}`}); });
   const rFeita=S.rotina.filter(r=>r.done===hoje); if(rFeita.length) itens.push({txt:`⏰ Cumpri ${rFeita.length}/${S.rotina.length} hábitos do dia`});
   const agua=S.agua[hoje]||0; if(agua) itens.push({txt:`💧 Bebi ${agua}ml de água`});
   const midiasHoje=(S.recordacoes||[]).filter(r=>r.dateISO===hoje);
@@ -2655,7 +2663,7 @@ function renderPerfilTemas(){
 /* =========================================================================
    NOTIFICAÇÕES / TRY HARD
 ========================================================================= */
-function notify(title,body){ if('Notification' in window && Notification.permission==='granted'){ try{ new Notification(title,{body, icon:'icon-192.png'}); }catch(e){} } }
+function notify(title,body,alvo){ if('Notification' in window && Notification.permission==='granted'){ try{ const n=new Notification(title,{body, icon:'icon-192.png'}); n.onclick=()=>{ try{ window.focus(); }catch(e){} try{ if(alvo){ if(alvo[0]==='#'){ location.hash=alvo; if(typeof handleDeepLink==='function') handleDeepLink(); } else go(alvo); } }catch(e){} n.close(); }; }catch(e){} } }
 function tryOpts(){ if(!S.config.tryOpts) S.config.tryOpts={som:'alarme', vibrar:true, intervaloS:20, treguaS:60, somNotif:true}; return S.config.tryOpts; }
 // motor de som (WebAudio) — sons diferentes; 'alarme' é a sirene chata do Try Hard
 let _actx=null; function audioCtx(){ try{ _actx=_actx||new (window.AudioContext||window.webkitAudioContext)(); if(_actx.state==='suspended') _actx.resume(); return _actx; }catch(e){ return null; } }
@@ -2681,57 +2689,76 @@ let _appActiveSince=Date.now();
 document.addEventListener('visibilitychange',()=>{ if(document.visibilityState==='visible') _appActiveSince=Date.now(); });
 window.addEventListener('focus',()=>{ _appActiveSince=Date.now(); });
 function segsNoApp(){ return document.visibilityState==='visible' ? (Date.now()-_appActiveSince)/1000 : 0; }
+// ---- SIRENE incansável do Try Hard (loop de verdade, para só quando cumpre ou dá trégua) ----
+let _siren=null, _sirenSrc=null;
+function sirenSrcAtual(){ const o=tryOpts(); return o.somCustom || 'siren.mp3'; }
+function sirenEl(){ const src=sirenSrcAtual(); if(!_siren || _sirenSrc!==src){ if(_siren){ try{_siren.pause();}catch(e){} } _siren=new Audio(src); _siren.loop=true; _siren.volume=1.0; _sirenSrc=src; } return _siren; }
+function sirenPlay(){ try{ const s=sirenEl(); if(s.paused) s.play().catch(()=>{}); }catch(e){} }
+function sirenStop(){ try{ if(_siren && !_siren.paused){ _siren.pause(); _siren.currentTime=0; } }catch(e){} }
+function atrasadosAgora(){ if(!S) return []; const now=brasiliaNow(); const hhmm=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0'); return S.rotina.filter(r=>r.hora && r.hora<hhmm && r.done!==todayISO()); }
+// gerencia a sirene a cada 2s: toca se Try Hard ON + tem atrasado + fora da trégua; senão para
+function manageSiren(){
+  const o=tryOpts();
+  if(!S || !S.config.tryHard){ sirenStop(); return; }
+  const emTregua = segsNoApp() >= (o.treguaS||60);
+  if(atrasadosAgora().length && !emTregua){ sirenPlay(); } else { sirenStop(); }
+}
 let _tryTick=0;
 function startTryHard(){
-  clearInterval(window._tryTimer);
+  clearInterval(window._tryTimer); clearInterval(window._sirenTimer);
   const o=tryOpts();
+  // loop rápido só pra sirene (responde na hora quando você cumpre ou entra na trégua)
+  window._sirenTimer=setInterval(manageSiren, 2000); manageSiren();
   window._tryTimer=setInterval(()=>{
     if(!S) return;
     const now=brasiliaNow(); const hhmm=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
-    // lembrete de hábito no horário exato (alarme vinculado ao horário)
-    // toca o alarme UMA vez, no minuto exato do hábito (gentil no normal, alarme no Try Hard)
-    S.rotina.forEach(r=>{ if(r.hora===hhmm && r.done!==todayISO()){ notify('REDZONE — '+r.nome, 'Está no horário. Cumpra agora, recruta.'); if(S.config.tryHard||S.config.notif){ if(o.somNotif!==false) tocarSom(S.config.tryHard?o.som:'sino'); if(o.vibrar&&navigator.vibrate) navigator.vibrate(200); } } });
-    const atrasados=S.rotina.filter(r=>r.hora && r.hora<hhmm && r.done!==todayISO());
-    if(!atrasados.length) return;
+    // lembrete no minuto exato do hábito
+    S.rotina.forEach(r=>{ if(r.hora===hhmm && r.done!==todayISO()){ notify('REDZONE — '+r.nome, 'Está no horário. Cumpra agora, recruta.', 'rotina'); if(!S.config.tryHard && S.config.notif && o.somNotif!==false) tocarSom('sino'); if(o.vibrar&&navigator.vibrate) navigator.vibrate(200); } });
+    const atrasados=atrasadosAgora();
+    if(!atrasados.length){ sirenStop(); return; }
     _tryTick++;
     if(S.config.tryHard){
-      // TRÉGUA: passou o tempo definido dentro do app → para de encher o saco
-      if(segsNoApp() >= (o.treguaS||60)) return;
+      if(segsNoApp() >= (o.treguaS||60)){ sirenStop(); return; }   // trégua: silencia
       const msg=TRYHARD[_tryTick%TRYHARD.length];
-      notify('🔥 MODO TRY HARD', msg+' ('+atrasados.length+' pendente(s))');
-      toast('🔥 '+msg, 4000);
-      tryHardFlash();
-      const som = o.som==='alarme' ? 'brutal' : o.som;   // no Try Hard o "alarme" vira insuportável
-      tocarSom(som); setTimeout(()=>tocarSom(som), 700);  // 2x pra ser pior
+      notify('🔥 MODO TRY HARD', msg+' ('+atrasados.length+' pendente(s))', 'rotina');
+      toast('🔥 '+msg, 4000); tryHardFlash();
       if(navigator.vibrate) navigator.vibrate([400,120,400,120,400,120,600]);
-    } else if(S.config.notif && _tryTick%6===0){   // normal: cobrança VISUAL, sem som-spam, e bem espaçada
-      notify('REDZONE', COBRANCA[_tryTick%COBRANCA.length]+' ('+atrasados.length+' pendente(s))');
+    } else if(S.config.notif && _tryTick%6===0){   // normal: cobrança visual, sem som-spam
+      notify('REDZONE', COBRANCA[_tryTick%COBRANCA.length]+' ('+atrasados.length+' pendente(s))', 'rotina');
     }
   }, Math.max(5,(o.intervaloS||20))*1000);
 }
 function tryHardOpcoesSheet(){
   const o=tryOpts();
   openSheet(`<h3>⚙️ Opções do Try Hard</h3>
-    <p class="small muted">Aqui o bicho pega. Ajuste como o app te cobra.</p>
-    <div class="field"><label>Som do alarme <button class="btn sm ghost" id="thTest" style="margin-left:8px">▶ testar</button></label>
-      <select id="thSom">
-        <option value="alarme" ${o.som==='alarme'?'selected':''}>Alarme (sirene chata)</option>
-        <option value="sirene" ${o.som==='sirene'?'selected':''}>Sirene</option>
-        <option value="apito" ${o.som==='apito'?'selected':''}>Apito curto</option>
-        <option value="sino" ${o.som==='sino'?'selected':''}>Sino</option>
-      </select></div>
+    <p class="small muted">Aqui o bicho pega. No Try Hard toca uma <b>sirene incansável</b> que só para quando você cumpre o hábito daquele horário — ou fica 1 min no app (trégua).</p>
+    <div class="field"><label>Som do alarme</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div class="txt" style="flex:1"><div class="t" id="thSomNome">${o.somCustom?'Som personalizado':'Sirene de polícia (padrão)'}</div></div>
+        <button class="btn sm ghost" id="thTest">▶ testar</button>
+        <button class="btn sm ghost" id="thPararTest">⏹</button>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn sm ghost" id="thUpload" style="flex:1">🎵 Enviar meu som</button>
+        ${o.somCustom?`<button class="btn sm ghost" id="thPadrao" style="flex:1">↩️ Voltar pro padrão</button>`:''}
+      </div></div>
     <label class="rowitem" style="cursor:pointer"><input type="checkbox" id="thVibrar" ${o.vibrar!==false?'checked':''} style="width:22px;height:22px"><div class="txt"><div class="t">Vibrar junto</div></div></label>
-    <label class="rowitem" style="cursor:pointer"><input type="checkbox" id="thSomNotif" ${o.somNotif!==false?'checked':''} style="width:22px;height:22px"><div class="txt"><div class="t">Som em toda notificação</div><div class="s">No Try Hard fica mais insuportável.</div></div></label>
-    <div class="field"><label>Intervalo da cobrança: <b id="thIntLbl">${o.intervaloS||20}s</b></label>
+    <label class="rowitem" style="cursor:pointer"><input type="checkbox" id="thSomNotif" ${o.somNotif!==false?'checked':''} style="width:22px;height:22px"><div class="txt"><div class="t">Som nas notificações (modo normal)</div><div class="s">Um sino suave no horário do hábito.</div></div></label>
+    <div class="field"><label>Intervalo das frases: <b id="thIntLbl">${o.intervaloS||20}s</b></label>
       <input id="thInt" type="range" min="5" max="120" step="5" value="${o.intervaloS||20}" style="width:100%"></div>
     <div class="field"><label>Trégua depois de <b id="thTregLbl">${o.treguaS||60}s</b> no app</label>
       <input id="thTreg" type="range" min="30" max="300" step="15" value="${o.treguaS||60}" style="width:100%">
-      <div class="s muted" style="font-size:12px">Passou esse tempo dentro do app (estudando/treinando), ele te dá um tempo.</div></div>
+      <div class="s muted" style="font-size:12px">Passou esse tempo dentro do app (estudando/treinando), a sirene silencia.</div></div>
     <button class="btn" id="thSalvar">Salvar opções</button>`);
+  let somCustom=o.somCustom||null;
   $('#thInt').oninput=e=>$('#thIntLbl').textContent=e.target.value+'s';
   $('#thTreg').oninput=e=>$('#thTregLbl').textContent=e.target.value+'s';
-  $('#thTest').onclick=(e)=>{ e.preventDefault(); tocarSom($('#thSom').value); };
-  $('#thSalvar').onclick=()=>{ S.config.tryOpts={ som:$('#thSom').value, vibrar:$('#thVibrar').checked, somNotif:$('#thSomNotif').checked, intervaloS:+$('#thInt').value, treguaS:+$('#thTreg').value }; save('config'); startTryHard(); closeSheet(); toast('Opções salvas.'); };
+  const testAudio=()=>{ const a=new Audio(somCustom||'siren.mp3'); a.volume=1; a.play().catch(()=>{}); window._thTest=a; };
+  $('#thTest').onclick=(e)=>{ e.preventDefault(); if(window._thTest){try{window._thTest.pause();}catch(x){}} testAudio(); };
+  $('#thPararTest').onclick=(e)=>{ e.preventDefault(); if(window._thTest){try{window._thTest.pause();window._thTest.currentTime=0;}catch(x){}} };
+  $('#thUpload').onclick=async(e)=>{ e.preventDefault(); const f=await escolherMidia('audio/*'); if(!f) return; toast('Enviando som…'); try{ const up=await uploadMedia(f); somCustom=up.url; $('#thSomNome').textContent='Som personalizado'; toast('Som carregado. Toque em ▶ testar.'); }catch(err){ toast('Falha ao enviar o som.'); } };
+  if($('#thPadrao')) $('#thPadrao').onclick=(e)=>{ e.preventDefault(); somCustom=null; $('#thSomNome').textContent='Sirene de polícia (padrão)'; toast('Voltou pro som padrão.'); };
+  $('#thSalvar').onclick=()=>{ S.config.tryOpts={ som:o.som||'alarme', somCustom, vibrar:$('#thVibrar').checked, somNotif:$('#thSomNotif').checked, intervaloS:+$('#thInt').value, treguaS:+$('#thTreg').value }; save('config'); _siren=null; startTryHard(); closeSheet(); toast('Opções salvas.'); };
 }
 
 /* =========================================================================
