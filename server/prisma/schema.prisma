@@ -25,6 +25,8 @@ model Usuario {
   genero     String?  // 'm' | 'f' — define avatar padrão
   resetToken String?  // reset de senha por e-mail (hash do token)
   resetExp   DateTime?
+  secPergunta String? // pergunta de segurança (recuperação universal sem e-mail)
+  secRespHash String? // hash da resposta
   pesoKg     Float?
   alturaCm   Int?
   metaAgua   Int      @default(2500)

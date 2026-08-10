@@ -18,9 +18,12 @@ const cadastroSchema = z.object({
   idade: z.number().int().min(5).max(100).optional(),
   dataNasc: z.string().optional().nullable(),
   genero: z.enum(['m', 'f']).optional(),
+  secPergunta: z.string().max(120).optional().nullable(),
+  secResposta: z.string().max(120).optional().nullable(),
   pesoKg: z.number().min(1).max(500),
   alturaCm: z.number().int().min(50).max(260),
 });
+const normResp = (s) => String(s || '').trim().toLowerCase();
 
 // Cadastro (etapa 1 e 2 do front chegam juntas aqui: conta + dados pessoais)
 authRouter.post('/cadastro', async (req, res) => {
@@ -40,6 +43,7 @@ authRouter.post('/cadastro', async (req, res) => {
     data: {
       email: d.email, senhaHash, username: d.username, nomeGuerra: d.nomeGuerra,
       idade: d.idade, dataNasc: d.dataNasc ? new Date(d.dataNasc) : null, genero: d.genero || null,
+      secPergunta: d.secPergunta || null, secRespHash: d.secResposta ? await hashSenha(normResp(d.secResposta)) : null,
       pesoKg: d.pesoKg, alturaCm: d.alturaCm, metaAgua: Math.round(d.pesoKg * 35),
     },
   });
@@ -85,6 +89,35 @@ authRouter.post('/esqueci', async (req, res) => {
        <p>Se não foi você, ignore este e-mail.</p>`).catch(() => {});
   }
   res.json({ ok: true, mailAtivo });
+});
+
+// Recuperação por PERGUNTA DE SEGURANÇA (universal, sem e-mail)
+// 1) pega a pergunta pelo e-mail
+authRouter.get('/pergunta', async (req, res) => {
+  const email = String(req.query.email || '').toLowerCase().trim();
+  const u = await prisma.usuario.findUnique({ where: { email } });
+  res.json({ pergunta: (u && u.secPergunta) ? u.secPergunta : null });
+});
+// 2) responde certo e define nova senha
+authRouter.post('/resetar-pergunta', async (req, res) => {
+  const email = String(req.body.email || '').toLowerCase().trim();
+  const resposta = normResp(req.body.resposta);
+  const senha = String(req.body.novaSenha || '');
+  if (senha.length < 6) return res.status(400).json({ erro: 'Senha muito curta (mínimo 6).' });
+  const u = await prisma.usuario.findUnique({ where: { email } });
+  if (!u || !u.secRespHash) return res.status(400).json({ erro: 'Essa conta não tem pergunta de segurança.' });
+  if (!(await conferirSenha(resposta, u.secRespHash))) return res.status(401).json({ erro: 'Resposta incorreta.' });
+  await prisma.usuario.update({ where: { id: u.id }, data: { senhaHash: await hashSenha(senha) } });
+  res.json({ ok: true });
+});
+
+// Definir/alterar a pergunta de segurança (logado)
+authRouter.post('/set-pergunta', exigirAuth, async (req, res) => {
+  const secPergunta = String(req.body.secPergunta || '').trim().slice(0, 120);
+  const resposta = normResp(req.body.secResposta);
+  if (!secPergunta || !resposta) return res.status(400).json({ erro: 'Pergunta e resposta são obrigatórias.' });
+  await prisma.usuario.update({ where: { id: req.userId }, data: { secPergunta, secRespHash: await hashSenha(resposta) } });
+  res.json({ ok: true });
 });
 
 // Redefinir senha com o token do e-mail

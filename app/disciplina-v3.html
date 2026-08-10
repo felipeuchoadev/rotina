@@ -55,7 +55,7 @@ a{color:var(--accent2);}
 }
 .brand{font-weight:800; font-size:20px; letter-spacing:-.01em;}
 .brand .dot{color:var(--accent);}
-.home-logo{height:46px; width:46px; object-fit:cover; border-radius:11px; filter:drop-shadow(0 4px 12px rgba(224,30,43,.4));}
+.home-logo{height:72px; width:72px; object-fit:cover; border-radius:16px; filter:drop-shadow(0 6px 18px rgba(224,30,43,.5));}
 .clock{font-weight:700; font-size:16px; color:var(--text-dim); font-variant-numeric:tabular-nums; text-align:right; line-height:1;}
 .clock small{color:var(--text-dim); font-size:11px; margin-left:3px; font-weight:600;}
 
@@ -664,6 +664,32 @@ const COBRANCA = [
   'Falta cumprir umas tarefas. Bora, um passo de cada vez.',
   'Disciplina é constância. Volta e termina o que começou.',
 ];
+/* Lembretes por área — VARIADOS, pra cobrar TUDO (normal incentiva, Try Hard esculacha) */
+const LEMBRETES = {
+  treino: { alvo:'treinos', normal:[
+    'Cadê o treino de hoje? Teu corpo não se move sozinho. 💪',
+    'Bora treinar, recruta. O TAF não espera ninguém.',
+    'Ainda sem treino hoje. Levanta e sua a farda.',
+    '30 min de treino já mudam seu dia. Começa agora.'], hard: ESC_TREINO },
+  estudo: { alvo:'estudos', normal:[
+    'Sem estudo hoje ainda. A ESA cobra teoria também. 📚',
+    'Abre o material, recruta. Aprovação é estudo diário.',
+    'Cadê a matéria de hoje? Senta e resolve umas questões.',
+    'Teu concorrente tá estudando agora. E você?'], hard: ESC_ESTUDO },
+  agua: { alvo:'alimentacao', normal:[
+    'Bebeu água? Tá longe da meta. Hidrata. 💧',
+    'Água, recruta. Desidratado ninguém rende.',
+    'Falta água hoje. Enche a garrafa e vira.',
+    'Meta de água ainda não batida. Bora, gole a gole.'], hard:[
+    'SEM ÁGUA?! QUER DESMAIAR NO TAF? BEBE AGORA, RECRUTA!',
+    'HIDRATAÇÃO É ORDEM, NÃO SUGESTÃO. ENCHE ESSA GARRAFA, JÁ!',
+    'TÁ SECO QUE NEM DESERTO. BEBE ÁGUA E PARA DE MOLEZA!'] },
+  rotina: { alvo:'rotina', normal:[
+    'Tem hábito pendente na rotina. Cumpre e marca ✅.',
+    'Sua rotina não se cumpre sozinha. Bora fechar o dia.',
+    'Faltam hábitos hoje. Um de cada vez, recruta.',
+    'Constância no básico é o que separa aprovado de reprovado.'], hard: ESC_LOCKED },
+};
 
 /* 20 TEMAS com gradiente de fundo completo */
 const THEMES = [
@@ -829,6 +855,15 @@ function renderSignupStep(){
           <option value="m" ${signupDraft.genero==='f'?'':'selected'}>Masculino</option>
           <option value="f" ${signupDraft.genero==='f'?'selected':''}>Feminino</option>
         </select></div>
+      <div class="field"><label>Pergunta de segurança (recuperar senha sem e-mail)</label>
+        <select id="suSecP">
+          <option value="Qual o nome do seu primeiro pet?">Nome do seu primeiro pet?</option>
+          <option value="Em que cidade você nasceu?">Cidade onde você nasceu?</option>
+          <option value="Qual o nome da sua mãe?">Nome da sua mãe?</option>
+          <option value="Qual foi sua primeira escola?">Sua primeira escola?</option>
+          <option value="Qual seu time do coração?">Seu time do coração?</option>
+        </select></div>
+      <div class="field"><label>Resposta</label><input id="suSecR" placeholder="Guarde bem — recupera a senha depois" autocomplete="off"></div>
       <div class="grid2">
         <div class="field"><label>Peso (kg)</label><input id="suPeso" type="text" inputmode="decimal" placeholder="ex: 88,50"></div>
         <div class="field"><label>Altura (cm ou m)</label><input id="suAltura" type="text" inputmode="decimal" placeholder="176 ou 1,76"></div>
@@ -854,14 +889,16 @@ async function signupFinish(){
   const nome=$('#suNome').value.trim(), username=$('#suUser').value.trim().toLowerCase().replace(/\s+/g,'_');
   const dataNasc=$('#suNasc').value; const idade=idadeDe(dataNasc); const peso=parsePeso($('#suPeso').value); const altura=parseAltura($('#suAltura').value);
   const genero=$('#suGenero')?.value||'m';
+  const secPergunta=$('#suSecP')?.value||''; const secResposta=$('#suSecR')?.value.trim()||'';
   if(!nome) return err.textContent='Informe o nome de guerra.';
+  if(!secResposta) return err.textContent='Responda a pergunta de segurança (pra recuperar a senha depois).';
   if(!/^[a-z0-9_]{3,20}$/.test(username)) return err.textContent='Username: 3–20 caracteres, letras/números/_';
   if(!dataNasc || idade==null || idade<5 || idade>100) return err.textContent='Informe uma data de nascimento válida.';
   if(!(peso>0)) return err.textContent='Informe o peso (ex: 88,50).';
   if(!(altura>0)) return err.textContent='Informe a altura (ex: 176 ou 1,76).';
   const btn=$('#suFinish'); if(btn){ btn.disabled=true; btn.textContent='Criando…'; }
   try{
-    const r = await api('/auth/cadastro',{auth:false, method:'POST', body:{ email:signupDraft.email, senha:signupDraft.pass, username, nomeGuerra:nome, idade, dataNasc, genero, pesoKg:peso, alturaCm:altura }});
+    const r = await api('/auth/cadastro',{auth:false, method:'POST', body:{ email:signupDraft.email, senha:signupDraft.pass, username, nomeGuerra:nome, idade, dataNasc, genero, secPergunta, secResposta, pesoKg:peso, alturaCm:altura }});
     setToken(r.token);
     const f=$('#suFoto').files[0];
     if(f){ try{ const up=await uploadMedia(f); await api('/perfil',{method:'PATCH',body:{fotoUrl:up.url}}); }catch(e){} }
@@ -883,16 +920,39 @@ async function doLogin(){
 async function logout(){ setToken(null); location.reload(); }
 function esqueciSenhaSheet(){
   openSheet(`<h3>Recuperar senha</h3>
-    <p class="small muted">Digite seu e-mail. Se existir conta, enviamos um link pra criar uma nova senha (vale 1h).</p>
-    <div class="field"><label>E-mail</label><input id="esEmail" type="email" placeholder="voce@gmail.com"></div>
+    <p class="small muted">Digite seu e-mail e escolha como recuperar.</p>
+    <div class="field"><label>Seu e-mail</label><input id="esEmail" type="email" placeholder="voce@gmail.com"></div>
     <div class="err" id="esErr"></div>
-    <button class="btn" id="esEnviar">Enviar link de recuperação</button>`);
-  $('#esEnviar').onclick=async()=>{
+    <button class="btn" id="esPergunta">🔐 Recuperar por pergunta de segurança</button>
+    <button class="btn ghost" id="esEmailBtn" style="margin-top:8px">✉️ Receber link por e-mail</button>`);
+  $('#esPergunta').onclick=async()=>{
+    const email=$('#esEmail').value.trim().toLowerCase();
+    if(!validEmail(email)) return $('#esErr').textContent='E-mail inválido.';
+    try{ const r=await api('/auth/pergunta?email='+encodeURIComponent(email),{auth:false});
+      if(!r.pergunta) return $('#esErr').textContent='Essa conta não tem pergunta de segurança. Use o e-mail.';
+      recuperarPerguntaSheet(email, r.pergunta);
+    }catch(e){ $('#esErr').textContent='Falha. Tenta de novo.'; }
+  };
+  $('#esEmailBtn').onclick=async()=>{
     const email=$('#esEmail').value.trim().toLowerCase();
     if(!validEmail(email)) return $('#esErr').textContent='E-mail inválido.';
     try{ const r=await api('/auth/esqueci',{auth:false,method:'POST',body:{email}}); closeSheet();
-      toast(r.mailAtivo ? 'Se o e-mail existir, o link foi enviado. Confira sua caixa.' : 'Pedido registrado. (Envio de e-mail ainda não configurado no servidor.)');
-    }catch(e){ $('#esErr').textContent='Falha ao enviar. Tenta de novo.'; }
+      toast(r.mailAtivo ? 'Se o e-mail existir, o link foi enviado. Confira sua caixa.' : 'E-mail ainda não liberado pra todos. Use a pergunta de segurança.');
+    }catch(e){ $('#esErr').textContent='Falha ao enviar.'; }
+  };
+}
+function recuperarPerguntaSheet(email, pergunta){
+  openSheet(`<h3>Pergunta de segurança</h3>
+    <p class="small" style="color:var(--text)">${esc(pergunta)}</p>
+    <div class="field"><label>Sua resposta</label><input id="rpResp" autocomplete="off"></div>
+    <div class="field"><label>Nova senha</label><input id="rpSenha" type="password" placeholder="mínimo 6"></div>
+    <div class="err" id="rpErr"></div>
+    <button class="btn" id="rpSalvar">Redefinir senha</button>`);
+  $('#rpSalvar').onclick=async()=>{
+    const resposta=$('#rpResp').value.trim(), senha=$('#rpSenha').value;
+    if(senha.length<6) return $('#rpErr').textContent='Senha muito curta (mínimo 6).';
+    try{ await api('/auth/resetar-pergunta',{auth:false,method:'POST',body:{email,resposta,novaSenha:senha}}); closeSheet(); toast('Senha redefinida! Agora é só entrar.'); }
+    catch(e){ $('#rpErr').textContent = e.status===401?'Resposta incorreta.':(e.data?.erro||'Falha ao redefinir.'); }
   };
 }
 function resetarSenhaSheet(token){
@@ -983,11 +1043,8 @@ function renderInicio(){
   $('#scr-inicio').innerHTML = `
     <div class="home-top">
       <div class="home-topline">
-        <div class="brand">RED<span class="dot">ZONE</span></div>
-        <div style="display:flex;align-items:center;gap:11px">
-          ${homeClockHTML()}
-          <img class="home-logo" src="redzone-logo.png" alt="REDZONE">
-        </div>
+        <img class="home-logo" src="redzone-logo.png" alt="REDZONE">
+        ${homeClockHTML()}
       </div>
       <div class="herocard">
         <div class="ring" style="background:conic-gradient(var(--accent) 0deg ${deg}deg, rgba(255,255,255,.08) ${deg}deg 360deg)">
@@ -2614,6 +2671,7 @@ function renderPerfilConfig(){
       <div class="h">Conta</div>
       <div class="rowitem" id="cfEmail" style="cursor:pointer"><div class="txt"><div class="t">✉️ Trocar e-mail</div><div class="s">${esc(S.profile.email||'')}</div></div><span class="muted" style="font-size:20px">›</span></div>
       <div class="rowitem" id="cfSenha" style="cursor:pointer"><div class="txt"><div class="t">🔑 Trocar senha</div><div class="s">Define uma nova senha.</div></div><span class="muted" style="font-size:20px">›</span></div>
+      <div class="rowitem" id="cfSecP" style="cursor:pointer"><div class="txt"><div class="t">🔐 Pergunta de segurança</div><div class="s">Pra recuperar a senha sem e-mail.</div></div><span class="muted" style="font-size:20px">›</span></div>
       <div class="rowitem" id="cfDel" style="cursor:pointer;border-color:color-mix(in srgb,var(--accent) 50%, var(--line))"><div class="txt"><div class="t" style="color:#ff6b6b">🗑️ Excluir minha conta</div><div class="s">Apaga tudo do banco, sem volta. Pede a senha.</div></div><span class="muted" style="font-size:20px">›</span></div>
     </div>`;
   $('#cfEdit').onchange=e=>{ S.config.editMode=e.target.checked; save('config'); toast(e.target.checked?'Modo edição ON':'Modo edição OFF'); };
@@ -2624,6 +2682,7 @@ function renderPerfilConfig(){
   $('#cfTryOpts').onclick=tryHardOpcoesSheet;
   $('#cfEmail').onclick=trocarEmailSheet;
   $('#cfSenha').onclick=trocarSenhaSheet;
+  $('#cfSecP').onclick=perguntaSegurancaSheet;
   $('#cfDel').onclick=excluirContaSheet;
 }
 function trocarEmailSheet(){
@@ -2653,6 +2712,26 @@ function trocarSenhaSheet(){
     if(nova.length<6) return $('#tsErr').textContent='Nova senha muito curta (mínimo 6).';
     try{ await api('/auth/trocar-senha',{method:'POST',body:{senhaAtual:atual, novaSenha:nova}}); closeSheet(); toast('Senha atualizada.'); }
     catch(e){ $('#tsErr').textContent = e.status===401?'Senha atual incorreta.':(e.data?.erro||'Falha ao trocar a senha.'); }
+  };
+}
+function perguntaSegurancaSheet(){
+  openSheet(`<h3>🔐 Pergunta de segurança</h3>
+    <p class="small muted">Usada pra recuperar sua senha sem depender de e-mail.</p>
+    <div class="field"><label>Pergunta</label>
+      <select id="spP">
+        <option value="Qual o nome do seu primeiro pet?">Nome do seu primeiro pet?</option>
+        <option value="Em que cidade você nasceu?">Cidade onde você nasceu?</option>
+        <option value="Qual o nome da sua mãe?">Nome da sua mãe?</option>
+        <option value="Qual foi sua primeira escola?">Sua primeira escola?</option>
+        <option value="Qual seu time do coração?">Seu time do coração?</option>
+      </select></div>
+    <div class="field"><label>Resposta</label><input id="spR" autocomplete="off" placeholder="Guarde bem"></div>
+    <div class="err" id="spErr"></div>
+    <button class="btn" id="spSalvar">Salvar</button>`);
+  $('#spSalvar').onclick=async()=>{
+    const secResposta=$('#spR').value.trim(); if(!secResposta) return $('#spErr').textContent='Responda a pergunta.';
+    try{ await api('/auth/set-pergunta',{method:'POST',body:{secPergunta:$('#spP').value, secResposta}}); closeSheet(); toast('Pergunta de segurança salva.'); }
+    catch(e){ $('#spErr').textContent='Falha ao salvar.'; }
   };
 }
 function excluirContaSheet(){
@@ -2735,17 +2814,26 @@ function startTryHard(){
     const now=brasiliaNow(); const hhmm=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
     // lembrete no minuto exato do hábito
     S.rotina.forEach(r=>{ if(r.hora===hhmm && r.done!==todayISO()){ notify('REDZONE — '+r.nome, 'Está no horário. Cumpra agora, recruta.', 'rotina', !S.config.tryHard); if(o.vibrar&&navigator.vibrate) navigator.vibrate(200); } });
-    const atrasados=atrasadosAgora();
-    if(!atrasados.length){ sirenStop(); return; }
+    const hoje=todayISO();
+    // COBRA TUDO: monta a lista de áreas pendentes do dia
+    const pend=[];
+    if(!S.treinoLogs.some(l=>l.dateISO===hoje)) pend.push('treino');
+    if(!S.estudoLogs.some(l=>l.dateISO===hoje)) pend.push('estudo');
+    if((S.agua[hoje]||0) < (S.profile.metaAgua||2500)) pend.push('agua');
+    if(S.rotina.some(r=>r.hora && r.done!==hoje)) pend.push('rotina');
+    if(!pend.length){ sirenStop(); return; }
     _tryTick++;
+    const area=pend[_tryTick % pend.length];      // rotaciona entre as áreas
+    const pool=LEMBRETES[area];
     if(S.config.tryHard){
-      if(segsNoApp() >= (o.treguaS||60)){ sirenStop(); return; }   // trégua: silencia
-      const msg=TRYHARD[_tryTick%TRYHARD.length];
-      notify('🔥 MODO TRY HARD', msg+' ('+atrasados.length+' pendente(s))', 'rotina');
+      if(segsNoApp() >= (o.treguaS||60)) return;   // trégua: só a sirene silencia; segue cobrando visual? não, dá trégua total
+      const msg=pool.hard[_tryTick % pool.hard.length];
+      notify('🔥 MODO TRY HARD', msg, pool.alvo);
       toast('🔥 '+msg, 4000); tryHardFlash();
       if(navigator.vibrate) navigator.vibrate([400,120,400,120,400,120,600]);
-    } else if(S.config.notif && _tryTick%6===0){   // normal: cobrança visual, sem som-spam
-      notify('REDZONE', COBRANCA[_tryTick%COBRANCA.length]+' ('+atrasados.length+' pendente(s))', 'rotina');
+    } else if(S.config.notif && _tryTick%3===0){   // normal: incentivo variado, espaçado, com som
+      const msg=pool.normal[_tryTick % pool.normal.length];
+      notify('REDZONE', msg, pool.alvo, true);
     }
   }, Math.max(5,(o.intervaloS||20))*1000);
 }
