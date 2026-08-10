@@ -1,7 +1,24 @@
 import { Server } from 'socket.io';
 import jwt from 'jsonwebtoken';
+import fs from 'node:fs';
 
 let io = null;
+
+// Observa o diretório do app e, quando o front muda (novo deploy), empurra 'app:update'
+// pra TODOS os aparelhos conectados recarregarem na hora (autoupdate em ms, sem baixar nada).
+let _lastDeploy = 0;
+export function watchDeploys(appDir) {
+  try {
+    fs.watch(appDir, (evt, file) => {
+      if (file && file !== 'disciplina-v3.html' && file !== 'service-worker.js') return;
+      const now = Date.now();
+      if (now - _lastDeploy < 1500) return; // debounce (scp dispara vários eventos)
+      _lastDeploy = now;
+      setTimeout(() => { if (io) { io.to('feed').emit('app:update', { at: Date.now() }); console.log('[deploy] app:update enviado a todos os conectados'); } }, 500);
+    });
+    console.log('[deploy] observando mudanças em', appDir);
+  } catch (e) { console.warn('[deploy] watch falhou:', e.message); }
+}
 
 export function initRealtime(httpServer, corsOrigins) {
   // path casa com o proxy do nginx: /rotina/socket.io/

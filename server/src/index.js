@@ -14,7 +14,7 @@ import { batalhaRouter } from './routes/batalha.js';
 import { dmRouter } from './routes/dm.js';
 import { pushRouter } from './routes/push.js';
 import { uploadRouter } from './routes/upload.js';
-import { initRealtime } from './realtime.js';
+import { initRealtime, watchDeploys } from './realtime.js';
 import { iniciarAgenda } from './lib/agenda.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -54,7 +54,11 @@ app.use((err, req, res, _next) => {
 const server = http.createServer(app);
 initRealtime(server, CORS_ORIGINS.length ? CORS_ORIGINS : true);
 
+// diretório do front (pra observar deploys e empurrar autoupdate ao vivo)
+const APP_DIR = process.env.APP_DIR || path.resolve(__dirname, '../../app');
+
 server.listen(PORT, () => {
   console.log(`DISCIPLINA API no ar em http://localhost:${PORT} (CORS: ${CORS_ORIGINS.join(', ') || '*'})`);
   iniciarAgenda(); // avisos programados de aniversários/datas
+  watchDeploys(APP_DIR); // autoupdate ao vivo: novo deploy → todos recarregam na hora
 });
