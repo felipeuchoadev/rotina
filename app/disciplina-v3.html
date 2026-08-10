@@ -28,8 +28,10 @@ body{
   background:
     radial-gradient(120% 55% at 50% 0, color-mix(in srgb,var(--accent) 12%, transparent), transparent 60%),
     linear-gradient(180deg,var(--bg),var(--bg2));
-  /* cor sólida sob o gradiente (fallback) — sem background-attachment:fixed, que no mobile
-     deixa faixas brancas quando a barra do navegador/teclado muda o viewport */
+  /* fixo na viewport: o topo é SEMPRE var(--bg), então a topbar (sticky) casa com o fundo ao rolar
+     (sem isso, o gradiente rolava e a topbar virava um "quadrado" de cor diferente).
+     A faixa branca no mobile já é evitada pelo html{background:var(--bg2)} acima (fallback escuro). */
+  background-attachment:fixed;
   background-color:var(--bg2);
   min-height:100vh; min-height:100dvh; font-size:16.5px; line-height:1.5;
   -webkit-font-smoothing:antialiased;
@@ -58,8 +60,10 @@ a{color:var(--accent2);}
 .topbar{
   display:flex; align-items:center; justify-content:space-between;
   padding:18px 4px 12px; position:sticky; top:0; z-index:20;
-  background:linear-gradient(180deg, var(--bg) 65%, transparent);
-  backdrop-filter:blur(8px);
+  /* semi-transparente + blur: deixa o fundo do tema (com o brilho) aparecer atrás,
+     em vez de um retângulo de cor sólida diferente. Fica frosted e se encaixa. */
+  background:linear-gradient(180deg, color-mix(in srgb, var(--bg2) 55%, transparent) 0%, transparent 100%);
+  backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
 }
 .brand{font-weight:800; font-size:20px; letter-spacing:-.01em;}
 .brand .dot{color:var(--accent);}
@@ -546,7 +550,9 @@ async function uploadMedia(file){
   const res=await fetch(API_BASE+'/upload',{method:'POST',headers:authToken?{'Authorization':'Bearer '+authToken}:{},body:fd});
   if(!res.ok) throw new Error('Falha no upload'); return res.json(); // {url,tipo}
 }
-async function reportXP(){ try{ await api('/perfil',{method:'PATCH',body:{xp:computeXP()}}); }catch(e){} }
+let _lastXpReported=null;
+async function reportXP(){ if(_syncBusy()) return; const xp=computeXP(); if(xp===_lastXpReported) return; _lastXpReported=xp;
+  try{ await api('/perfil',{method:'PATCH',body:{xp, clientId:CLIENT_ID}}); }catch(e){ _lastXpReported=null; } }
 
 /* ---------- OFFLINE: fila de escrita + cache (não perder progresso sem internet) ---------- */
 function offQueue(){ try{ return JSON.parse(localStorage.getItem('disc:queue')||'[]'); }catch{ return []; } }
@@ -566,11 +572,18 @@ window.addEventListener('online', ()=>{ flushQueue(); });
 const CLIENT_ID = (Math.random().toString(36).slice(2)+'-'+Date.now().toString(36));
 // evita re-render que rouba o foco enquanto a pessoa digita (o dado já foi aplicado em S de qualquer forma)
 function _syncPodeRender(){ const a=document.activeElement; return !(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||'')); }
+// ANTI-LOOP: ao aplicar uma mudança que VEIO do servidor, um re-render pode disparar escritas de
+// efeito colateral (reportXP/saveProfile/save) que voltariam a emitir e criariam ping-pong entre
+// aparelhos. Durante uma janela curta após aplicar o remoto, NÃO reescrevemos no servidor.
+let _syncBusyUntil=0;
+function _syncBusy(){ return Date.now() < _syncBusyUntil; }
+function _syncHold(){ _syncBusyUntil = Date.now() + 3000; }
 /* ---------- STORE: dados pessoais por usuário (backend + offline) ---------- */
 const Store = {
   async get(key){ try{ return await api('/state/'+encodeURIComponent(key)); }catch(e){ return null; } },
   async set(key,val){
     try{ localStorage.setItem('disc:local:'+key, JSON.stringify(val)); }catch{}   // espelho local
+    if(_syncBusy()) return true;   // veio do servidor agora → não reescreve (anti-loop)
     try{ await api('/state/'+encodeURIComponent(key),{method:'PUT',body:{valor:val, clientId:CLIENT_ID}}); return true; }
     catch(e){
       const q=offQueue().filter(i=>i.chave!==key); q.push({chave:key, valor:val}); setQueue(q);  // enfileira (última escrita vence)
@@ -588,6 +601,7 @@ function applyRemoteState(chave, valor){
   try{ localStorage.setItem('disc:local:'+chave, JSON.stringify(valor)); }catch{}
   // atualiza o cache do estado completo pra ficar consistente offline
   try{ const c=JSON.parse(localStorage.getItem('disc:cache:st')||'{}'); c[chave]=valor; localStorage.setItem('disc:cache:st', JSON.stringify(c)); }catch{}
+  _syncHold();   // segura escritas de efeito colateral do re-render (anti-loop)
   if(activeTab && _syncPodeRender()){ try{ go(activeTab); }catch(e){} }
 }
 
@@ -841,6 +855,7 @@ async function loadUserData(){
   applyTheme(S.profile.tema||'red');
 }
 async function saveProfile(){
+  if(_syncBusy()) return;   // veio do servidor agora → não reescreve (anti-loop)
   const p=S.profile;
   try{ await api('/perfil',{method:'PATCH',body:{ nomeGuerra:p.nome, username:p.username, idade:p.idade,
     pesoKg:p.peso, alturaCm:p.altura, fotoUrl:p.foto, tema:p.tema, metaAgua:p.metaAgua, xp:computeXP(), clientId:CLIENT_ID }}); }
@@ -862,6 +877,7 @@ function applyRemoteProfile(u){
   if(JSON.stringify(S.profile)===before) return;   // nada mudou de verdade
   applyTheme(S.profile.tema||'red');
   try{ const c=JSON.parse(localStorage.getItem('disc:cache:me')||'{}'); if(c.usuario){ c.usuario={...c.usuario, ...u}; localStorage.setItem('disc:cache:me', JSON.stringify(c)); } }catch{}
+  _syncHold();   // segura escritas de efeito colateral do re-render (anti-loop)
   if(activeTab && _syncPodeRender()){ try{ go(activeTab); }catch(e){} }
 }
 async function save(k){ await Store.set(k, S[cameMap(k)]); }
