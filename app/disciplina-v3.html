@@ -41,7 +41,7 @@ a{color:var(--accent2);}
 /* ============================================================
    ESTRUTURA GERAL — Modelo C "Atleta"
 ============================================================ */
-#app{max-width:520px; margin:0 auto; min-height:100vh; position:relative; padding-bottom:104px;}
+#app{max-width:520px; margin:0 auto; min-height:100vh; position:relative; padding-bottom:32px;}
 .screen{display:none; padding:0 16px;}
 .screen.active{display:block; animation:fade .2s ease;}
 @keyframes fade{from{opacity:0; transform:translateY(8px);} to{opacity:1; transform:none;}}
@@ -214,12 +214,18 @@ textarea.auto{resize:none; overflow:hidden; min-height:48px;}
 .post-actions b{color:var(--text);}
 
 /* Bottom nav (7 itens) */
-.nav{position:fixed; bottom:0; left:0; right:0; z-index:40; background:rgba(14,16,19,.92); backdrop-filter:blur(14px);
-  border-top:1px solid var(--line); padding:8px 0 calc(8px + env(safe-area-inset-bottom));}
-.nav-inner{max-width:520px; margin:0 auto; display:flex; justify-content:space-between; padding:0 6px;}
-.nav button{background:none; border:none; color:#fff; flex:1; min-width:0; padding:7px 1px; display:flex; flex-direction:column; align-items:center; gap:4px; font-size:8.8px; font-weight:700; letter-spacing:-.01em; white-space:nowrap; border-radius:12px;}
-.nav button svg{width:21px; height:21px; stroke:currentColor; fill:none; stroke-width:1.8;}
-.nav button.active{color:var(--accent);}
+/* CELULAR: nav vira GAVETA lateral (abre no ☰). Desktop vira sidebar (media query abaixo). */
+.nav{position:fixed; top:0; left:0; bottom:0; z-index:70; width:250px; max-width:82vw; background:rgba(12,14,17,.98); backdrop-filter:blur(16px);
+  border-right:1px solid var(--line); padding:16px 0 calc(20px + env(safe-area-inset-bottom)); transform:translateX(-106%); transition:transform .25s ease; overflow-y:auto; box-shadow:8px 0 40px rgba(0,0,0,.5);}
+.nav.open{transform:translateX(0);}
+.nav-inner{display:flex; flex-direction:column; gap:4px; padding:0 10px;}
+.nav-inner::before{content:'REDZONE'; font-family:'Oswald',sans-serif; display:block; font-weight:800; font-size:20px; padding:6px 12px 12px; color:var(--text); letter-spacing:.03em;}
+.nav button{background:none; border:none; color:#fff; width:100%; display:flex; flex-direction:row; align-items:center; gap:13px; padding:13px 12px; font-size:15px; font-weight:700; white-space:nowrap; border-radius:12px; text-align:left;}
+.nav button svg{width:22px; height:22px; stroke:currentColor; fill:none; stroke-width:1.8; flex:0 0 22px;}
+.nav button.active{color:var(--accent); background:color-mix(in srgb,var(--accent) 13%, transparent);}
+.navbd{position:fixed; inset:0; z-index:65; background:rgba(0,0,0,.5); display:none;}
+.navbd.show{display:block;}
+.hamb{display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px; border-radius:11px; border:1px solid var(--line); background:var(--surface2); color:var(--text); font-size:19px; flex:0 0 40px; cursor:pointer;}
 
 /* Overlay genérico (sheet) */
 .overlay{position:fixed; inset:0; z-index:60; background:rgba(0,0,0,.62); display:none; align-items:flex-end;}
@@ -381,10 +387,15 @@ body.th-shake{animation:thshake .55s;}
    lateral e o conteúdo ganha respiro; resumo em 2 colunas.
 ============================================================ */
 @media (min-width:900px){
-  .nav{top:0; bottom:0; left:0; right:auto; width:108px; height:100vh; border-top:none; border-right:1px solid var(--line); padding:18px 0;}
-  .nav-inner{flex-direction:column; height:100%; justify-content:flex-start; gap:6px; padding:0 10px; max-width:none;}
-  .nav button{flex:0 0 auto; width:100%; padding:12px 4px; font-size:10.5px;}
+  /* DESKTOP: sidebar fixa (sem gaveta, sem ☰) */
+  .nav{transform:none !important; box-shadow:none; top:0; bottom:0; left:0; right:auto; width:108px; height:100vh; border-top:none; border-right:1px solid var(--line); padding:18px 0; max-width:none;}
+  .nav-inner{flex-direction:column; height:100%; justify-content:flex-start; gap:6px; padding:0 10px;}
+  .nav-inner::before{display:none;}
+  .nav button{flex:0 0 auto; width:100%; flex-direction:column; gap:4px; padding:12px 4px; font-size:10.5px; text-align:center; justify-content:center;}
+  .nav button svg{width:21px; height:21px;}
   .nav button.active{background:color-mix(in srgb,var(--accent) 14%, transparent);}
+  .hamb{display:none !important;}
+  .navbd{display:none !important;}
   #app{max-width:880px; margin:0 auto; padding-left:108px; padding-bottom:44px;}
   .screen{padding:0 30px;}
   .sumgrid{grid-template-columns:1fr 1fr;}
@@ -434,7 +445,8 @@ body.th-shake{animation:thshake .55s;}
   <section id="scr-batalha" class="screen"></section>
   <section id="scr-perfil" class="screen"></section>
 
-  <nav class="nav"><div class="nav-inner" id="navInner"></div></nav>
+  <div class="navbd" id="navBackdrop" onclick="closeDrawer()"></div>
+  <nav class="nav" id="nav"><div class="nav-inner" id="navInner"></div></nav>
 </div>
 
 <!-- Sheet genérico -->
@@ -997,7 +1009,12 @@ function renderNav(){
       ${svgIcon(NAV_ICO[t.id])}${t.label}</button>`).join('');
   $$('#navInner button').forEach(b=> b.onclick=()=>go(b.dataset.tab));
 }
+// gaveta lateral (celular)
+function openDrawer(){ $('#nav').classList.add('open'); $('#navBackdrop').classList.add('show'); }
+function closeDrawer(){ $('#nav').classList.remove('open'); $('#navBackdrop').classList.remove('show'); }
+window.openDrawer=openDrawer; window.closeDrawer=closeDrawer;
 function go(tab){
+  closeDrawer();
   activeTab=tab; renderNav();
   $$('.screen').forEach(s=>s.classList.remove('active'));
   $('#scr-'+tab).classList.add('active');
@@ -1046,7 +1063,10 @@ function renderInicio(){
   $('#scr-inicio').innerHTML = `
     <div class="home-top">
       <div class="home-topline">
-        <div class="brand" style="font-size:27px;letter-spacing:.02em"><span style="color:var(--accent)">RED</span>ZONE</div>
+        <div style="display:flex;align-items:center;gap:11px">
+          <button class="hamb" onclick="openDrawer()">☰</button>
+          <div class="brand" style="font-size:27px;letter-spacing:.02em"><span style="color:var(--accent)">RED</span>ZONE</div>
+        </div>
         ${homeClockHTML()}
       </div>
       <div class="herocard">
@@ -1392,7 +1412,7 @@ function resumoDetalheSheet(tipo){
 }
 
 /* ---------- helper de topo neutro ---------- */
-function topbar(title){ return `<div class="topbar"><div class="brand">${title}</div>${homeClockHTML()}</div>`; }
+function topbar(title){ return `<div class="topbar"><div style="display:flex;align-items:center;gap:10px"><button class="hamb" onclick="openDrawer()">☰</button><div class="brand">${title}</div></div>${homeClockHTML()}</div>`; }
 function editToggleHint(){ return S.config.editMode ? `<span class="chip" style="border-color:var(--accent2);color:var(--accent2)">✏️ MODO EDIÇÃO ON</span>` : ''; }
 
 /* =========================================================================
@@ -2411,7 +2431,7 @@ async function renderBatalha(){
   const badge = notif.naoLidas>0 ? `<span class="notif-badge">${notif.naoLidas>9?'9+':notif.naoLidas}</span>` : '';
   const dmBadge = dmN.naoLidas>0 ? `<span class="notif-badge">${dmN.naoLidas>9?'9+':dmN.naoLidas}</span>` : '';
   $('#scr-batalha').innerHTML=`
-    <div class="topbar"><div class="brand">BATALHA</div>
+    <div class="topbar"><div style="display:flex;align-items:center;gap:10px"><button class="hamb" onclick="openDrawer()">☰</button><div class="brand">BATALHA</div></div>
       <div style="display:flex;align-items:center;gap:10px">
         <button class="icobtn" id="dmBtn">${svgIcon('i-dm')}${dmBadge}</button>
         <button class="icobtn" id="sinoBtn">${svgIcon('i-sino')}${badge}</button>${homeClockHTML()}
