@@ -260,6 +260,8 @@ textarea.auto{resize:none; overflow:hidden; min-height:48px;}
 /* logo se camufla no fundo escuro: 'screen' faz o preto do PNG sumir e só o brilho/desenho aparece
    (sem borda arredondada e sem drop-shadow retangular, que era o "quadrado" que aparecia) */
 .emblema{width:190px; height:190px; margin:0 auto 2px; display:block; object-fit:contain; mix-blend-mode:screen;}
+/* login: logo grande preenchendo o espaço (o nome "REDZONE" já está na própria arte) */
+.emblema.big{width:min(78vw,300px); height:auto; aspect-ratio:1; margin-bottom:-6px;}
 .auth-title{font-weight:800; font-size:34px; text-align:center; letter-spacing:-.01em;}
 .auth-sub{text-align:center; color:var(--text-dim); margin:4px 0 24px; font-size:15px;}
 .tabs{display:flex; gap:8px; margin-bottom:16px;}
@@ -638,8 +640,8 @@ function insignia(rankId, cls='insignia'){
   </svg>`;
 }
 /* Emblema ESA estilizado (arte própria) pra tela de login */
-function emblemaESA(){
-  return `<img class="emblema" src="redzone-logo.png" alt="REDZONE" width="180" height="180">`;
+function emblemaESA(big){
+  return `<img class="emblema${big?' big':''}" src="redzone-logo.png" alt="REDZONE">`;
 }
 
 /* Esculachos (tom instrutor de quartel — pesado, sem ofensa degradante) */
@@ -821,9 +823,8 @@ function renderAuth(){
   const inner=$('#authInner');
   if(authMode==='login'){
     inner.innerHTML = `
-      ${emblemaESA()}
-      <div class="auth-title">REDZONE</div>
-      <div class="auth-sub">Disciplina é território. Domina o seu.</div>
+      ${emblemaESA(true)}
+      <div class="auth-sub" style="margin-top:0">Disciplina é território. Domina o seu.</div>
       <div class="tabs"><button class="on">Entrar</button><button id="toSignup">Criar conta</button></div>
       <div class="field"><label>E-mail</label><input id="lgEmail" type="email" placeholder="voce@gmail.com" autocomplete="email"></div>
       <div class="field"><label>Senha</label><input id="lgPass" type="password" placeholder="••••••••" autocomplete="current-password"></div>
