@@ -1,7 +1,31 @@
-# DISCIPLINA — Status atual e roadmap (ponto de retomada)
+# REDZONE (ex-DISCIPLINA) — Status atual e roadmap (ponto de retomada)
 
 > Documento vivo pra QUALQUER sessão continuar sem perder contexto. Se o chat
 > zerar, leia isto + `docs/07`, `08`, `09` e os arquivos de memória.
+
+> ⚠️ **ATENÇÃO (leia antes de "começar da onda 1"):** a lista original inteira
+> (ondas 1–8) JÁ ESTÁ FEITA E NO AR há tempo, mais o rebrand **REDZONE**, a
+> reformulação da **Rotina**, o **menu gaveta** no celular e a **alimentação
+> semanal**. NÃO refazer nada disso. O que REALMENTE falta está em
+> **"PENDENTE DE VERDADE (hoje)"** mais abaixo. App = `redzone`; nome do arquivo
+> ainda é `app/disciplina-v3.html`; logo `redzone-logo.png`. Conta de teste:
+> `felipeestudos220807@gmail.com` / `felipe220807@` (pergunta de segurança: time = Flamengo).
+
+## PENDENTE DE VERDADE (hoje)
+1. **Domínio pro e-mail** (~R$40/ano): sem domínio verificado o Resend só entrega
+   pro dono da conta; a VM mandaria mas cai em spam/porta 25 bloqueada. Recuperação
+   por **pergunta de segurança** já cobre todos os usuários agora. Quando houver
+   domínio, configurar SPF/DKIM no Resend e trocar `MAIL_FROM`.
+2. **Landing** `/rotina/landing.html`: existe rebrandeada; falta screenshots reais.
+3. **Deep-link pra post específico** (hoje cai no perfil/feed).
+4. Polir o que o Felipe apontar ao usar no celular.
+
+## Ondas mais recentes já entregues (além da lista original)
+- **Alimentação semanal**: banner "feche a semana passada" + "Finalizar semana" arquiva %saudável/%ruim em `alim:hist` e zera as refeições; gráfico de evolução por semana.
+- **Rotina reformulada**: atividades por dia com horário opcional (`rotina:dias`), "repetir em semana/mês/ano/X dias", lixeira pra limpar dias; calendário ✅(100%)/✕(incompleto)/futuro no tema.
+- **Menu gaveta ☰** no celular (sidebar no PC).
+- **Try Hard corrigido**: sirene/tremor/esculacho SÓ quando item COM HORÁRIO passou; treino/estudo/água = lembrete gentil espaçado. Semana conta o dia real (hojeDia). Stories = últimas 24h.
+- **Recuperação universal por pergunta de segurança**; som de notificação personalizável; logo texto RED/ZONE; datas com repetição dia/semana/mês/ano; legenda nas comprovações.
 
 ## Onde tudo vive
 - **Código:** GitHub `felipeuchoadev/rotina` (branch `main`) — commit a cada mudança.
