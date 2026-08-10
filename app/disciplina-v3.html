@@ -2607,7 +2607,8 @@ function renderPerfilConfig(){
       <div class="h">Notificações & Modo Try Hard</div>
       <label class="rowitem"><input type="checkbox" id="cfNotif" ${c.notif?'checked':''} style="width:24px;height:24px"><div class="txt"><div class="t">Permitir notificações</div><div class="s">Lembretes no horário dos hábitos.</div></div></label>
       <label class="rowitem"><input type="checkbox" id="cfTry" ${c.tryHard?'checked':''} style="width:24px;height:24px"><div class="txt"><div class="t">Modo Try Hard 🔥</div><div class="s">Aqui o bicho pega: o app floda notificação e alarme SEM PARAR até você cumprir. Desligado, ele ainda cobra — só que na metade da intensidade.</div></div></label>
-      <div class="rowitem" id="cfTryOpts" style="cursor:pointer"><div class="txt"><div class="t">⚙️ Opções do Try Hard</div><div class="s">Som do alarme, vibração, intervalo, tempo de trégua…</div></div><span class="muted" style="font-size:20px">›</span></div>
+      <div class="rowitem" id="cfSomNotif" style="cursor:pointer"><div class="txt"><div class="t">🔔 Som das notificações</div><div class="s">Use o som padrão ou envie o seu próprio áudio.</div></div><span class="muted" style="font-size:20px">›</span></div>
+      <div class="rowitem" id="cfTryOpts" style="cursor:pointer"><div class="txt"><div class="t">⚙️ Opções do Try Hard</div><div class="s">Sirene do alarme, vibração, intervalo, tempo de trégua…</div></div><span class="muted" style="font-size:20px">›</span></div>
     </div>
     <div class="card">
       <div class="h">Conta</div>
@@ -2619,6 +2620,7 @@ function renderPerfilConfig(){
   $('#cfPriv').onchange=async e=>{ S.profile.privado=e.target.checked; try{ await api('/perfil',{method:'PATCH',body:{privado:e.target.checked}}); toast(e.target.checked?'Perfil agora é privado.':'Perfil agora é público.'); }catch(err){ toast('Falha ao salvar.'); } };
   $('#cfNotif').onchange=async e=>{ S.config.notif=e.target.checked; save('config'); if(e.target.checked && 'Notification' in window){ const perm=await Notification.requestPermission(); if(perm!=='granted'){ toast('Permissão de notificação negada no navegador.'); } else { subscribePush(); toast('Notificações ligadas — chegam até com o app fechado.'); } } };
   $('#cfTry').onchange=e=>{ S.config.tryHard=e.target.checked; save('config'); startTryHard(); };
+  $('#cfSomNotif').onclick=somNotificacaoSheet;
   $('#cfTryOpts').onclick=tryHardOpcoesSheet;
   $('#cfEmail').onclick=trocarEmailSheet;
   $('#cfSenha').onclick=trocarSenhaSheet;
@@ -2680,8 +2682,10 @@ function renderPerfilTemas(){
 /* =========================================================================
    NOTIFICAÇÕES / TRY HARD
 ========================================================================= */
-function notify(title,body,alvo){ if('Notification' in window && Notification.permission==='granted'){ try{ const n=new Notification(title,{body, icon:'icon-192.png'}); n.onclick=()=>{ try{ window.focus(); }catch(e){} try{ if(alvo){ if(alvo[0]==='#'){ location.hash=alvo; if(typeof handleDeepLink==='function') handleDeepLink(); } else go(alvo); } }catch(e){} n.close(); }; }catch(e){} } }
+function notify(title,body,alvo,comSom){ if(comSom) tocarSomNotif(); if('Notification' in window && Notification.permission==='granted'){ try{ const n=new Notification(title,{body, icon:'icon-192.png'}); n.onclick=()=>{ try{ window.focus(); }catch(e){} try{ if(alvo){ if(alvo[0]==='#'){ location.hash=alvo; if(typeof handleDeepLink==='function') handleDeepLink(); } else go(alvo); } }catch(e){} n.close(); }; }catch(e){} } }
 function tryOpts(){ if(!S.config.tryOpts) S.config.tryOpts={som:'alarme', vibrar:true, intervaloS:20, treguaS:60, somNotif:true}; return S.config.tryOpts; }
+// som que toca em CADA notificação do app (personalizável pela pessoa)
+function tocarSomNotif(){ const o=tryOpts(); if(o.somNotif===false) return; if(o.somNotifCustom){ try{ const a=new Audio(o.somNotifCustom); a.volume=1; a.play().catch(()=>{}); }catch(e){} } else { tocarSom('sino'); } }
 // motor de som (WebAudio) — sons diferentes; 'alarme' é a sirene chata do Try Hard
 let _actx=null; function audioCtx(){ try{ _actx=_actx||new (window.AudioContext||window.webkitAudioContext)(); if(_actx.state==='suspended') _actx.resume(); return _actx; }catch(e){ return null; } }
 function tocarSom(tipo){
@@ -2730,7 +2734,7 @@ function startTryHard(){
     if(!S) return;
     const now=brasiliaNow(); const hhmm=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
     // lembrete no minuto exato do hábito
-    S.rotina.forEach(r=>{ if(r.hora===hhmm && r.done!==todayISO()){ notify('REDZONE — '+r.nome, 'Está no horário. Cumpra agora, recruta.', 'rotina'); if(!S.config.tryHard && S.config.notif && o.somNotif!==false) tocarSom('sino'); if(o.vibrar&&navigator.vibrate) navigator.vibrate(200); } });
+    S.rotina.forEach(r=>{ if(r.hora===hhmm && r.done!==todayISO()){ notify('REDZONE — '+r.nome, 'Está no horário. Cumpra agora, recruta.', 'rotina', !S.config.tryHard); if(o.vibrar&&navigator.vibrate) navigator.vibrate(200); } });
     const atrasados=atrasadosAgora();
     if(!atrasados.length){ sirenStop(); return; }
     _tryTick++;
@@ -2744,6 +2748,32 @@ function startTryHard(){
       notify('REDZONE', COBRANCA[_tryTick%COBRANCA.length]+' ('+atrasados.length+' pendente(s))', 'rotina');
     }
   }, Math.max(5,(o.intervaloS||20))*1000);
+}
+// Som das notificações — a pessoa escolhe o padrão ou envia o próprio áudio
+function somNotificacaoSheet(){
+  const o=tryOpts();
+  openSheet(`<h3>🔔 Som das notificações</h3>
+    <p class="small muted">O som que toca em cada aviso do app (horário de hábito, mensagem, etc.).</p>
+    <label class="rowitem" style="cursor:pointer"><input type="checkbox" id="snLigado" ${o.somNotif!==false?'checked':''} style="width:22px;height:22px"><div class="txt"><div class="t">Tocar som nas notificações</div></div></label>
+    <div class="field"><label>Áudio atual</label>
+      <div style="display:flex;gap:8px;align-items:center">
+        <div class="txt" style="flex:1"><div class="t" id="snNome">${o.somNotifCustom?'Seu áudio personalizado':'Sino (padrão)'}</div></div>
+        <button class="btn sm ghost" id="snTest">▶ testar</button>
+        <button class="btn sm ghost" id="snStop">⏹</button>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn sm ghost" id="snUpload" style="flex:1">🎵 Enviar meu áudio</button>
+        ${o.somNotifCustom?`<button class="btn sm ghost" id="snPadrao" style="flex:1">↩️ Voltar pro padrão</button>`:''}
+      </div>
+      <p class="s muted" style="font-size:12px;margin-top:6px">Aceita MP3, WAV, etc. (o som toca com o app aberto).</p></div>
+    <button class="btn" id="snSalvar">Salvar</button>`);
+  let custom=o.somNotifCustom||null;
+  const testA=()=>{ const a=new Audio(custom||'siren.mp3'); if(!custom){ a.src=''; a.remove?.(); tocarSom('sino'); return; } a.volume=1; a.play().catch(()=>{}); window._snTest=a; };
+  $('#snTest').onclick=(e)=>{ e.preventDefault(); if(window._snTest){try{window._snTest.pause();}catch(x){}} if(custom){ const a=new Audio(custom); a.volume=1; a.play().catch(()=>{}); window._snTest=a; } else tocarSom('sino'); };
+  $('#snStop').onclick=(e)=>{ e.preventDefault(); if(window._snTest){try{window._snTest.pause();window._snTest.currentTime=0;}catch(x){}} };
+  $('#snUpload').onclick=async(e)=>{ e.preventDefault(); const f=await escolherMidia('audio/*'); if(!f) return; toast('Enviando áudio…'); try{ const up=await uploadMedia(f); custom=up.url; $('#snNome').textContent='Seu áudio personalizado'; toast('Áudio carregado. Toque em ▶ testar.'); }catch(err){ toast('Falha ao enviar o áudio.'); } };
+  if($('#snPadrao')) $('#snPadrao').onclick=(e)=>{ e.preventDefault(); custom=null; $('#snNome').textContent='Sino (padrão)'; toast('Voltou pro som padrão.'); };
+  $('#snSalvar').onclick=()=>{ const o2=tryOpts(); o2.somNotif=$('#snLigado').checked; o2.somNotifCustom=custom; save('config'); closeSheet(); toast('Som das notificações salvo.'); };
 }
 function tryHardOpcoesSheet(){
   const o=tryOpts();
@@ -2821,7 +2851,7 @@ function connectSocket(){
         $('#chatMsgs').scrollTop=$('#chatMsgs').scrollHeight;
       } else {
         toast('💬 '+nome+': '+m.texto.slice(0,40));
-        notify('Mensagem de '+nome, m.texto);
+        notify('Mensagem de '+nome, m.texto, '#dm='+(m.de?.username||''), true);
         if(activeTab==='batalha') renderBatalha();
       }
     });
