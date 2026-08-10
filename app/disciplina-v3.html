@@ -3088,20 +3088,22 @@ function startTryHard(){
         if(navigator.vibrate) navigator.vibrate([400,120,400,120,400,120,600]);
       }
     }
-    // 3) LEMBRETE ÚTIL (sem tremor, sem sirene), espaçado ~10min: cita EXATAMENTE o que falta
+    // 3) LEMBRETE ÚTIL (sem tremor, sem sirene), ~10min: SÓ o que o usuário cadastrou/planejou pra HOJE.
+    //    Nada de informação inventada — cada linha vem de um dado real do próprio usuário.
     if(S.config.notif && Date.now()-_lastGentle > 600000){
+      const dia=hojeDia();   // 'seg'..'dom' de hoje
       const msgs=[];
-      // atividades do dia ainda não feitas — nomeia a atividade (e o horário, se tiver)
-      ((S.rotinaDias&&S.rotinaDias[hoje])||[]).forEach(a=>{ if(!a.done) msgs.push({t:`Não deixe de fazer: ${a.nome}${a.hora?` (${a.hora})`:''}.`, alvo:'rotina'}); });
-      // hábitos com horário ainda não cumpridos
-      (S.rotina||[]).forEach(r=>{ if(r.hora && r.done!==hoje) msgs.push({t:`Falta cumprir o hábito: ${r.nome} (${r.hora}).`, alvo:'rotina'}); });
-      // matérias que você ainda não estudou hoje — nomeia a matéria
+      // (a) atividades que VOCÊ marcou pra hoje na rotina e ainda não fez
+      ((S.rotinaDias&&S.rotinaDias[hoje])||[]).forEach(a=>{ if(a && a.nome && !a.done) msgs.push({t:`Não deixe de fazer: ${a.nome}${a.hora?` (${a.hora})`:''}.`, alvo:'rotina'}); });
+      // (b) hábitos COM horário que ainda não cumpriu hoje
+      (S.rotina||[]).forEach(r=>{ if(r && r.nome && r.hora && r.done!==hoje) msgs.push({t:`Falta o hábito: ${r.nome} (${r.hora}).`, alvo:'rotina'}); });
+      // (c) ESTUDO: só as matérias que você AGENDOU pra hoje (estudo por dia da semana) e ainda não estudou
       const estIdsHoje=new Set(S.estudoLogs.filter(l=>l.dateISO===hoje).map(l=>l.materiaId));
-      (S.materias||[]).forEach(m=>{ if(m && m.nome && !estIdsHoje.has(m.id)) msgs.push({t:`Você ainda não estudou ${m.nome} hoje. Abre o material, recruta.`, alvo:'estudos'}); });
-      // treino do dia
-      if(!S.treinoLogs.some(l=>l.dateISO===hoje)) msgs.push({t:'Cadê o treino de hoje? Não deixa esse dia zerar.', alvo:'treinos'});
-      // água abaixo da meta
-      if((S.agua[hoje]||0) < (S.profile.metaAgua||2500)) msgs.push({t:`Falta água pra bater a meta de hoje (${S.agua[hoje]||0}/${S.profile.metaAgua||2500}ml). Hidrata. 💧`, alvo:'alimentacao'});
+      (S.estudoSemana[dia]||[]).forEach(mid=>{ const m=(S.materias||[]).find(x=>x.id===mid); if(m && m.nome && !estIdsHoje.has(mid)) msgs.push({t:`Você planejou estudar ${m.nome} hoje e ainda não abriu. Bora, recruta.`, alvo:'estudos'}); });
+      // (d) TREINO: só se há treino MONTADO pra hoje no template e você ainda não treinou
+      if((S.treinoTemplate[dia]||[]).length && !S.treinoLogs.some(l=>l.dateISO===hoje)) msgs.push({t:'Você tem treino marcado pra hoje e ainda não fez. Levanta, recruta.', alvo:'treinos'});
+      // (e) ÁGUA: só se tem meta definida e está abaixo dela
+      if(S.profile.metaAgua>0 && (S.agua[hoje]||0) < S.profile.metaAgua) msgs.push({t:`Falta água pra bater a meta de hoje (${S.agua[hoje]||0}/${S.profile.metaAgua}ml). Hidrata. 💧`, alvo:'alimentacao'});
       if(msgs.length){ _lastGentle=Date.now(); const pick=msgs[Math.floor(Date.now()/600000) % msgs.length]; notify('REDZONE', pick.t, pick.alvo, true); }
     }
   }, Math.max(5,(o.intervaloS||20))*1000);
