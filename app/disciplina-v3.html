@@ -295,7 +295,7 @@ textarea.auto{resize:none; overflow:hidden; min-height:48px;}
 .caldw{text-align:center; font-size:11px; font-weight:700; color:var(--text-dim);}
 .calc{aspect-ratio:1; display:flex; align-items:center; justify-content:center; border-radius:9px; font-size:12.5px; font-weight:700; background:var(--surface); color:var(--text); border:1px solid var(--line);}
 .calc.empty{background:transparent; border:none;}
-.calc.futuro{background:var(--surface); color:var(--text-dim);}
+.calc.futuro{background:color-mix(in srgb,#fff 8%, var(--surface)); color:var(--text-dim);}
 .calc.sem{background:var(--surface); color:var(--text);}
 .calc.ok{background:color-mix(in srgb,var(--ok) 26%, var(--surface)); color:var(--ok); border-color:transparent;}
 .calc.fail{background:color-mix(in srgb,var(--accent) 26%, var(--surface)); color:#ff8080; border-color:transparent;}
@@ -308,7 +308,8 @@ textarea.auto{resize:none; overflow:hidden; min-height:48px;}
 /* Rotina calendário editável: 100% ✅, incompleto vermelho, futuro claro */
 .calc.full{background:color-mix(in srgb,var(--ok) 24%, var(--surface)); color:var(--ok); cursor:pointer; font-size:16px;}
 .calc.inc{background:color-mix(in srgb,var(--accent) 16%, var(--surface)); color:#ff6b6b; font-weight:800; cursor:pointer; font-size:16px;}
-.calc.futuro.plan{box-shadow:inset 0 0 0 2px color-mix(in srgb,var(--accent) 45%, transparent);}
+/* dia futuro COM plano: anel branco suave (NÃO vermelho) só pra sinalizar que tem algo marcado */
+.calc.futuro.plan{background:color-mix(in srgb,#fff 14%, var(--surface)); box-shadow:inset 0 0 0 1.5px color-mix(in srgb,#fff 26%, transparent);}
 .calc.selc{box-shadow:0 0 0 3px var(--accent); background:color-mix(in srgb,var(--accent) 22%, var(--surface)); color:var(--text);}
 .calc[data-caldia]{cursor:pointer;}
 /* Agenda (Início): calendário grande navegável + banner de aniversário */
@@ -1547,7 +1548,7 @@ function addTreinoWeek(){
   save('treino:weeks'); renderTreinoWeeks();
 }
 function renderTreinoWeeks(){
-  const now=new Date(); now.setHours(0,0,0,0);
+  const now=brasiliaNow(); now.setHours(0,0,0,0);
   const cwi=currentWeekIndex();
   let h='';
   S.treinoWeeks.forEach((w,i)=>{
@@ -1555,7 +1556,8 @@ function renderTreinoWeeks(){
     const end=new Date(start); end.setDate(end.getDate()+7);
     const locked = start>now;
     const done = Object.values(w.exec).filter(e=>e&&e.done).length;
-    const concluida = !locked && (end<=now || done>=7);
+    const concluida = !locked && done>=7;            // ✅ SÓ quando treinou os 7 dias
+    const encerrada = !locked && !concluida && end<=now;   // janela passou mas NÃO fez tudo
     if(locked){
       const esc1=ESC_LOCKED[i%ESC_LOCKED.length];
       const secs=Math.max(0,Math.floor((start-new Date())/1000));
@@ -1572,6 +1574,12 @@ function renderTreinoWeeks(){
           <div class="donelbl">SEMANA CONCLUÍDA</div>
           <div class="small muted" style="margin-top:3px">${done}/7 dias cumpridos · toque pra ver o progresso</div>
         </div></div>`;
+    } else if(encerrada){
+      const strip=DIAS.map(d=>{ const e=w.exec[d]; const ok=e&&e.done;
+        return `<div class="wd ${ok?'ok':''}"><b>${ok?'✓':(DIAS_AB[d][0])}</b>${DIAS_AB[d]}</div>`; }).join('');
+      h+=`<div class="week atual" data-weekview="${i}" style="opacity:.85"><div class="week-head"><h3>Semana ${i+1}</h3><span class="small" style="color:#ff8080;font-weight:800">${done}/7</span></div>
+        <div class="weekstrip">${strip}</div>
+        <div style="padding:2px 14px 12px" class="small muted">Semana encerrada — você treinou <b>${done} de 7</b> dias. ${done===0?'Zerou essa. ':''}O que passou, passou; foca na semana de agora.</div></div>`;
     } else {
       const strip=DIAS.map(d=>{ const e=w.exec[d]; const ok=e&&e.done; const isToday=d===hojeDia()&&i===cwi;
         return `<div class="wd ${ok?'ok':''} ${isToday?'today':''}"><b>${ok?'✓':(DIAS_AB[d][0])}</b>${DIAS_AB[d]}</div>`; }).join('');
@@ -1593,6 +1601,10 @@ const ESC_TRAVADA=[...ESC_LOCKED,
   'ANSIEDADE NÃO TREINA POR VOCÊ. FOCA NO AGORA E PARA DE OLHAR PRA FRENTE!',
   'ISSO AQUI NÃO É FILA DE PADARIA. RESPEITA O PROCESSO E EXECUTA O HOJE!',
   'QUER O FUTURO? CONQUISTA O PRESENTE PRIMEIRO. VOLTA PRA SEMANA ATUAL!'];
+// Frases de abertura pro Try Hard quando um item COM HORÁRIO passou (não é "furar fila")
+const ESC_ATRASO=[
+  'ⓧ ATRASADO!', 'ⓧ TÁ ATRASADO, RECRUTA!', 'ⓧ O RELÓGIO NÃO ESPERA.',
+  'ⓧ DEIXOU PASSAR!', 'ⓧ HORÁRIO É ORDEM.', 'ⓧ ACORDA, SOLDADO!'];
 function esculachoTravada(el, i){
   el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake');
   const msg=ESC_TRAVADA[Math.floor((Date.now()/1000+i)%ESC_TRAVADA.length)]; // varia a cada clique
@@ -1632,7 +1644,7 @@ function verMidiaSimples(url, legenda){
     ${legenda?`<p class="small" style="margin-top:10px;color:var(--text)">📝 ${esc(legenda)}</p>`:''}
     <a class="btn sm" href="${url}" download style="margin-top:10px;text-decoration:none;text-align:center;display:block">⬇️ Baixar</a>`);
 }
-function currentWeekIndex(){ const now=new Date(); now.setHours(0,0,0,0);
+function currentWeekIndex(){ const now=brasiliaNow(); now.setHours(0,0,0,0);
   let idx=0; S.treinoWeeks.forEach((w,i)=>{ const s=new Date(w.startISO); s.setHours(0,0,0,0); if(s<=now) idx=i; }); return idx; }
 // semana que CONTÉM hoje (startISO <= hoje < startISO+7); -1 se nenhuma
 function weekContainingToday(){ const t=todayISO(); for(let i=0;i<S.treinoWeeks.length;i++){ const s=S.treinoWeeks[i].startISO; const e=new Date(s+'T00:00:00'); e.setDate(e.getDate()+7); const eISO=`${e.getFullYear()}-${String(e.getMonth()+1).padStart(2,'0')}-${String(e.getDate()).padStart(2,'0')}`; if(t>=s && t<eISO) return i; } return -1; }
@@ -2264,7 +2276,9 @@ function diaRotinaSheet(iso){
   const dObj=new Date(iso+'T00:00:00');
   const dataLabel=dObj.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long'});
   const st=diaStatusRotina(iso);
-  const podeMarcar = isToday || editable;   // marca ✅ hoje (ou no modo edição)
+  const isFuturo = iso>hoje;
+  // Dia futuro = SÓ visualização (dá pra planejar no modo edição, mas NÃO finalizar).
+  const podeMarcar = isToday || (editable && !isFuturo);
   const linhas = acts.length ? acts.map(a=>`<div class="rowitem ${a.done?'done':''}">
       <div class="chk" data-actchk="${a.id}" style="${podeMarcar?'':'opacity:.5'}">${a.done?'✓':''}</div>
       <div class="txt"><div class="t">${esc(a.nome)}</div>${a.hora?`<div class="s mono">⏰ ${a.hora}</div>`:''}</div>
@@ -2274,6 +2288,7 @@ function diaRotinaSheet(iso){
     <p class="small" style="${st.total>0&&st.done>=st.total?'color:var(--ok)':'color:var(--text-dim)'}">${st.total>0?`${st.done}/${st.total} atividades${st.done>=st.total?' · dia 100% ✅':''}`:'Sem atividades planejadas.'}</p>
     ${linhas}`;
   if(editable){
+    if(isFuturo) sheet+=`<p class="small muted" style="margin-top:10px">Dia futuro: dá pra <b>planejar</b>, mas não dá pra marcar como feito antes de chegar o dia.</p>`;
     sheet+=`<div class="section-title" style="margin-top:12px">Adicionar atividade</div>
       <div class="field" style="margin:6px 0"><input id="actNome" placeholder="Ex: Corrida 5km, estudar Português..."></div>
       <div class="field" style="margin:6px 0"><label>Horário (opcional)</label><input id="actHora" type="time"></div>
@@ -2325,10 +2340,11 @@ function renderRotinaList(){
   }
 }
 function editHabitoSheet(id){
-  const r=id?S.rotina.find(x=>x.id===id):{nome:'',hora:'06:30'};
+  const r=id?S.rotina.find(x=>x.id===id):{nome:'',hora:''};
   openSheet(`<h3>${id?'Editar':'Novo'} hábito</h3>
     <div class="field"><label>Hábito</label><input id="hbNome" value="${esc(r.nome)}" placeholder="Ex: Escovar os dentes"></div>
-    <div class="field"><label>Horário</label><input id="hbHora" type="time" value="${r.hora||'06:30'}"></div>
+    <div class="field"><label>Horário (opcional)</label><input id="hbHora" type="time" value="${r.hora||''}">
+      <p class="small muted" style="margin:4px 2px 0">Só cobra no Try Hard se você definir um horário. Sem horário = fica só na lista, sem alarme.</p></div>
     <button class="btn" id="hbSave">Salvar</button>`);
   $('#hbSave').onclick=()=>{ const nome=$('#hbNome').value.trim(); if(!nome) return toast('Nome do hábito?');
     if(id){ r.nome=nome; r.hora=$('#hbHora').value; } else S.rotina.push({id:uid(),nome,hora:$('#hbHora').value,done:null});
@@ -2349,8 +2365,10 @@ const REC_TIPOS={treino:'🏋️ Treino', alim:'🍽️ Alimentação', estudo:'
 let recFiltro='tudo';
 function addRecordacao(rec){
   if(!S.recordacoes) S.recordacoes=[];
-  const now=brasiliaNow();
-  S.recordacoes.unshift({ id:uid(), tipo:rec.tipo||'outro', url:rec.url, midiaTipo:rec.midiaTipo||'image', texto:rec.texto||'', dateISO:todayISO(), at:now.toISOString() });
+  // `at` = instante REAL (UTC) — a janela de 24h do story compara com Date.now(), então
+  // precisa ser o momento verdadeiro, não a hora-de-parede de Brasília (que dava fuso errado).
+  // `dateISO` continua sendo o dia de Brasília (agrupa no álbum de memórias).
+  S.recordacoes.unshift({ id:uid(), tipo:rec.tipo||'outro', url:rec.url, midiaTipo:rec.midiaTipo||'image', texto:rec.texto||'', dateISO:todayISO(), at:new Date().toISOString() });
   save('recordacoes');
 }
 function escolherMidia(accept='image/*,video/*'){ return new Promise(res=>{ const inp=document.createElement('input'); inp.type='file'; inp.accept=accept; inp.onchange=()=>res(inp.files[0]||null); inp.click(); }); }
@@ -2761,16 +2779,23 @@ async function gerarPublicacaoDoDia(){
   const hoje=todayISO();
   const itens=[];
   const exNames={}; Object.values(S.treinoTemplate||{}).flat().forEach(ex=>{ exNames[ex.id]=ex.nome; });
-  // agrupa treinos por exercício e soma minutos — só entra o que teve tempo de verdade
+  // TREINO — entra todo treino de hoje (com ou sem cronômetro)
   const treinoAgg={};
   S.treinoLogs.filter(l=>l.dateISO===hoje).forEach(l=>{ const nome=l.nome||exNames[l.exId]||'Treino'; const m=Math.round((l.ativoMs||0)/60000); treinoAgg[nome]=(treinoAgg[nome]||0)+m; });
-  Object.entries(treinoAgg).filter(([n,m])=>m>0).forEach(([nome,m])=>{ itens.push({txt:`🏋️ Treinei ${nome} — ${m} min`}); });
-  // agrupa estudos por matéria — só entra se teve tempo OU conteúdo concluído
+  Object.entries(treinoAgg).forEach(([nome,m])=>{ itens.push({txt:`🏋️ Treinei ${nome}${m>0?` — ${m} min`:''}`}); });
+  // ESTUDO — entra se teve tempo OU conteúdo concluído
   const estAgg={};
   S.estudoLogs.filter(l=>l.dateISO===hoje).forEach(l=>{ const nome=l.materia||'Matéria'; const a=estAgg[nome]||{min:0,c:0}; a.min+=Math.round((l.ativoMs||0)/60000); a.c+=(l.conteudos?.length||0); estAgg[nome]=a; });
-  Object.entries(estAgg).filter(([n,a])=>a.min>0).forEach(([nome,a])=>{ itens.push({txt:`📚 Estudei ${nome} — ${a.min} min${a.c?` (${a.c} conteúdo(s))`:''}`}); });
-  const rFeita=S.rotina.filter(r=>r.done===hoje); if(rFeita.length) itens.push({txt:`⏰ Cumpri ${rFeita.length}/${S.rotina.length} hábitos do dia`});
+  Object.entries(estAgg).filter(([n,a])=>a.min>0||a.c>0).forEach(([nome,a])=>{ itens.push({txt:`📚 Estudei ${nome}${a.min>0?` — ${a.min} min`:''}${a.c?` (${a.c} conteúdo(s))`:''}`}); });
+  // ALIMENTAÇÃO — refeições marcadas como feitas hoje (com a análise automática)
+  DIAS.forEach(d=>(S.alimSemana[d]||[]).forEach(r=>{ if(r.done===hoje){ const q=qualidadeAuto(r); itens.push({txt:`🍽️ ${r.nome}${q?` — ${q}`:''}`}); } }));
+  // ROTINA — atividades do dia concluídas + hábitos
+  ((S.rotinaDias&&S.rotinaDias[hoje])||[]).filter(a=>a.done).forEach(a=>{ itens.push({txt:`✅ ${a.nome}${a.hora?` (${a.hora})`:''}`}); });
+  const rFeita=S.rotina.filter(r=>r.done===hoje); if(rFeita.length) itens.push({txt:`⏰ Cumpri ${rFeita.length}/${S.rotina.length} hábitos`});
+  // ÁGUA
   const agua=S.agua[hoje]||0; if(agua) itens.push({txt:`💧 Bebi ${agua}ml de água`});
+  // PESO — se registrou hoje
+  const pesoHoje=[...(S.pesos||[])].reverse().find(p=>p.dateISO===hoje); if(pesoHoje) itens.push({txt:`⚖️ Me pesei: ${pesoHoje.peso} kg`});
   const midiasHoje=(S.recordacoes||[]).filter(r=>r.dateISO===hoje);
   if(!itens.length && !midiasHoje.length){ return toast('Nada registrado hoje ainda. Treina/estuda e volta pra gerar.'); }
   openSheet(`<h3>Gerar publicação do dia</h3>
@@ -3032,21 +3057,31 @@ function startTryHard(){
     // 2) TRY HARD BRUTAL (sirene+tremor+esculacho): SÓ pra itens com horário que já PASSOU
     const atrasados=atrasadosAgora();
     if(S.config.tryHard && atrasados.length){
-      if(segsNoApp() < (o.treguaS||60)){   // sem trégua → esculacha
+      if(segsNoApp() < (o.treguaS||60)){   // sem trégua → esculacha (SÓ pra item com horário que passou)
         _tryTick++;
-        const msg=ESC_TRAVADA[_tryTick % ESC_TRAVADA.length];
-        notify('🔥 MODO TRY HARD', msg+' ('+atrasados.length+' atrasada(s))', 'rotina');
+        const nomes = atrasados.slice(0,2).join(', ') + (atrasados.length>2?` +${atrasados.length-2}`:'');
+        const abre = ESC_ATRASO[_tryTick % ESC_ATRASO.length];
+        const msg = `${abre} PASSOU DO HORÁRIO: ${nomes}. CUMPRE AGORA, RECRUTA!`;
+        notify('🔥 MODO TRY HARD', msg, 'rotina');
         toast('🔥 '+msg, 4000); tryHardFlash();
         if(navigator.vibrate) navigator.vibrate([400,120,400,120,400,120,600]);
       }
     }
-    // 3) LEMBRETE GENTIL (sem tremor, sem sirene), espaçado ~10min: incentiva as áreas do dia
+    // 3) LEMBRETE ÚTIL (sem tremor, sem sirene), espaçado ~10min: cita EXATAMENTE o que falta
     if(S.config.notif && Date.now()-_lastGentle > 600000){
-      const pend=[];
-      if(!S.treinoLogs.some(l=>l.dateISO===hoje)) pend.push('treino');
-      if(!S.estudoLogs.some(l=>l.dateISO===hoje)) pend.push('estudo');
-      if((S.agua[hoje]||0) < (S.profile.metaAgua||2500)) pend.push('agua');
-      if(pend.length){ _lastGentle=Date.now(); const area=pend[Math.floor(Date.now()/600000) % pend.length]; const pool=LEMBRETES[area]; const msg=pool.normal[Math.floor(Date.now()/600000) % pool.normal.length]; notify('REDZONE', msg, pool.alvo, true); }
+      const msgs=[];
+      // atividades do dia ainda não feitas — nomeia a atividade (e o horário, se tiver)
+      ((S.rotinaDias&&S.rotinaDias[hoje])||[]).forEach(a=>{ if(!a.done) msgs.push({t:`Não deixe de fazer: ${a.nome}${a.hora?` (${a.hora})`:''}.`, alvo:'rotina'}); });
+      // hábitos com horário ainda não cumpridos
+      (S.rotina||[]).forEach(r=>{ if(r.hora && r.done!==hoje) msgs.push({t:`Falta cumprir o hábito: ${r.nome} (${r.hora}).`, alvo:'rotina'}); });
+      // matérias que você ainda não estudou hoje — nomeia a matéria
+      const estIdsHoje=new Set(S.estudoLogs.filter(l=>l.dateISO===hoje).map(l=>l.materiaId));
+      (S.materias||[]).forEach(m=>{ if(m && m.nome && !estIdsHoje.has(m.id)) msgs.push({t:`Você ainda não estudou ${m.nome} hoje. Abre o material, recruta.`, alvo:'estudos'}); });
+      // treino do dia
+      if(!S.treinoLogs.some(l=>l.dateISO===hoje)) msgs.push({t:'Cadê o treino de hoje? Não deixa esse dia zerar.', alvo:'treinos'});
+      // água abaixo da meta
+      if((S.agua[hoje]||0) < (S.profile.metaAgua||2500)) msgs.push({t:`Falta água pra bater a meta de hoje (${S.agua[hoje]||0}/${S.profile.metaAgua||2500}ml). Hidrata. 💧`, alvo:'alimentacao'});
+      if(msgs.length){ _lastGentle=Date.now(); const pick=msgs[Math.floor(Date.now()/600000) % msgs.length]; notify('REDZONE', pick.t, pick.alvo, true); }
     }
   }, Math.max(5,(o.intervaloS||20))*1000);
 }

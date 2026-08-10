@@ -18,12 +18,14 @@ const cadastroSchema = z.object({
   idade: z.number().int().min(5).max(100).optional(),
   dataNasc: z.string().optional().nullable(),
   genero: z.enum(['m', 'f']).optional(),
-  secPergunta: z.string().max(120).optional().nullable(),
-  secResposta: z.string().max(120).optional().nullable(),
+  secPergunta: z.string().min(1).max(120),
+  secResposta: z.string().min(1).max(120),
   pesoKg: z.number().min(1).max(500),
   alturaCm: z.number().int().min(50).max(260),
 });
-const normResp = (s) => String(s || '').trim().toLowerCase();
+// Resposta de segurança: match EXATO (case-sensitive). Só apara espaços das bordas,
+// mas preserva maiúsculas/minúsculas — se a pessoa botou maiúscula, só vale com maiúscula.
+const normResp = (s) => String(s || '').trim();
 
 // Cadastro (etapa 1 e 2 do front chegam juntas aqui: conta + dados pessoais)
 authRouter.post('/cadastro', async (req, res) => {
