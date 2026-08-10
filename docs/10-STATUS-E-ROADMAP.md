@@ -11,13 +11,48 @@
 > ainda é `app/disciplina-v3.html`; logo `redzone-logo.png`. Conta de teste:
 > `felipeestudos220807@gmail.com` / `felipe220807@` (pergunta de segurança: time = Flamengo).
 
-## PENDENTE DE VERDADE (hoje)
-1. **Domínio pro e-mail** (~R$40/ano): sem domínio verificado o Resend só entrega
-   pro dono da conta; a VM mandaria mas cai em spam/porta 25 bloqueada. Recuperação
-   por **pergunta de segurança** já cobre todos os usuários agora. Quando houver
-   domínio, configurar SPF/DKIM no Resend e trocar `MAIL_FROM`.
-2. **Landing** `/rotina/landing.html`: existe rebrandeada; falta screenshots reais.
-3. Polir o que o Felipe apontar ao usar no celular.
+> 🟢 **VERSÃO ATUAL: SW `redzone-v22`.** App/back TODOS no ar e testados. Sync ao vivo ponta a ponta
+> (mudou num aparelho → aparece nos outros em ms) + autoupdate ao vivo (deploy → conectados recarregam em ms)
+> JÁ FUNCIONAM. Deploy = `scp app/* server/src/**` pra VM (chave `Chaves/oracle_vm`, user `ubuntu`,
+> `redsystems.ddns.net:/opt/disciplina/`) + `systemctl restart disciplina` se mexeu no `server/` + **bump do SW**.
+
+## PRÓXIMA SESSÃO (combinado p/ amanhã, 2026-08-11) ⭐
+**REDESIGN a partir de mockup do ChatGPT.** O Felipe gera a estética no ChatGPT e **manda a imagem**; eu
+**reproduzo fiel em código**: (1) **tela de login**, (2) **página de download/landing** (`app/landing.html` →
+`/rotina/landing.html`), (3) trato geral no **app**. Sempre responsivo (celular/tablet/PC) e seguindo o tema.
+Ver memória [[plano-redesign-login-download]] e [[assets-via-downloads]]. Pedir a imagem em alta; confirmar
+fontes/cores; manter wordmark transparente (`redzone-wordmark.png`) e emblema camuflado (`mix-blend-mode:screen`).
+
+## PENDENTE DE VERDADE
+1. **Redesign login/landing/app** (item ⭐ acima) — foco de amanhã.
+2. **Domínio pro e-mail** (~R$40/ano): sem domínio o Resend só entrega pro dono; recuperação por **pergunta de
+   segurança** já cobre todos. Quando houver domínio, configurar SPF/DKIM no Resend e trocar `MAIL_FROM`.
+3. **Landing**: falta screenshots reais (o Felipe pode mandar prints ou exibir o painel Browser pra eu capturar).
+4. Oferta pendente aceita? **Limpar dados fictícios** da conta de teste (6 matérias, 40 logs de treino, refeições
+   de amostra) pra começar do zero — o Felipe ainda não confirmou; perguntar.
+
+## ONDA 8 — no ar (feedback intenso do Felipe, SW v9→v22) ✅
+- **Cadastro mobile (tela branca)**: `html{background:var(--bg2)}` (fallback escuro) resolveu a faixa branca.
+  ⚠️ **Cuidado aprendido:** tirar `background-attachment:fixed` do body quebrou a topbar no desktop (virava um
+  "quadrado" de cor diferente ao rolar, em temas ≠ sangue). Correção final: **manter o `fixed`** (topo sempre
+  `var(--bg)` → topbar casa) + `html` escuro (mobile ok). **Testar desktop E mobile antes de subir.**
+- **Deep-link pra post** (`#post=<id>`, `GET /batalha/feed/:id`, botão 🔗 compartilhar, notif de curtida/comentário
+  abre o post) — coluna `alvoPostId` em Notificacao.
+- **Pergunta de segurança personalizada** (opção "escrever a minha" no cadastro e na conta).
+- **Logo**: wordmark transparente `redzone-wordmark.png` no topo do menu; login usa o emblema grande camuflado
+  (sem o texto "REDZONE" redundante).
+- **Notificações só com dados reais**: lembra SÓ o que o usuário planejou pra HOJE (estudo por `estudo:semana`,
+  treino por template do dia, rotina/água) — ver [[notificacoes-so-dados-reais]]. `itemFeitoHoje()` cruza
+  hábito×treino×estudo → **nunca cobra "corre" se já correu**.
+- **Treino (bug grande)**: semanas **ancoradas na segunda** (`mondayOfISO`, com migração) e leitura por
+  `treino:logs` (data) → o dia treinado bate com a coluna SEG..DOM; dia 100% = ✅ cobrindo, clique mostra
+  exercícios + provas. (Antes lia `exec`, que estava vazio → "fiz e não aparece".)
+- **Água** zera ao virar o dia (watcher no relógio re-renderiza). **Altura** com vírgula (`fmtAltura` → "1,76 m").
+- **Olho na senha** (`bindPasswordEyes`), **seta ‹ Voltar** no cadastro (tema), **botão de foto colorido** +
+  **remover foto** (volta pro avatar padrão do gênero). **Gráfico de peso** = barras (revertido).
+- **Temas**: vermelhos hardcoded → `var(--accent)/(--accent2)` (glow do logo, calendário, flash de tema, etc.).
+- **SYNC AO VIVO** (backend emite `state:changed`/`profile:changed`; front aplica com `CLIENT_ID` anti-eco) e
+  **AUTOUPDATE AO VIVO** (`fs.watch` no dir do app → `app:update` a todos; reload deduplicado com controllerchange).
 
 ## ONDA 7 — no ar (bateria de correções do feedback do Felipe) ✅
 Tudo testado ao vivo na VM, SW `redzone-v8`.
