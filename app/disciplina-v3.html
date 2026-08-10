@@ -2670,18 +2670,19 @@ function startTryHard(){
     if(!S) return;
     const now=brasiliaNow(); const hhmm=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
     // lembrete de hábito no horário exato (alarme vinculado ao horário)
-    S.rotina.forEach(r=>{ if(r.hora===hhmm && r.done!==todayISO()){ notify('REDZONE — '+r.nome, 'Está no horário. Cumpra agora, recruta.'); if(S.config.tryHard||S.config.notif){ tocarSom(o.som); if(o.vibrar&&navigator.vibrate) navigator.vibrate(200); } } });
+    // toca o alarme UMA vez, no minuto exato do hábito (gentil no normal, alarme no Try Hard)
+    S.rotina.forEach(r=>{ if(r.hora===hhmm && r.done!==todayISO()){ notify('REDZONE — '+r.nome, 'Está no horário. Cumpra agora, recruta.'); if(S.config.tryHard||S.config.notif){ if(o.somNotif!==false) tocarSom(S.config.tryHard?o.som:'sino'); if(o.vibrar&&navigator.vibrate) navigator.vibrate(200); } } });
     const atrasados=S.rotina.filter(r=>r.hora && r.hora<hhmm && r.done!==todayISO());
     if(!atrasados.length) return;
     _tryTick++;
-    // TRÉGUA: se o cara já passou o tempo definido (1 min padrão) dentro do app, para de encher o saco
-    if(S.config.tryHard && segsNoApp() >= (o.treguaS||60)) return;
     if(S.config.tryHard){
+      // TRÉGUA: passou o tempo definido dentro do app → para de encher o saco
+      if(segsNoApp() >= (o.treguaS||60)) return;
       notify('🔥 MODO TRY HARD', TRYHARD[_tryTick%TRYHARD.length]+' ('+atrasados.length+' pendente(s))');
-      tocarSom(o.som); if(o.vibrar && navigator.vibrate) navigator.vibrate([300,120,300,120,300]);
-    } else if(S.config.notif && _tryTick%3===0){   // normal: cobra ~50% (bem mais leve)
+      if(o.somNotif!==false) tocarSom(o.som);
+      if(o.vibrar && navigator.vibrate) navigator.vibrate([300,120,300,120,300]);
+    } else if(S.config.notif && _tryTick%6===0){   // normal: cobrança VISUAL, sem som-spam, e bem espaçada
       notify('REDZONE', COBRANCA[_tryTick%COBRANCA.length]+' ('+atrasados.length+' pendente(s))');
-      if(o.somNotif) tocarSom('apito');
     }
   }, Math.max(5,(o.intervaloS||20))*1000);
 }
