@@ -20,14 +20,18 @@
 }
 *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
 html,body{margin:0; padding:0;}
+/* html pega a cor do tema pra NUNCA aparecer branco por trás (overscroll/teclado no celular) */
+html{background:var(--bg2);}
 body{
   font-family:'Inter',system-ui,-apple-system,'Segoe UI',sans-serif;
   color:var(--text);
   background:
     radial-gradient(120% 55% at 50% 0, color-mix(in srgb,var(--accent) 12%, transparent), transparent 60%),
     linear-gradient(180deg,var(--bg),var(--bg2));
-  background-attachment:fixed;
-  min-height:100vh; font-size:16.5px; line-height:1.5;
+  /* cor sólida sob o gradiente (fallback) — sem background-attachment:fixed, que no mobile
+     deixa faixas brancas quando a barra do navegador/teclado muda o viewport */
+  background-color:var(--bg2);
+  min-height:100vh; min-height:100dvh; font-size:16.5px; line-height:1.5;
   -webkit-font-smoothing:antialiased;
 }
 .display{font-family:'Inter',sans-serif; font-weight:800; letter-spacing:-.01em;}
@@ -250,7 +254,9 @@ textarea.auto{resize:none; overflow:hidden; min-height:48px;}
 #toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
 
 /* Auth */
-#auth{max-width:440px; margin:0 auto; padding:0 20px; min-height:100vh; display:flex; flex-direction:column; justify-content:center;}
+#auth{max-width:440px; margin:0 auto; padding:24px 20px; min-height:100vh; min-height:100dvh; display:flex; flex-direction:column; justify-content:center;}
+/* telas baixas / teclado aberto: começa do topo e rola, em vez de centralizar e cortar */
+@media (max-height:760px){ #auth{ justify-content:flex-start; } }
 .emblema{width:180px; height:180px; margin:0 auto 2px; display:block; object-fit:contain; border-radius:24px; filter:drop-shadow(0 10px 30px rgba(224,30,43,.4));}
 .auth-title{font-weight:800; font-size:34px; text-align:center; letter-spacing:-.01em;}
 .auth-sub{text-align:center; color:var(--text-dim); margin:4px 0 24px; font-size:15px;}
