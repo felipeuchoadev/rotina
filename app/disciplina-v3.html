@@ -1633,6 +1633,8 @@ function verMidiaSimples(url, legenda){
 }
 function currentWeekIndex(){ const now=new Date(); now.setHours(0,0,0,0);
   let idx=0; S.treinoWeeks.forEach((w,i)=>{ const s=new Date(w.startISO); s.setHours(0,0,0,0); if(s<=now) idx=i; }); return idx; }
+// semana que CONTÉM hoje (startISO <= hoje < startISO+7); -1 se nenhuma
+function weekContainingToday(){ const t=todayISO(); for(let i=0;i<S.treinoWeeks.length;i++){ const s=S.treinoWeeks[i].startISO; const e=new Date(s+'T00:00:00'); e.setDate(e.getDate()+7); const eISO=`${e.getFullYear()}-${String(e.getMonth()+1).padStart(2,'0')}-${String(e.getDate()).padStart(2,'0')}`; if(t>=s && t<eISO) return i; } return -1; }
 function fmtDHM(secs){ const d=Math.floor(secs/86400), h=Math.floor(secs%86400/3600), m=Math.floor(secs%3600/60), s=secs%60; return d>0?`${d}d ${h}h ${m}m`:`${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`; }
 function updateCountdowns(){ $$('[data-cd]').forEach(el=>{ const secs=Math.max(0,Math.floor((+el.dataset.cd-Date.now())/1000)); el.textContent=fmtDHM(secs); if(secs<=0){ el.textContent='LIBERADA'; renderTreinos(); } }); }
 
@@ -1701,7 +1703,9 @@ function posTreino(sess){
     const legenda=$('#finLeg')?.value.trim()||'';
     S.treinoLogs.push({ exId:sess.refId, nome:nomeEx, dia:sess.dia, dateISO:todayISO(), ativoMs:sess.ativoMs, pausaMs:sess.pausedMs, prova:prova?.dataUrl, provaTipo:prova?.kind, legenda });
     save('treino:logs'); reportXP();
-    const wi=currentWeekIndex(); if(S.treinoWeeks[wi]){ S.treinoWeeks[wi].exec[sess.dia]={done:true, at:Date.now(), prova:prova?.dataUrl, provaTipo:prova?.kind, legenda}; save('treino:weeks'); }
+    // marca o DIA REAL de hoje na semana que contém hoje (não o chip selecionado) — evita contar dias que não treinou
+    const wi=weekContainingToday(); const diaReal=hojeDia();
+    if(wi>=0 && S.treinoWeeks[wi]){ S.treinoWeeks[wi].exec[diaReal]={done:true, at:Date.now(), prova:prova?.dataUrl, provaTipo:prova?.kind, legenda}; save('treino:weeks'); }
     let rec=null;
     if(prova){ addRecordacao({tipo:'treino', url:prova.dataUrl, midiaTipo:prova.kind==='video'?'video':'image', texto: legenda || `Treino: ${nomeEx}`}); rec=S.recordacoes[0]; }
     const postar=$('#finPostar')?.checked;
@@ -2365,22 +2369,19 @@ function compartilharNoFeedSheet(r){
 }
 
 /* ---------- STORIES (topo do feed, estilo Instagram) ---------- */
+// stories = memórias das ÚLTIMAS 24H (somem depois disso; o álbum Memórias guarda tudo)
+function recordsStories(){ const lim=Date.now()-24*3600*1000; return (S.recordacoes||[]).filter(r=>{ const t=new Date(r.at).getTime(); return isFinite(t) && t>=lim; }).sort((a,b)=>String(a.at).localeCompare(String(b.at))); }
 function storiesHTML(){
-  const list=[...(S.recordacoes||[])].sort((a,b)=>String(b.at).localeCompare(String(a.at)));
-  const porDia={}; list.forEach(r=>{ (porDia[r.dateISO]=porDia[r.dateISO]||[]).push(r); });
-  const dias=Object.keys(porDia).sort((a,b)=>b.localeCompare(a)).slice(0,12);
+  const recentes=recordsStories();
   const add=`<div class="story add" data-storyadd><div class="ring2"><div>＋</div></div><div class="slbl">Adicionar</div></div>`;
-  const bubbles=dias.map(iso=>{ const arr=porDia[iso]; const capa=arr[0]; const hoje=iso===todayISO();
-    const lbl=hoje?'Hoje':new Date(iso+'T00:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
-    return `<div class="story" data-storyday="${iso}"><div class="ring2">${capa.midiaTipo==='video'?`<video src="${capa.url}" muted playsinline></video>`:`<img src="${capa.url}">`}</div><div class="slbl">${lbl}</div></div>`;
-  }).join('');
-  return `<div class="stories">${add}${bubbles}</div>`;
+  if(!recentes.length) return `<div class="stories">${add}</div>`;
+  const capa=recentes[recentes.length-1]; // mais recente como capa
+  const bubble=`<div class="story" data-storyall><div class="ring2">${capa.midiaTipo==='video'?`<video src="${capa.url}" muted playsinline></video>`:`<img src="${capa.url}">`}</div><div class="slbl">Meu dia (${recentes.length})</div></div>`;
+  return `<div class="stories">${add}${bubble}</div>`;
 }
 function bindStories(){
-  const list=[...(S.recordacoes||[])].sort((a,b)=>String(b.at).localeCompare(String(a.at)));
-  const porDia={}; list.forEach(r=>{ (porDia[r.dateISO]=porDia[r.dateISO]||[]).push(r); });
   $$('#scr-batalha [data-storyadd]').forEach(el=>el.onclick=()=>adicionarMemoria('outro'));
-  $$('#scr-batalha [data-storyday]').forEach(el=>el.onclick=()=>{ const arr=(porDia[el.dataset.storyday]||[]).slice().reverse(); abrirStories(arr,0); });
+  $$('#scr-batalha [data-storyall]').forEach(el=>el.onclick=()=>abrirStories(recordsStories(),0));
 }
 let _story={items:[], i:0, timer:null};
 function abrirStories(items, startIdx=0){
@@ -2910,45 +2911,50 @@ function sirenSrcAtual(){ const o=tryOpts(); return o.somCustom || 'siren.mp3'; 
 function sirenEl(){ const src=sirenSrcAtual(); if(!_siren || _sirenSrc!==src){ if(_siren){ try{_siren.pause();}catch(e){} } _siren=new Audio(src); _siren.loop=true; _siren.volume=1.0; _sirenSrc=src; } return _siren; }
 function sirenPlay(){ try{ const s=sirenEl(); if(s.paused) s.play().catch(()=>{}); }catch(e){} }
 function sirenStop(){ try{ if(_siren && !_siren.paused){ _siren.pause(); _siren.currentTime=0; } }catch(e){} }
-function atrasadosAgora(){ if(!S) return []; const now=brasiliaNow(); const hhmm=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0'); return S.rotina.filter(r=>r.hora && r.hora<hhmm && r.done!==todayISO()); }
-// gerencia a sirene a cada 2s: toca se Try Hard ON + tem atrasado + fora da trégua; senão para
+// itens COM HORÁRIO que já passaram e não foram feitos hoje (hábitos + atividades do dia)
+function atrasadosAgora(){
+  if(!S) return []; const now=brasiliaNow(); const hhmm=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0'); const hoje=todayISO();
+  const out=[];
+  (S.rotina||[]).forEach(r=>{ if(r.hora && r.hora<hhmm && r.done!==hoje) out.push(r.nome); });
+  ((S.rotinaDias&&S.rotinaDias[hoje])||[]).forEach(a=>{ if(a.hora && a.hora<hhmm && !a.done) out.push(a.nome); });
+  return out;
+}
+// gerencia a sirene a cada 2s: toca SÓ se Try Hard ON + tem algo com horário atrasado + fora da trégua
 function manageSiren(){
   const o=tryOpts();
   if(!S || !S.config.tryHard){ sirenStop(); return; }
   const emTregua = segsNoApp() >= (o.treguaS||60);
   if(atrasadosAgora().length && !emTregua){ sirenPlay(); } else { sirenStop(); }
 }
-let _tryTick=0;
+let _tryTick=0, _lastGentle=0;
 function startTryHard(){
   clearInterval(window._tryTimer); clearInterval(window._sirenTimer);
   const o=tryOpts();
-  // loop rápido só pra sirene (responde na hora quando você cumpre ou entra na trégua)
   window._sirenTimer=setInterval(manageSiren, 2000); manageSiren();
   window._tryTimer=setInterval(()=>{
     if(!S) return;
-    const now=brasiliaNow(); const hhmm=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0');
-    // lembrete no minuto exato do hábito
-    S.rotina.forEach(r=>{ if(r.hora===hhmm && r.done!==todayISO()){ notify('REDZONE — '+r.nome, 'Está no horário. Cumpra agora, recruta.', 'rotina', !S.config.tryHard); if(o.vibrar&&navigator.vibrate) navigator.vibrate(200); } });
-    const hoje=todayISO();
-    // COBRA TUDO: monta a lista de áreas pendentes do dia
-    const pend=[];
-    if(!S.treinoLogs.some(l=>l.dateISO===hoje)) pend.push('treino');
-    if(!S.estudoLogs.some(l=>l.dateISO===hoje)) pend.push('estudo');
-    if((S.agua[hoje]||0) < (S.profile.metaAgua||2500)) pend.push('agua');
-    if(S.rotina.some(r=>r.hora && r.done!==hoje)) pend.push('rotina');
-    if(!pend.length){ sirenStop(); return; }
-    _tryTick++;
-    const area=pend[_tryTick % pend.length];      // rotaciona entre as áreas
-    const pool=LEMBRETES[area];
-    if(S.config.tryHard){
-      if(segsNoApp() >= (o.treguaS||60)) return;   // trégua: só a sirene silencia; segue cobrando visual? não, dá trégua total
-      const msg=pool.hard[_tryTick % pool.hard.length];
-      notify('🔥 MODO TRY HARD', msg, pool.alvo);
-      toast('🔥 '+msg, 4000); tryHardFlash();
-      if(navigator.vibrate) navigator.vibrate([400,120,400,120,400,120,600]);
-    } else if(S.config.notif && _tryTick%3===0){   // normal: incentivo variado, espaçado, com som
-      const msg=pool.normal[_tryTick % pool.normal.length];
-      notify('REDZONE', msg, pool.alvo, true);
+    const now=brasiliaNow(); const hhmm=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0'); const hoje=todayISO();
+    // 1) AVISO no minuto exato do horário (hábitos + atividades do dia)
+    (S.rotina||[]).forEach(r=>{ if(r.hora===hhmm && r.done!==hoje){ notify('REDZONE — '+r.nome, 'Está no horário. Cumpra agora, recruta.', 'rotina', true); if(o.vibrar&&navigator.vibrate) navigator.vibrate(200); } });
+    ((S.rotinaDias&&S.rotinaDias[hoje])||[]).forEach(a=>{ if(a.hora===hhmm && !a.done){ notify('REDZONE — '+a.nome, 'Tá no horário. Cumpra agora, recruta.', 'rotina', true); if(o.vibrar&&navigator.vibrate) navigator.vibrate(200); } });
+    // 2) TRY HARD BRUTAL (sirene+tremor+esculacho): SÓ pra itens com horário que já PASSOU
+    const atrasados=atrasadosAgora();
+    if(S.config.tryHard && atrasados.length){
+      if(segsNoApp() < (o.treguaS||60)){   // sem trégua → esculacha
+        _tryTick++;
+        const msg=ESC_TRAVADA[_tryTick % ESC_TRAVADA.length];
+        notify('🔥 MODO TRY HARD', msg+' ('+atrasados.length+' atrasada(s))', 'rotina');
+        toast('🔥 '+msg, 4000); tryHardFlash();
+        if(navigator.vibrate) navigator.vibrate([400,120,400,120,400,120,600]);
+      }
+    }
+    // 3) LEMBRETE GENTIL (sem tremor, sem sirene), espaçado ~10min: incentiva as áreas do dia
+    if(S.config.notif && Date.now()-_lastGentle > 600000){
+      const pend=[];
+      if(!S.treinoLogs.some(l=>l.dateISO===hoje)) pend.push('treino');
+      if(!S.estudoLogs.some(l=>l.dateISO===hoje)) pend.push('estudo');
+      if((S.agua[hoje]||0) < (S.profile.metaAgua||2500)) pend.push('agua');
+      if(pend.length){ _lastGentle=Date.now(); const area=pend[Math.floor(Date.now()/600000) % pend.length]; const pool=LEMBRETES[area]; const msg=pool.normal[Math.floor(Date.now()/600000) % pool.normal.length]; notify('REDZONE', msg, pool.alvo, true); }
     }
   }, Math.max(5,(o.intervaloS||20))*1000);
 }
