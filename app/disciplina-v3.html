@@ -2163,6 +2163,33 @@ function renderAlimAnalise(){
   }
   $('#alimAnalise').innerHTML=`<div class="card"><div class="h">Análise da semana</div><p style="font-size:15.5px;line-height:1.5">${msg}</p></div>`;
 }
+// Gráfico de peso: linha SVG responsiva (fica proporcional no celular com 1 ou vários pontos)
+function pesoChartSVG(hist){
+  const W=320, H=150, padL=12, padR=12, padT=26, padB=22;
+  const vals=hist.map(h=>h.peso); const n=vals.length;
+  let mn=Math.min(...vals), mx=Math.max(...vals);
+  if(mn===mx){ mn-=1; mx+=1; } else { const r=mx-mn; mn-=r*0.25; mx+=r*0.25; }
+  const X=i=> n===1 ? W/2 : padL + (i/(n-1))*(W-padL-padR);
+  const Y=v=> padT + (1-(v-mn)/(mx-mn))*(H-padT-padB);
+  const pts=hist.map((h,i)=>[X(i), Y(h.peso)]);
+  const line=pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
+  const base=(H-padB).toFixed(1);
+  const area=`M${pts[0][0].toFixed(1)} ${base} `+pts.map(p=>`L${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(' ')+` L${pts[n-1][0].toFixed(1)} ${base} Z`;
+  const dots=pts.map((p,i)=>`<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${i===n-1?4:2.6}" fill="${i===n-1?'var(--accent2)':'var(--accent)'}" stroke="var(--bg2)" stroke-width="1.2"/>`).join('');
+  const fmt=v=>String(v).replace('.',',');
+  const lbl=(i,anchor,dx)=>`<text x="${(X(i)+dx).toFixed(1)}" y="${(Y(hist[i].peso)-9).toFixed(1)}" text-anchor="${anchor}" font-size="12" font-weight="800" fill="var(--text)">${fmt(hist[i].peso)}</text>`;
+  const labels = n===1 ? lbl(0,'middle',0) : lbl(0,'start',-2)+lbl(n-1,'end',2);
+  const dt=iso=>{ try{ return new Date(iso+'T00:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}); }catch(e){ return ''; } };
+  const dates = n===1
+    ? `<text x="${X(0)}" y="${H-6}" text-anchor="middle" font-size="9.5" fill="var(--text-dim)">${dt(hist[0].dateISO)}</text>`
+    : `<text x="${padL}" y="${H-6}" text-anchor="start" font-size="9.5" fill="var(--text-dim)">${dt(hist[0].dateISO)}</text><text x="${W-padR}" y="${H-6}" text-anchor="end" font-size="9.5" fill="var(--text-dim)">${dt(hist[n-1].dateISO)}</text>`;
+  return `<div style="max-width:520px;margin:6px auto 0"><svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block;height:auto" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Evolução do peso">
+    <defs><linearGradient id="pesoFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--accent)" stop-opacity=".32"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>
+    ${n>1?`<path d="${area}" fill="url(#pesoFill)"/>`:''}
+    ${n>1?`<path d="${line}" fill="none" stroke="var(--accent2)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>`:''}
+    ${dots}${labels}${dates}
+  </svg></div>`;
+}
 function renderAlimPeso(){
   const p=S.profile;
   const hist=S.pesos.slice(-12);
@@ -2173,8 +2200,8 @@ function renderAlimPeso(){
       <div class="field" style="flex:1;margin:0"><label>Registrar peso hoje (kg)</label><input id="pesoInput" type="text" inputmode="decimal" placeholder="ex: 88,50"></div>
       <button class="btn sm" id="pesoSave">Salvar</button>
     </div>
-    ${hist.length?`<div class="report-bars">${(()=>{ const min=Math.min(...hist.map(h=>h.peso))-1, max=Math.max(...hist.map(h=>h.peso))+1; return hist.map(h=>`<div class="bar" style="height:${Math.round((h.peso-min)/(max-min)*110)+3}px"><b>${h.peso}</b></div>`).join(''); })()}</div>`:'<p class="muted small">Sem registros de peso ainda.</p>'}
-    ${first!=null?`<p class="small" style="margin-top:24px">Evolução: <b>${delta>0?'+':''}${delta.toFixed(1)} kg</b> desde o início. ${delta<0?'Secando, soldado. Continua.':delta>0?'Subiu — se é massa, ok; se é gordura, ajusta a dieta.':'Estável.'}</p>`:''}
+    ${hist.length?pesoChartSVG(hist):'<p class="muted small">Sem registros de peso ainda.</p>'}
+    ${first!=null?`<p class="small" style="margin-top:10px">Evolução: <b>${delta>0?'+':''}${delta.toFixed(1).replace('.',',')} kg</b> desde o início. ${delta<0?'Secando, soldado. Continua.':delta>0?'Subiu — se é massa, ok; se é gordura, ajusta a dieta.':'Estável.'}</p>`:''}
   </div>`;
   $('#pesoSave').onclick=()=>{ const v=numBR($('#pesoInput').value); if(!(v>=30&&v<=250)) return toast('Peso inválido (30–250 kg). Use vírgula, ex: 89,50.');
     S.pesos.push({dateISO:todayISO(), peso:v}); S.profile.peso=v; save('alim:pesos'); saveProfile(); renderAlimPeso(); };
