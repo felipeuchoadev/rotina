@@ -39,6 +39,10 @@ body{
 h1,h2,h3,h4{font-family:'Inter',system-ui,sans-serif; font-weight:800; letter-spacing:-.01em; margin:0; color:var(--text);}
 button{font-family:inherit; cursor:pointer;}
 input,textarea,select{font-family:inherit; font-size:16px;}
+.pwwrap{position:relative; display:block;}
+.pwwrap input{padding-right:46px !important; width:100%;}
+.eyebtn{position:absolute; right:8px; top:50%; transform:translateY(-50%); background:none; border:none; font-size:18px; line-height:1; opacity:.75; padding:6px; cursor:pointer;}
+.eyebtn:hover{opacity:1;}
 img{max-width:100%;}
 a{color:var(--accent2);}
 
@@ -59,7 +63,7 @@ a{color:var(--accent2);}
 }
 .brand{font-weight:800; font-size:20px; letter-spacing:-.01em;}
 .brand .dot{color:var(--accent);}
-.home-logo{height:72px; width:72px; object-fit:cover; border-radius:16px; filter:drop-shadow(0 6px 18px rgba(224,30,43,.5));}
+.home-logo{height:72px; width:72px; object-fit:cover; border-radius:16px; filter:drop-shadow(0 6px 18px color-mix(in srgb,var(--accent) 50%, transparent));}
 .clock{font-weight:700; font-size:16px; color:var(--text-dim); font-variant-numeric:tabular-nums; text-align:right; line-height:1;}
 .clock small{color:var(--text-dim); font-size:11px; margin-left:3px; font-weight:600;}
 
@@ -81,10 +85,10 @@ a{color:var(--accent2);}
 .hero-name{font-weight:800; font-size:23px; line-height:1; letter-spacing:-.01em;}
 .hero-user{color:var(--text-dim); font-size:13px; margin-top:5px;}
 .pill{display:inline-flex; align-items:center; gap:6px; margin-top:11px; background:color-mix(in srgb,var(--accent) 18%, transparent); color:var(--accent2); font-size:12px; font-weight:800; padding:6px 13px; border-radius:999px; border:1px solid color-mix(in srgb,var(--accent) 30%, transparent);}
-.biorow{display:flex; gap:10px; margin:14px 0 2px;}
-.biocard{flex:1; background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:13px 8px; text-align:center;}
-.biocard b{font-size:19px; font-weight:800; display:block;}
-.biocard s{font-size:10px; text-decoration:none; color:var(--text-dim); text-transform:uppercase; letter-spacing:.06em;}
+.biorow{display:flex; gap:10px; margin:16px 0 4px;}
+.biocard{flex:1; min-width:0; background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:15px 8px; text-align:center;}
+.biocard b{font-size:19px; font-weight:800; display:block; line-height:1.15; margin-bottom:4px;}
+.biocard s{font-size:10px; text-decoration:none; color:var(--text-dim); text-transform:uppercase; letter-spacing:.06em; line-height:1.2;}
 
 /* Avatar (ranking / feed / perfil) */
 .avatar{width:84px; height:84px; border-radius:20px; object-fit:cover; flex:0 0 84px; background:var(--surface2);}
@@ -111,12 +115,12 @@ a{color:var(--accent2);}
 
 /* Cards de resumo do Início (com ícone + progresso) */
 .sumgrid{display:grid; gap:10px;}
-.sumcard{display:flex; align-items:center; gap:13px; background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:13px 15px;}
+.sumcard{display:flex; align-items:center; gap:14px; background:var(--surface); border:1px solid var(--line); border-radius:16px; padding:14px 15px;}
 .sumcard .ic{width:40px; height:40px; flex:0 0 40px; border-radius:13px; background:color-mix(in srgb,var(--accent) 12%, transparent); display:grid; place-items:center;}
 .sumcard .ic svg{width:20px; height:20px; stroke:var(--accent); fill:none; stroke-width:1.9;}
 .sumcard .g{flex:1; min-width:0;}
-.sumcard .g .t{font-size:12px; color:var(--text-dim);}
-.sumcard .g .v{font-weight:800; font-size:16px;}
+.sumcard .g .t{font-size:12px; color:var(--text-dim); line-height:1.2;}
+.sumcard .g .v{font-weight:800; font-size:16px; line-height:1.3; margin-top:2px;}
 .sumcard .prog{width:52px; height:6px; border-radius:99px; background:rgba(255,255,255,.09); overflow:hidden; flex:0 0 52px;}
 .sumcard .prog i{display:block; height:100%; background:var(--ok);}
 
@@ -223,7 +227,8 @@ textarea.auto{resize:none; overflow:hidden; min-height:48px;}
   border-right:1px solid var(--line); padding:16px 0 calc(20px + env(safe-area-inset-bottom)); transform:translateX(-106%); transition:transform .25s ease; overflow-y:auto; box-shadow:8px 0 40px rgba(0,0,0,.5);}
 .nav.open{transform:translateX(0);}
 .nav-inner{display:flex; flex-direction:column; gap:4px; padding:0 10px;}
-.nav-inner::before{content:'REDZONE'; font-family:'Oswald',sans-serif; display:block; font-weight:800; font-size:20px; padding:6px 12px 12px; color:var(--text); letter-spacing:.03em;}
+/* wordmark REDZONE transparente (PNG) no topo do menu, no lugar do texto */
+.nav-inner::before{content:''; display:block; height:34px; margin:2px 12px 14px; background:url(redzone-wordmark.png) left center/contain no-repeat;}
 .nav button{background:none; border:none; color:#fff; width:100%; display:flex; flex-direction:row; align-items:center; gap:13px; padding:13px 12px; font-size:15px; font-weight:700; white-space:nowrap; border-radius:12px; text-align:left;}
 .nav button svg{width:22px; height:22px; stroke:currentColor; fill:none; stroke-width:1.8; flex:0 0 22px;}
 .nav button.active{color:var(--accent); background:color-mix(in srgb,var(--accent) 13%, transparent);}
@@ -274,7 +279,7 @@ textarea.auto{resize:none; overflow:hidden; min-height:48px;}
 .grid2{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
 .chip{display:inline-block; padding:5px 11px; border-radius:999px; font-size:12px; font-weight:700; border:1px solid var(--line);}
 .chip.bom{color:#8ff0b0; border-color:#2f7d4f;}
-.chip.ruim{color:#ff9a9a; border-color:#8a3030;}
+.chip.ruim{color:var(--accent2); border-color:color-mix(in srgb,var(--accent) 45%, var(--line));}
 .chip.neutro{color:var(--text-dim);}
 
 /* Temas grid */
@@ -308,16 +313,16 @@ textarea.auto{resize:none; overflow:hidden; min-height:48px;}
 .calc.futuro{background:color-mix(in srgb,#fff 8%, var(--surface)); color:var(--text-dim);}
 .calc.sem{background:var(--surface); color:var(--text);}
 .calc.ok{background:color-mix(in srgb,var(--ok) 26%, var(--surface)); color:var(--ok); border-color:transparent;}
-.calc.fail{background:color-mix(in srgb,var(--accent) 26%, var(--surface)); color:#ff8080; border-color:transparent;}
+.calc.fail{background:color-mix(in srgb,var(--accent) 26%, var(--surface)); color:var(--accent2); border-color:transparent;}
 .calc.hoje{box-shadow:0 0 0 2px var(--accent);}
 .callegend{display:flex; gap:12px; margin-top:12px; font-size:11px; color:var(--text-dim); flex-wrap:wrap;}
 .callegend span{display:inline-flex; align-items:center; gap:4px;}
 .callegend i{display:inline-block; width:12px; height:12px; border-radius:3px;}
-.callegend .lok{background:var(--ok);} .callegend .lfail{background:#ff6b6b;} .callegend .lfut{background:var(--line);}
+.callegend .lok{background:var(--ok);} .callegend .lfail{background:var(--accent);} .callegend .lfut{background:var(--line);}
 .callegend .ldot{background:var(--accent); border-radius:50%; width:8px; height:8px;}
 /* Rotina calendário editável: 100% ✅, incompleto vermelho, futuro claro */
 .calc.full{background:color-mix(in srgb,var(--ok) 24%, var(--surface)); color:var(--ok); cursor:pointer; font-size:16px;}
-.calc.inc{background:color-mix(in srgb,var(--accent) 16%, var(--surface)); color:#ff6b6b; font-weight:800; cursor:pointer; font-size:16px;}
+.calc.inc{background:color-mix(in srgb,var(--accent) 16%, var(--surface)); color:var(--accent2); font-weight:800; cursor:pointer; font-size:16px;}
 /* dia futuro COM plano: anel branco suave (NÃO vermelho) só pra sinalizar que tem algo marcado */
 .calc.futuro.plan{background:color-mix(in srgb,#fff 14%, var(--surface)); box-shadow:inset 0 0 0 1.5px color-mix(in srgb,#fff 26%, transparent);}
 .calc.selc{box-shadow:0 0 0 3px var(--accent); background:color-mix(in srgb,var(--accent) 22%, var(--surface)); color:var(--text);}
@@ -351,7 +356,7 @@ textarea.auto{resize:none; overflow:hidden; min-height:48px;}
 .notif-item{display:flex; align-items:center; gap:10px; padding:12px; border:1px solid var(--line); border-radius:13px; margin:8px 0; background:var(--surface);}
 .notif-item.nova{border-color:var(--accent); background:color-mix(in srgb,var(--accent) 8%, var(--surface));}
 /* Try Hard: flash vermelho + tremor da tela inteira */
-.th-flash{position:fixed; inset:0; z-index:100; background:radial-gradient(circle,#ff2a2a,#7a0000); pointer-events:none; opacity:0;}
+.th-flash{position:fixed; inset:0; z-index:100; background:radial-gradient(circle,var(--accent2),var(--accent)); pointer-events:none; opacity:0;}
 .th-flash.go{animation:thflash .7s ease-out;}
 @keyframes thflash{0%{opacity:0}12%{opacity:.6}30%{opacity:.15}45%{opacity:.5}100%{opacity:0}}
 @keyframes thshake{0%,100%{transform:translate(0,0)}15%{transform:translate(-7px,4px)}30%{transform:translate(7px,-4px)}45%{transform:translate(-6px,-4px)}60%{transform:translate(6px,4px)}75%{transform:translate(-4px,2px)}}
@@ -393,10 +398,26 @@ body.th-shake{animation:thshake .55s;}
 .storyview .closev{position:absolute; top:12px; right:14px; z-index:2; background:rgba(0,0,0,.4); border:none; color:#fff; width:36px; height:36px; border-radius:50%; font-size:20px;}
 
 /* ============================================================
-   RESPONSIVO — tablet / desktop / TV
-   No celular: nav inferior. A partir de 900px: nav vira barra
-   lateral e o conteúdo ganha respiro; resumo em 2 colunas.
+   RESPONSIVO
 ============================================================ */
+/* CELULAR estreito: dá respiro pros números do Início (não colar um no outro) */
+@media (max-width:430px){
+  .biorow{gap:8px; margin:14px 0 4px;}
+  .biocard{padding:14px 6px; border-radius:14px;}
+  .biocard b{font-size:17px; margin-bottom:6px;}
+  .biocard s{font-size:9.5px; letter-spacing:.04em;}
+  .hero-name{font-size:20px;}
+  .homeclock .hc-time{font-size:22px;}
+  .sumcard{gap:11px; padding:13px 13px;}
+  .sumcard .g .v{font-size:15px; margin-top:5px;}
+  .sumcard .g .t{margin-bottom:1px;}
+  .sumcard .prog{width:40px; flex-basis:40px;}
+}
+@media (max-width:360px){
+  .biocard b{font-size:15.5px;}
+  .biocard s{font-size:9px;}
+  .sumcard .prog{display:none;}   /* tela minúscula: esconde a barrinha pra o texto respirar */
+}
 @media (min-width:900px){
   /* DESKTOP: sidebar fixa (sem gaveta, sem ☰) */
   .nav{transform:none !important; box-shadow:none; top:0; bottom:0; left:0; right:auto; width:108px; height:100vh; border-top:none; border-right:1px solid var(--line); padding:18px 0; max-width:none;}
@@ -563,6 +584,8 @@ function parsePeso(v){ const raw=String(v??'').trim(); if(/[.,]/.test(raw)) retu
 function parseAltura(v){ let a=numBR(v); if(a>0&&a<3) a=a*100; return Math.round(a); }
 // formata número pra exibição em pt-BR com 2 casas (89.5 -> "89,50")
 function fmtPeso(n){ return (n==null||isNaN(n))?'' : Number(n).toFixed(2).replace('.',','); }
+// altura em cm (176) -> metros com vírgula pra exibição ("1,76"). A máquina põe a vírgula.
+function fmtAltura(cm){ if(cm==null||isNaN(cm)) return ''; return (Number(cm)/100).toFixed(2).replace('.',','); }
 // idade a partir da data de nascimento (YYYY-MM-DD)
 function idadeDe(dataNasc){ if(!dataNasc) return null; const d=new Date(dataNasc); if(isNaN(d)) return null; const h=brasiliaNow(); let a=h.getFullYear()-d.getFullYear(); const m=h.getMonth()-d.getMonth(); if(m<0||(m===0&&h.getDate()<d.getDate())) a--; return a; }
 // é aniversário hoje?
@@ -718,7 +741,7 @@ const LEMBRETES = {
 
 /* 20 TEMAS com gradiente de fundo completo */
 const THEMES = [
-  {id:'red',    n:'RED',          bg:'#0e1013', bg2:'#0b0d0f', a:'#ff4b4b', a2:'#ff6b6b'},
+  {id:'red',    n:'RED',          bg:'#0e1013', bg2:'#0b0d0f', a:'#ff4b4b', a2:'var(--accent2)'},
   {id:'sangue', n:'SANGUE',       bg:'#0c0304', bg2:'#3d060a', a:'#b3121f', a2:'#ff3b47'},
   {id:'aco',    n:'AÇO',          bg:'#0a0d10', bg2:'#1b2733', a:'#4c6b86', a2:'#8fb3d6'},
   {id:'selva',  n:'SELVA',        bg:'#070b06', bg2:'#12240f', a:'#3f7a34', a2:'#7ec15a'},
@@ -790,7 +813,7 @@ async function loadUserData(){
     datas:          g('datas', []),   // aniversários + datas importantes
     recordacoes:    g('recordacoes', []),   // memórias: mídia por data (treino/alim/estudo)
   };
-  if(!S.treinoWeeks){ S.treinoWeeks = [{ id:uid(), startISO:todayISO(), exec:{} }]; await save('treino:weeks'); }
+  if(!S.treinoWeeks){ S.treinoWeeks = [{ id:uid(), startISO:mondayOfISO(todayISO()), exec:{} }]; await save('treino:weeks'); }
   currentUser = u.username;
   applyTheme(S.profile.tema||'red');
 }
@@ -865,6 +888,7 @@ function renderAuth(){
       if(selP && wrap) selP.onchange=()=>{ wrap.style.display = selP.value==='__custom__' ? '' : 'none'; if(selP.value==='__custom__') $('#suSecPCustom').focus(); };
     }
   }
+  bindPasswordEyes($('#authInner'));
 }
 function renderSignupStep(){
   const b=$('#signupBody');
@@ -1063,12 +1087,16 @@ function fmtDataLonga(d){ return d.toLocaleDateString('pt-BR',{weekday:'short', 
 // relógio + data integrados, só no Início
 function homeClockHTML(){ const d=brasiliaNow(); const hh=String(d.getHours()).padStart(2,'0'), mm=String(d.getMinutes()).padStart(2,'0'), ss=String(d.getSeconds()).padStart(2,'0');
   return `<div class="homeclock"><div class="hc-time">${hh}:${mm}<small>${ss}</small></div><div class="hc-date">${fmtDataLonga(d)}</div></div>`; }
-function startClock(){ clearInterval(window._clk); window._clk=setInterval(()=>{
+let _curDay = null;
+function startClock(){ clearInterval(window._clk); _curDay=todayISO(); window._clk=setInterval(()=>{
   const d=brasiliaNow();
   const hh=String(d.getHours()).padStart(2,'0'), mm=String(d.getMinutes()).padStart(2,'0'), ss=String(d.getSeconds()).padStart(2,'0');
   $$('.clock').forEach(c=>{ c.innerHTML=`${hh}:${mm}<small>${ss}s</small>`; });
   $$('.homeclock .hc-time').forEach(c=>{ c.innerHTML=`${hh}:${mm}<small>${ss}</small>`; });
   $$('.homeclock .hc-date').forEach(c=>{ c.textContent=fmtDataLonga(d); });
+  // virou o dia com o app aberto → re-renderiza a tela ativa (água/rotina/treino do novo dia zeram)
+  const hoje=todayISO();
+  if(hoje!==_curDay){ _curDay=hoje; try{ if(activeTab) go(activeTab); }catch(e){} }
 },1000); }
 
 /* ---------- INÍCIO ---------- */
@@ -1083,7 +1111,7 @@ function renderInicio(){
       <div class="home-topline">
         <div style="display:flex;align-items:center;gap:11px">
           <button class="hamb" onclick="openDrawer()">☰</button>
-          <div class="brand" style="font-size:27px;letter-spacing:.02em"><span style="color:var(--accent)">RED</span>ZONE</div>
+          <img src="redzone-wordmark.png" alt="REDZONE" class="wordmark-img" style="height:26px;width:auto;display:block">
         </div>
         ${homeClockHTML()}
       </div>
@@ -1100,7 +1128,7 @@ function renderInicio(){
       <div class="biorow">
         <div class="biocard" data-bio="idade" style="cursor:pointer"><b>${idadeDe(p.dataNasc) ?? p.idade ?? '—'}</b><s>anos ⓘ</s></div>
         <div class="biocard" data-bio="peso" style="cursor:pointer"><b>${fmtPeso(p.peso)}</b><s>kg ⓘ</s></div>
-        <div class="biocard"><b>${p.altura}</b><s>altura (cm)</s></div>
+        <div class="biocard"><b>${p.altura?fmtAltura(p.altura):'—'}</b><s>altura (m)</s></div>
       </div>
     </div>
 
@@ -1159,7 +1187,7 @@ function pesoRelatorioSheet(){
   openSheet(`<h3>Relatório de peso</h3>
     <div class="card"><div style="display:flex;justify-content:space-around;text-align:center">
       <div><div class="muted small">Atual</div><div style="font-weight:800;font-size:22px">${fmtPeso(last)}</div></div>
-      <div><div class="muted small">Variação</div><div style="font-weight:800;font-size:22px;color:${delta<0?'var(--ok)':delta>0?'#ff6b6b':'var(--text)'}">${delta>0?'+':''}${delta.toFixed(2).replace('.',',')} kg</div></div>
+      <div><div class="muted small">Variação</div><div style="font-weight:800;font-size:22px;color:${delta<0?'var(--ok)':delta>0?'var(--accent2)':'var(--text)'}">${delta>0?'+':''}${delta.toFixed(2).replace('.',',')} kg</div></div>
       <div><div class="muted small">Mín/Máx</div><div style="font-weight:800;font-size:16px">${fmtPeso(min)}–${fmtPeso(max)}</div></div>
     </div></div>
     <div class="section-title" style="margin-top:8px">Histórico</div>${linhas}`);
@@ -1174,7 +1202,7 @@ function xpHistoricoSheet(){
   if(S.profile.xpBonus) itens.push({dateISO:todayISO(), xp:S.profile.xpBonus, txt:'Bônus/ajuste'});
   itens.sort((a,b)=>String(b.dateISO).localeCompare(String(a.dateISO)));
   const total=computeXP();
-  const linhas = itens.length ? itens.slice(0,60).map(i=>`<div class="rowitem"><div class="txt"><div class="t">${esc(i.txt)}</div><div class="s mono">${i.dateISO?new Date(i.dateISO+'T00:00:00').toLocaleDateString('pt-BR'):''}</div></div><div style="font-weight:800;color:${i.xp<0?'#ff6b6b':'var(--ok)'}">${i.xp>0?'+':''}${i.xp.toLocaleString('pt-BR')}</div></div>`).join('') : '<p class="muted small">Sem pontos ainda. Treine, estude e cumpra metas pra pontuar.</p>';
+  const linhas = itens.length ? itens.slice(0,60).map(i=>`<div class="rowitem"><div class="txt"><div class="t">${esc(i.txt)}</div><div class="s mono">${i.dateISO?new Date(i.dateISO+'T00:00:00').toLocaleDateString('pt-BR'):''}</div></div><div style="font-weight:800;color:${i.xp<0?'var(--accent2)':'var(--ok)'}">${i.xp>0?'+':''}${i.xp.toLocaleString('pt-BR')}</div></div>`).join('') : '<p class="muted small">Sem pontos ainda. Treine, estude e cumpra metas pra pontuar.</p>';
   openSheet(`<h3>Histórico de XP</h3>
     <p class="small muted">Total atual: <b>${total.toLocaleString('pt-BR')} XP</b>. Cada treino, estudo, conteúdo e meta de água vira ponto.</p>
     ${linhas}`);
@@ -1313,7 +1341,7 @@ function dataSheet(id){
     <label class="rowitem" style="cursor:pointer"><input type="checkbox" id="avDia" ${av.dia!==false?'checked':''} style="width:22px;height:22px"><div class="txt"><div class="t">No dia</div></div></label>
     <p class="small muted" style="margin-top:8px">As notificações chegam mesmo com o app fechado (se você ativou as notificações no Perfil).</p>
     <button class="btn" id="dtSalvar" style="margin-top:12px">${edit?'Salvar':'Adicionar'}</button>
-    ${edit?`<button class="btn ghost" id="dtDel" style="margin-top:8px;color:#e0342b">🗑️ Excluir</button>`:''}`);
+    ${edit?`<button class="btn ghost" id="dtDel" style="margin-top:8px;color:var(--accent2)">🗑️ Excluir</button>`:''}`);
 
   $('#dtSalvar').onclick=async()=>{
     const nome=$('#dtNome').value.trim();
@@ -1437,7 +1465,33 @@ function editToggleHint(){ return S.config.editMode ? `<span class="chip" style=
    TREINOS
 ========================================================================= */
 let treinoDiaSel = DIAS[(new Date().getDay()+6)%7];
+// segunda-feira (ISO) da semana que contém `iso` — as semanas de treino são Seg→Dom
+function mondayOfISO(iso){ const d=new Date(iso+'T00:00:00'); const dow=(d.getDay()+6)%7; d.setDate(d.getDate()-dow); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function addDiasISO(iso,n){ const d=new Date(iso+'T00:00:00'); d.setDate(d.getDate()+n); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+// garante semanas ANCORADAS NA SEGUNDA e que exista a semana de hoje (senão o treino de hoje não teria coluna).
+// Também migra dados antigos (que começavam num dia qualquer) pra segunda, pra o rótulo SEG..DOM bater com a data real.
+function ensureWeeksCoverToday(){
+  const monHoje=mondayOfISO(todayISO());
+  if(!S.treinoWeeks||!S.treinoWeeks.length){ S.treinoWeeks=[{id:uid(), startISO:monHoje, exec:{}}]; save('treino:weeks'); return; }
+  let changed=false;
+  // 1) ancora toda semana na segunda-feira
+  S.treinoWeeks.forEach(w=>{ const m=mondayOfISO(w.startISO); if(w.startISO!==m){ w.startISO=m; changed=true; } });
+  // 2) ordena e remove semanas duplicadas (mesma segunda)
+  const seen={}, uniq=[];
+  S.treinoWeeks.slice().sort((a,b)=>a.startISO.localeCompare(b.startISO)).forEach(w=>{ if(!seen[w.startISO]){ seen[w.startISO]=1; uniq.push(w); } });
+  if(uniq.length!==S.treinoWeeks.length){ changed=true; }
+  S.treinoWeeks=uniq;
+  // 3) auto-avança até cobrir a semana de hoje
+  let guard=0;
+  while(guard++<520){
+    const last=S.treinoWeeks[S.treinoWeeks.length-1];
+    if(last.startISO>=monHoje) break;
+    S.treinoWeeks.push({id:uid(), startISO:addDiasISO(last.startISO,7), exec:{}}); changed=true;
+  }
+  if(changed) save('treino:weeks');
+}
 function renderTreinos(){
+  ensureWeeksCoverToday();
   const edit=S.config.editMode;
   const wk = S.treinoWeeks;
   const html = `
@@ -1563,6 +1617,18 @@ function addTreinoWeek(){
   S.treinoWeeks.push({id:uid(), startISO:start.toISOString().slice(0,10), exec:{}});
   save('treino:weeks'); renderTreinoWeeks();
 }
+// data ISO do dia `di` (0=seg..6=dom) de uma semana que começa em startISO
+function weekDayISO(startISO, di){ const dt=new Date(startISO+'T00:00:00'); dt.setDate(dt.getDate()+di); return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`; }
+// FONTE DA VERDADE = treino:logs por data. Treinou nesse dia se existe log com essa data.
+function treinouNoDia(iso){ return (S.treinoLogs||[]).some(l=>l.dateISO===iso); }
+// prova (foto/vídeo) + legenda desse dia: 1º do log com prova, senão da recordação de treino do dia
+function provaDoDia(iso){
+  const logs=(S.treinoLogs||[]).filter(l=>l.dateISO===iso);
+  const cp=logs.find(l=>l.prova); if(cp) return {prova:cp.prova, tipo:cp.provaTipo, legenda:cp.legenda||''};
+  const rec=(S.recordacoes||[]).find(r=>r.tipo==='treino' && r.dateISO===iso);
+  if(rec) return {prova:rec.url, tipo:rec.midiaTipo, legenda:rec.texto||''};
+  const cl=logs.find(l=>l.legenda); return cl?{prova:null,tipo:null,legenda:cl.legenda}:null;
+}
 function renderTreinoWeeks(){
   const now=brasiliaNow(); now.setHours(0,0,0,0);
   const cwi=currentWeekIndex();
@@ -1571,7 +1637,9 @@ function renderTreinoWeeks(){
     const start=new Date(w.startISO); start.setHours(0,0,0,0);
     const end=new Date(start); end.setDate(end.getDate()+7);
     const locked = start>now;
-    const done = Object.values(w.exec).filter(e=>e&&e.done).length;
+    // dias feitos derivados dos LOGS (não do exec, que podia dessincronizar)
+    const diasFeitos = DIAS.map((d,di)=> treinouNoDia(weekDayISO(w.startISO,di)));
+    const done = diasFeitos.filter(Boolean).length;
     const concluida = !locked && done>=7;            // ✅ SÓ quando treinou os 7 dias
     const encerrada = !locked && !concluida && end<=now;   // janela passou mas NÃO fez tudo
     if(locked){
@@ -1591,13 +1659,13 @@ function renderTreinoWeeks(){
           <div class="small muted" style="margin-top:3px">${done}/7 dias cumpridos · toque pra ver o progresso</div>
         </div></div>`;
     } else if(encerrada){
-      const strip=DIAS.map(d=>{ const e=w.exec[d]; const ok=e&&e.done;
+      const strip=DIAS.map((d,di)=>{ const ok=diasFeitos[di];
         return `<div class="wd ${ok?'ok':''}"><b>${ok?'✓':(DIAS_AB[d][0])}</b>${DIAS_AB[d]}</div>`; }).join('');
-      h+=`<div class="week atual" data-weekview="${i}" style="opacity:.85"><div class="week-head"><h3>Semana ${i+1}</h3><span class="small" style="color:#ff8080;font-weight:800">${done}/7</span></div>
+      h+=`<div class="week atual" data-weekview="${i}" style="opacity:.85"><div class="week-head"><h3>Semana ${i+1}</h3><span class="small" style="color:var(--accent2);font-weight:800">${done}/7</span></div>
         <div class="weekstrip">${strip}</div>
         <div style="padding:2px 14px 12px" class="small muted">Semana encerrada — você treinou <b>${done} de 7</b> dias. ${done===0?'Zerou essa. ':''}O que passou, passou; foca na semana de agora.</div></div>`;
     } else {
-      const strip=DIAS.map(d=>{ const e=w.exec[d]; const ok=e&&e.done; const isToday=d===hojeDia()&&i===cwi;
+      const strip=DIAS.map((d,di)=>{ const ok=diasFeitos[di]; const isToday=d===hojeDia()&&i===cwi;
         return `<div class="wd ${ok?'ok':''} ${isToday?'today':''}"><b>${ok?'✓':(DIAS_AB[d][0])}</b>${DIAS_AB[d]}</div>`; }).join('');
       h+=`<div class="week atual" data-weekview="${i}"><div class="week-head"><h3>Semana ${i+1} ${i===cwi?'• ATUAL':''}</h3><span class="small muted">${done}/7 dias</span></div>
         <div class="weekstrip">${strip}</div>
@@ -1634,16 +1702,20 @@ function esculachoTravada(el, i){
 function weekProgressSheet(i){
   const w=S.treinoWeeks[i]; if(!w) return;
   const start=new Date(w.startISO);
-  const done=Object.values(w.exec).filter(e=>e&&e.done).length;
+  const diasFeitos=DIAS.map((d,di)=>treinouNoDia(weekDayISO(w.startISO,di)));
+  const done=diasFeitos.filter(Boolean).length;
   const linhas=DIAS.map((d,di)=>{
-    const e=w.exec[d]; const ok=e&&e.done;
+    const iso=weekDayISO(w.startISO,di); const ok=diasFeitos[di];
+    const pv=ok?provaDoDia(iso):null;
     const dt=new Date(start); dt.setDate(dt.getDate()+di);
     const dataStr=dt.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
-    const prova = e&&e.prova ? `<div class="rec-cell" data-prova="${esc(e.prova)}" data-leg="${esc(e.legenda||'')}" style="width:48px;height:48px;flex:0 0 48px;aspect-ratio:auto;border:1px solid var(--line)"><img src="${e.prova}" alt="" onerror="this.style.opacity=.15"></div>` : '';
-    const legLinha = e&&e.legenda ? ` · “${esc(e.legenda)}”` : '';
+    // o que foi treinado nesse dia (nomes dos exercícios dos logs)
+    const exs=[...new Set((S.treinoLogs||[]).filter(l=>l.dateISO===iso).map(l=>l.nome).filter(Boolean))];
+    const prova = pv&&pv.prova ? `<div class="rec-cell" data-prova="${esc(pv.prova)}" data-leg="${esc(pv.legenda||'')}" style="width:48px;height:48px;flex:0 0 48px;aspect-ratio:auto;border:1px solid var(--line)"><img src="${pv.prova}" alt="" onerror="this.style.opacity=.15"></div>` : '';
+    const detalhe = ok ? (exs.length?exs.join(', '):'concluído') : 'não treinou';
     return `<div class="rowitem ${ok?'done':''}">
       <div class="chk">${ok?'✓':''}</div>
-      <div class="txt"><div class="t">${DIAS_NOME[d]}</div><div class="s mono">${dataStr}${ok&&e.at?` · concluído`:' · não treinou'}${e&&e.prova?' · 📷 toque pra ver':''}</div>${legLinha?`<div class="s" style="color:var(--text)">${legLinha.slice(3)}</div>`:''}</div>
+      <div class="txt"><div class="t">${DIAS_NOME[d]}</div><div class="s mono">${dataStr} · ${detalhe}${pv&&pv.prova?' · 📷 toque':''}</div>${pv&&pv.legenda?`<div class="s" style="color:var(--text)">“${esc(pv.legenda)}”</div>`:''}</div>
       ${prova}
     </div>`;
   }).join('');
@@ -2007,7 +2079,7 @@ function fecharSemanaAlim(){
   const a=analiseAlimAtual();
   openSheet(`<h3>Fechar a semana</h3>
     <p class="small muted">Vou guardar a análise dessa semana no gráfico e <b>zerar as refeições</b> pra você registrar a próxima do zero.</p>
-    <div class="card"><p style="margin:0">Semana: <b>${a.total}</b> refeições · <b style="color:var(--ok)">${a.pctBom}%</b> saudáveis · <b style="color:#ff6b6b">${a.pctRuim}%</b> ruins</p></div>
+    <div class="card"><p style="margin:0">Semana: <b>${a.total}</b> refeições · <b style="color:var(--ok)">${a.pctBom}%</b> saudáveis · <b style="color:var(--accent2)">${a.pctRuim}%</b> ruins</p></div>
     <button class="btn" id="fsConfirm">Fechar semana e começar nova</button>`);
   $('#fsConfirm').onclick=async()=>{
     if(a.total>0) S.alimHist.hist.push({weekStartISO:(S.alimHist.ref||weekStartISO()), ...a});
@@ -2163,33 +2235,6 @@ function renderAlimAnalise(){
   }
   $('#alimAnalise').innerHTML=`<div class="card"><div class="h">Análise da semana</div><p style="font-size:15.5px;line-height:1.5">${msg}</p></div>`;
 }
-// Gráfico de peso: linha SVG responsiva (fica proporcional no celular com 1 ou vários pontos)
-function pesoChartSVG(hist){
-  const W=320, H=150, padL=12, padR=12, padT=26, padB=22;
-  const vals=hist.map(h=>h.peso); const n=vals.length;
-  let mn=Math.min(...vals), mx=Math.max(...vals);
-  if(mn===mx){ mn-=1; mx+=1; } else { const r=mx-mn; mn-=r*0.25; mx+=r*0.25; }
-  const X=i=> n===1 ? W/2 : padL + (i/(n-1))*(W-padL-padR);
-  const Y=v=> padT + (1-(v-mn)/(mx-mn))*(H-padT-padB);
-  const pts=hist.map((h,i)=>[X(i), Y(h.peso)]);
-  const line=pts.map((p,i)=>(i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)).join(' ');
-  const base=(H-padB).toFixed(1);
-  const area=`M${pts[0][0].toFixed(1)} ${base} `+pts.map(p=>`L${p[0].toFixed(1)} ${p[1].toFixed(1)}`).join(' ')+` L${pts[n-1][0].toFixed(1)} ${base} Z`;
-  const dots=pts.map((p,i)=>`<circle cx="${p[0].toFixed(1)}" cy="${p[1].toFixed(1)}" r="${i===n-1?4:2.6}" fill="${i===n-1?'var(--accent2)':'var(--accent)'}" stroke="var(--bg2)" stroke-width="1.2"/>`).join('');
-  const fmt=v=>String(v).replace('.',',');
-  const lbl=(i,anchor,dx)=>`<text x="${(X(i)+dx).toFixed(1)}" y="${(Y(hist[i].peso)-9).toFixed(1)}" text-anchor="${anchor}" font-size="12" font-weight="800" fill="var(--text)">${fmt(hist[i].peso)}</text>`;
-  const labels = n===1 ? lbl(0,'middle',0) : lbl(0,'start',-2)+lbl(n-1,'end',2);
-  const dt=iso=>{ try{ return new Date(iso+'T00:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}); }catch(e){ return ''; } };
-  const dates = n===1
-    ? `<text x="${X(0)}" y="${H-6}" text-anchor="middle" font-size="9.5" fill="var(--text-dim)">${dt(hist[0].dateISO)}</text>`
-    : `<text x="${padL}" y="${H-6}" text-anchor="start" font-size="9.5" fill="var(--text-dim)">${dt(hist[0].dateISO)}</text><text x="${W-padR}" y="${H-6}" text-anchor="end" font-size="9.5" fill="var(--text-dim)">${dt(hist[n-1].dateISO)}</text>`;
-  return `<div style="max-width:520px;margin:6px auto 0"><svg viewBox="0 0 ${W} ${H}" width="100%" style="display:block;height:auto" preserveAspectRatio="xMidYMid meet" role="img" aria-label="Evolução do peso">
-    <defs><linearGradient id="pesoFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="var(--accent)" stop-opacity=".32"/><stop offset="1" stop-color="var(--accent)" stop-opacity="0"/></linearGradient></defs>
-    ${n>1?`<path d="${area}" fill="url(#pesoFill)"/>`:''}
-    ${n>1?`<path d="${line}" fill="none" stroke="var(--accent2)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>`:''}
-    ${dots}${labels}${dates}
-  </svg></div>`;
-}
 function renderAlimPeso(){
   const p=S.profile;
   const hist=S.pesos.slice(-12);
@@ -2200,8 +2245,8 @@ function renderAlimPeso(){
       <div class="field" style="flex:1;margin:0"><label>Registrar peso hoje (kg)</label><input id="pesoInput" type="text" inputmode="decimal" placeholder="ex: 88,50"></div>
       <button class="btn sm" id="pesoSave">Salvar</button>
     </div>
-    ${hist.length?pesoChartSVG(hist):'<p class="muted small">Sem registros de peso ainda.</p>'}
-    ${first!=null?`<p class="small" style="margin-top:10px">Evolução: <b>${delta>0?'+':''}${delta.toFixed(1).replace('.',',')} kg</b> desde o início. ${delta<0?'Secando, soldado. Continua.':delta>0?'Subiu — se é massa, ok; se é gordura, ajusta a dieta.':'Estável.'}</p>`:''}
+    ${hist.length?`<div class="report-bars">${(()=>{ const min=Math.min(...hist.map(h=>h.peso))-1, max=Math.max(...hist.map(h=>h.peso))+1; return hist.map(h=>`<div class="bar" style="height:${Math.round((h.peso-min)/(max-min)*110)+3}px"><b>${fmtPeso(h.peso)}</b></div>`).join(''); })()}</div>`:'<p class="muted small">Sem registros de peso ainda.</p>'}
+    ${first!=null?`<p class="small" style="margin-top:24px">Evolução: <b>${delta>0?'+':''}${delta.toFixed(1).replace('.',',')} kg</b> desde o início. ${delta<0?'Secando, soldado. Continua.':delta>0?'Subiu — se é massa, ok; se é gordura, ajusta a dieta.':'Estável.'}</p>`:''}
   </div>`;
   $('#pesoSave').onclick=()=>{ const v=numBR($('#pesoInput').value); if(!(v>=30&&v<=250)) return toast('Peso inválido (30–250 kg). Use vírgula, ex: 89,50.');
     S.pesos.push({dateISO:todayISO(), peso:v}); S.profile.peso=v; save('alim:pesos'); saveProfile(); renderAlimPeso(); };
@@ -2291,7 +2336,7 @@ function renderCalendarioRotina(){
     <div class="calgrid caldow">${['D','S','T','Q','Q','S','S'].map(x=>`<div class="caldw">${x}</div>`).join('')}</div>
     <div class="calgrid">${cells}</div>
     <div class="callegend"><span><i class="lok"></i>tudo feito ✅</span><span><i class="lfail"></i>incompleto ✕</span><span><i class="lfut"></i>futuro</span></div>
-    ${rotClearMode?`<button class="btn" id="rotLimparConfirm" style="margin-top:12px;background:linear-gradient(135deg,#b3241f,#e0342b)">🗑️ Limpar ${rotClearSel.size} dia(s) selecionado(s)</button>`:''}
+    ${rotClearMode?`<button class="btn" id="rotLimparConfirm" style="margin-top:12px;background:linear-gradient(135deg,var(--accent),var(--accent2))">🗑️ Limpar ${rotClearSel.size} dia(s) selecionado(s)</button>`:''}
   </div>`;
   $('#rotPrev').onclick=()=>{ rotCalM--; if(rotCalM<0){ rotCalM=11; rotCalY--; } renderCalendarioRotina(); };
   $('#rotNext').onclick=()=>{ rotCalM++; if(rotCalM>11){ rotCalM=0; rotCalY++; } renderCalendarioRotina(); };
@@ -2451,7 +2496,7 @@ function verRecordacao(id){
       <a class="btn sm" href="${r.url}" download="redzone-${r.id}.${r.midiaTipo==='video'?'mp4':'jpg'}" style="flex:1;text-decoration:none;text-align:center">⬇️ Baixar</a>
       <button class="btn sm ghost" id="recPost" style="flex:1">📣 Postar no feed</button>
     </div>
-    <button class="btn ghost" id="recDel" style="margin-top:8px;color:#ff6b6b">🗑️ Excluir memória</button>`);
+    <button class="btn ghost" id="recDel" style="margin-top:8px;color:var(--accent2)">🗑️ Excluir memória</button>`);
   $('#recPost').onclick=()=>compartilharNoFeedSheet(r);
   $('#recDel').onclick=async()=>{ S.recordacoes=S.recordacoes.filter(x=>x.id!==id); await save('recordacoes'); closeSheet(); toast('Memória removida.'); renderRecordacoes(); };
 }
@@ -2638,7 +2683,7 @@ function postMenu(id, off, priv){
   openSheet(`<h3>Publicação</h3>
     <button class="btn ghost" id="pmPriv">${priv?'🌎 Tornar pública':'🔒 Tornar privada (só eu)'}</button>
     <button class="btn ghost" id="pmToggle" style="margin-top:8px">${off?'💬 Ativar comentários':'🚫 Desativar comentários'}</button>
-    <button class="btn" id="pmDel" style="margin-top:10px;background:linear-gradient(135deg,#b3241f,#e0342b)">🗑️ Excluir publicação</button>`);
+    <button class="btn" id="pmDel" style="margin-top:10px;background:linear-gradient(135deg,var(--accent),var(--accent2))">🗑️ Excluir publicação</button>`);
   $('#pmPriv').onclick=async()=>{ try{ await api('/batalha/feed/'+id,{method:'PATCH',body:{privado:!priv}}); closeSheet(); toast(priv?'Publicação agora é pública.':'Publicação agora é privada.'); renderBatalha(); }catch(e){ toast('Falha.'); } };
   $('#pmToggle').onclick=async()=>{ try{ await api('/batalha/feed/'+id,{method:'PATCH',body:{comentariosOff:!off}}); closeSheet(); toast(off?'Comentários ativados.':'Comentários desativados.'); renderBatalha(); }catch(e){ toast('Falha.'); } };
   $('#pmDel').onclick=async()=>{ try{ await api('/batalha/feed/'+id,{method:'DELETE'}); closeSheet(); toast('Publicação excluída.'); renderBatalha(); }catch(e){ toast('Falha ao excluir.'); } };
@@ -2899,7 +2944,7 @@ function renderPerfilConta(){
       <div class="field"><label>Gênero</label><select id="pfGenero"><option value="m" ${p.genero==='f'?'':'selected'}>Masculino</option><option value="f" ${p.genero==='f'?'selected':''}>Feminino</option></select></div>
       <div class="grid2">
         <div class="field"><label>Peso (kg)</label><input id="pfPeso" type="text" inputmode="decimal" value="${fmtPeso(p.peso)}"></div>
-        <div class="field"><label>Altura (cm ou m)</label><input id="pfAltura" type="text" inputmode="decimal" value="${p.altura??''}" placeholder="176 ou 1,76"></div>
+        <div class="field"><label>Altura (m)</label><input id="pfAltura" type="text" inputmode="decimal" value="${p.altura?fmtAltura(p.altura):''}" placeholder="1,76"></div>
       </div>
       <div class="err" id="pfErr"></div>
       <button class="btn" id="pfSave">Salvar alterações</button>
@@ -2948,7 +2993,7 @@ function renderPerfilConfig(){
       <div class="rowitem" id="cfEmail" style="cursor:pointer"><div class="txt"><div class="t">✉️ Trocar e-mail</div><div class="s">${esc(S.profile.email||'')}</div></div><span class="muted" style="font-size:20px">›</span></div>
       <div class="rowitem" id="cfSenha" style="cursor:pointer"><div class="txt"><div class="t">🔑 Trocar senha</div><div class="s">Define uma nova senha.</div></div><span class="muted" style="font-size:20px">›</span></div>
       <div class="rowitem" id="cfSecP" style="cursor:pointer"><div class="txt"><div class="t">🔐 Pergunta de segurança</div><div class="s">Pra recuperar a senha sem e-mail.</div></div><span class="muted" style="font-size:20px">›</span></div>
-      <div class="rowitem" id="cfDel" style="cursor:pointer;border-color:color-mix(in srgb,var(--accent) 50%, var(--line))"><div class="txt"><div class="t" style="color:#ff6b6b">🗑️ Excluir minha conta</div><div class="s">Apaga tudo do banco, sem volta. Pede a senha.</div></div><span class="muted" style="font-size:20px">›</span></div>
+      <div class="rowitem" id="cfDel" style="cursor:pointer;border-color:color-mix(in srgb,var(--accent) 50%, var(--line))"><div class="txt"><div class="t" style="color:var(--accent2)">🗑️ Excluir minha conta</div><div class="s">Apaga tudo do banco, sem volta. Pede a senha.</div></div><span class="muted" style="font-size:20px">›</span></div>
     </div>`;
   $('#cfEdit').onchange=e=>{ S.config.editMode=e.target.checked; save('config'); toast(e.target.checked?'Modo edição ON':'Modo edição OFF'); };
   $('#cfPriv').onchange=async e=>{ S.profile.privado=e.target.checked; try{ await api('/perfil',{method:'PATCH',body:{privado:e.target.checked}}); toast(e.target.checked?'Perfil agora é privado.':'Perfil agora é público.'); }catch(err){ toast('Falha ao salvar.'); } };
@@ -3016,11 +3061,11 @@ function perguntaSegurancaSheet(){
   };
 }
 function excluirContaSheet(){
-  openSheet(`<h3 style="color:#ff6b6b">Excluir conta</h3>
+  openSheet(`<h3 style="color:var(--accent2)">Excluir conta</h3>
     <p class="small">Isso apaga <b>TUDO</b>: perfil, treinos, estudos, posts, mensagens, seguidores — sem volta. Digite sua senha pra confirmar.</p>
     <div class="field"><label>Senha</label><input id="dcSenha" type="password" placeholder="••••••••"></div>
     <div class="err" id="dcErr"></div>
-    <button class="btn" id="dcConfirm" style="background:linear-gradient(135deg,#b3241f,#e0342b)">Apagar minha conta pra sempre</button>`);
+    <button class="btn" id="dcConfirm" style="background:linear-gradient(135deg,var(--accent),var(--accent2))">Apagar minha conta pra sempre</button>`);
   $('#dcConfirm').onclick=async()=>{
     const senha=$('#dcSenha').value;
     if(!senha) return $('#dcErr').textContent='Digite a senha.';
@@ -3076,12 +3121,23 @@ function sirenSrcAtual(){ const o=tryOpts(); return o.somCustom || 'siren.mp3'; 
 function sirenEl(){ const src=sirenSrcAtual(); if(!_siren || _sirenSrc!==src){ if(_siren){ try{_siren.pause();}catch(e){} } _siren=new Audio(src); _siren.loop=true; _siren.volume=1.0; _sirenSrc=src; } return _siren; }
 function sirenPlay(){ try{ const s=sirenEl(); if(s.paused) s.play().catch(()=>{}); }catch(e){} }
 function sirenStop(){ try{ if(_siren && !_siren.paused){ _siren.pause(); _siren.currentTime=0; } }catch(e){} }
-// itens COM HORÁRIO que já passaram e não foram feitos hoje (hábitos + atividades do dia)
+// nome "bate" com outro (case-insensitive, um contém o outro) — pra cruzar hábito × treino × estudo
+function _nomeBate(a,b){ a=(a||'').trim().toLowerCase(); b=(b||'').trim().toLowerCase(); return !!a && !!b && (a===b || a.includes(b) || b.includes(a)); }
+// um item da rotina conta como FEITO hoje se: marcado ✅, OU há treino/estudo equivalente hoje.
+// Ex.: correu no treino "Corrida" ⇒ o hábito "Corrida" NÃO cobra mais. (funcional e inteligente, sem cobrar o que já foi feito)
+function itemFeitoHoje(nome, doneFlag){
+  const hoje=todayISO();
+  if(doneFlag===true || doneFlag===hoje) return true;
+  if((S.treinoLogs||[]).some(l=>l.dateISO===hoje && _nomeBate(l.nome,nome))) return true;
+  if((S.estudoLogs||[]).some(l=>l.dateISO===hoje && _nomeBate(l.materia,nome))) return true;
+  return false;
+}
+// itens COM HORÁRIO que já passaram e ainda NÃO foram feitos hoje (hábitos + atividades do dia)
 function atrasadosAgora(){
   if(!S) return []; const now=brasiliaNow(); const hhmm=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0'); const hoje=todayISO();
   const out=[];
-  (S.rotina||[]).forEach(r=>{ if(r.hora && r.hora<hhmm && r.done!==hoje) out.push(r.nome); });
-  ((S.rotinaDias&&S.rotinaDias[hoje])||[]).forEach(a=>{ if(a.hora && a.hora<hhmm && !a.done) out.push(a.nome); });
+  (S.rotina||[]).forEach(r=>{ if(r.hora && r.hora<hhmm && !itemFeitoHoje(r.nome, r.done)) out.push(r.nome); });
+  ((S.rotinaDias&&S.rotinaDias[hoje])||[]).forEach(a=>{ if(a.hora && a.hora<hhmm && !itemFeitoHoje(a.nome, a.done)) out.push(a.nome); });
   return out;
 }
 // gerencia a sirene a cada 2s: toca SÓ se Try Hard ON + tem algo com horário atrasado + fora da trégua
@@ -3100,8 +3156,8 @@ function startTryHard(){
     if(!S) return;
     const now=brasiliaNow(); const hhmm=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0'); const hoje=todayISO();
     // 1) AVISO no minuto exato do horário (hábitos + atividades do dia)
-    (S.rotina||[]).forEach(r=>{ if(r.hora===hhmm && r.done!==hoje){ notify('REDZONE — '+r.nome, 'Está no horário. Cumpra agora, recruta.', 'rotina', true); if(o.vibrar&&navigator.vibrate) navigator.vibrate(200); } });
-    ((S.rotinaDias&&S.rotinaDias[hoje])||[]).forEach(a=>{ if(a.hora===hhmm && !a.done){ notify('REDZONE — '+a.nome, 'Tá no horário. Cumpra agora, recruta.', 'rotina', true); if(o.vibrar&&navigator.vibrate) navigator.vibrate(200); } });
+    (S.rotina||[]).forEach(r=>{ if(r.hora===hhmm && !itemFeitoHoje(r.nome,r.done)){ notify('REDZONE — '+r.nome, 'Está no horário. Cumpra agora, recruta.', 'rotina', true); if(o.vibrar&&navigator.vibrate) navigator.vibrate(200); } });
+    ((S.rotinaDias&&S.rotinaDias[hoje])||[]).forEach(a=>{ if(a.hora===hhmm && !itemFeitoHoje(a.nome,a.done)){ notify('REDZONE — '+a.nome, 'Tá no horário. Cumpra agora, recruta.', 'rotina', true); if(o.vibrar&&navigator.vibrate) navigator.vibrate(200); } });
     // 2) TRY HARD BRUTAL (sirene+tremor+esculacho): SÓ pra itens com horário que já PASSOU
     const atrasados=atrasadosAgora();
     if(S.config.tryHard && atrasados.length){
@@ -3117,13 +3173,15 @@ function startTryHard(){
     }
     // 3) LEMBRETE ÚTIL (sem tremor, sem sirene), ~10min: SÓ o que o usuário cadastrou/planejou pra HOJE.
     //    Nada de informação inventada — cada linha vem de um dado real do próprio usuário.
-    if(S.config.notif && Date.now()-_lastGentle > 600000){
+    if(S.config.notif && Date.now()-_lastGentle > 600000 && now.getHours()>=7 && now.getHours()<22){
+      // horário decente (7h–22h). Item COM horário só entra depois que o horário chegou — nada de
+      // "não deixe de correr (12:00)" às 2 da manhã. Item já feito NUNCA entra.
       const dia=hojeDia();   // 'seg'..'dom' de hoje
       const msgs=[];
-      // (a) atividades que VOCÊ marcou pra hoje na rotina e ainda não fez
-      ((S.rotinaDias&&S.rotinaDias[hoje])||[]).forEach(a=>{ if(a && a.nome && !a.done) msgs.push({t:`Não deixe de fazer: ${a.nome}${a.hora?` (${a.hora})`:''}.`, alvo:'rotina'}); });
-      // (b) hábitos COM horário que ainda não cumpriu hoje
-      (S.rotina||[]).forEach(r=>{ if(r && r.nome && r.hora && r.done!==hoje) msgs.push({t:`Falta o hábito: ${r.nome} (${r.hora}).`, alvo:'rotina'}); });
+      // (a) atividades que VOCÊ marcou pra hoje e ainda não fez (se tem horário, só quando já chegou)
+      ((S.rotinaDias&&S.rotinaDias[hoje])||[]).forEach(a=>{ if(a && a.nome && !itemFeitoHoje(a.nome,a.done) && (!a.hora || a.hora<=hhmm)) msgs.push({t:`Não deixe de fazer: ${a.nome}${a.hora?` (${a.hora})`:''}.`, alvo:'rotina'}); });
+      // (b) hábitos COM horário que já chegou e ainda não cumpriu hoje (já feito no treino/estudo NÃO cobra)
+      (S.rotina||[]).forEach(r=>{ if(r && r.nome && r.hora && r.hora<=hhmm && !itemFeitoHoje(r.nome,r.done)) msgs.push({t:`Falta o hábito: ${r.nome} (${r.hora}).`, alvo:'rotina'}); });
       // (c) ESTUDO: só as matérias que você AGENDOU pra hoje (estudo por dia da semana) e ainda não estudou
       const estIdsHoje=new Set(S.estudoLogs.filter(l=>l.dateISO===hoje).map(l=>l.materiaId));
       (S.estudoSemana[dia]||[]).forEach(mid=>{ const m=(S.materias||[]).find(x=>x.id===mid); if(m && m.nome && !estIdsHoje.has(mid)) msgs.push({t:`Você planejou estudar ${m.nome} hoje e ainda não abriu. Bora, recruta.`, alvo:'estudos'}); });
@@ -3197,7 +3255,18 @@ function tryHardOpcoesSheet(){
 /* =========================================================================
    SHEET helpers
 ========================================================================= */
-function openSheet(html){ $('#sheet').innerHTML=`<button class="sheet-close" onclick="closeSheet()">×</button>`+html; $('#overlay').classList.add('show'); }
+// adiciona o "olho" (mostrar/ocultar) em todo campo de senha dentro de `root`
+function bindPasswordEyes(root){
+  (root||document).querySelectorAll('input[type=password]:not([data-eye])').forEach(inp=>{
+    inp.setAttribute('data-eye','1');
+    const wrap=document.createElement('div'); wrap.className='pwwrap';
+    inp.parentNode.insertBefore(wrap, inp); wrap.appendChild(inp);
+    const btn=document.createElement('button'); btn.type='button'; btn.className='eyebtn'; btn.setAttribute('aria-label','Mostrar senha'); btn.textContent='👁';
+    btn.onclick=()=>{ const mostrar=inp.type==='password'; inp.type=mostrar?'text':'password'; btn.textContent=mostrar?'🙈':'👁'; btn.setAttribute('aria-label', mostrar?'Ocultar senha':'Mostrar senha'); try{ inp.focus(); const v=inp.value; inp.value=''; inp.value=v; }catch(e){} };
+    wrap.appendChild(btn);
+  });
+}
+function openSheet(html){ $('#sheet').innerHTML=`<button class="sheet-close" onclick="closeSheet()">×</button>`+html; $('#overlay').classList.add('show'); bindPasswordEyes($('#sheet')); }
 function closeSheet(){ $('#overlay').classList.remove('show'); }
 $('#overlay').addEventListener('click',e=>{ if(e.target.id==='overlay') closeSheet(); });
 window.closeSheet=closeSheet;
