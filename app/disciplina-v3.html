@@ -235,6 +235,13 @@ textarea.auto{resize:none; overflow:hidden; min-height:48px;}
 .navbd{position:fixed; inset:0; z-index:65; background:rgba(0,0,0,.5); display:none;}
 .navbd.show{display:block;}
 .hamb{display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px; border-radius:11px; border:1px solid var(--line); background:var(--surface2); color:var(--text); font-size:19px; flex:0 0 40px; cursor:pointer;}
+/* seta de voltar: reaproveita o visual do ☰ mas fica visível também no desktop (onde o ☰ some) */
+.backbtn{font-size:26px !important; display:inline-flex !important; line-height:1;}
+/* seta de voltar — acompanha o tema (cor do texto, realce no hover com a cor do tema) */
+.backbtn{display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px; border-radius:11px; border:1px solid var(--line); background:var(--surface2); color:var(--text); flex:0 0 40px; cursor:pointer; padding:0;}
+.backbtn:hover,.backbtn:active{background:color-mix(in srgb,var(--accent) 16%, var(--surface2)); border-color:color-mix(in srgb,var(--accent) 40%, var(--line));}
+.backbtn svg{width:22px; height:22px; stroke:currentColor; fill:none; stroke-width:2.2; stroke-linecap:round; stroke-linejoin:round;}
+.auth-back{position:absolute; left:14px; top:14px; z-index:3;}
 
 /* Overlay genérico (sheet) */
 .overlay{position:fixed; inset:0; z-index:60; background:rgba(0,0,0,.62); display:none; align-items:flex-end;}
@@ -259,7 +266,9 @@ textarea.auto{resize:none; overflow:hidden; min-height:48px;}
 #toast.show{opacity:1; transform:translateX(-50%) translateY(0);}
 
 /* Auth */
-#auth{max-width:440px; margin:0 auto; padding:24px 20px; min-height:100vh; min-height:100dvh; display:flex; flex-direction:column; justify-content:center;}
+#auth{position:relative; max-width:440px; margin:0 auto; padding:24px 20px; min-height:100vh; min-height:100dvh; display:flex; flex-direction:column; justify-content:center;}
+.authback{position:absolute; top:14px; left:14px; z-index:6; display:inline-flex; align-items:center; gap:4px; background:var(--surface); border:1px solid var(--line); color:var(--text); padding:9px 14px 9px 11px; border-radius:12px; font-size:14px; font-weight:700; cursor:pointer;}
+.authback:hover{background:color-mix(in srgb,var(--accent) 14%, var(--surface));}
 /* telas baixas / teclado aberto: começa do topo e rola, em vez de centralizar e cortar */
 @media (max-height:760px){ #auth{ justify-content:flex-start; } }
 /* logo se camufla no fundo escuro: 'screen' faz o preto do PNG sumir e só o brilho/desenho aparece
@@ -861,6 +870,7 @@ function renderAuth(){
     $('#lgPass').onkeydown=e=>{ if(e.key==='Enter') doLogin(); };
   } else {
     inner.innerHTML = `
+      <button class="authback" id="authBack" aria-label="Voltar">‹ Voltar</button>
       ${emblemaESA()}
       <div class="auth-title">Cadastro</div>
       <div class="stepper">
@@ -878,6 +888,7 @@ function renderAuth(){
       <p class="auth-sub" style="margin-top:14px"><a id="toLogin">Já tenho conta — entrar</a></p>`;
     renderSignupStep();
     $('#toLogin').onclick=()=>{ authMode='login'; renderAuth(); };
+    $('#authBack').onclick=()=>{ if(signupStep===2){ signupStep=1; renderAuth(); } else { authMode='login'; renderAuth(); } };
     if(signupStep===1){ $('#suNext').onclick=signupNext;
       $('#suPass2').onkeydown=e=>{ if(e.key==='Enter') signupNext(); };
       $('#suEmail').onkeydown=e=>{ if(e.key==='Enter') $('#suPass').focus(); };
@@ -1055,8 +1066,13 @@ function renderNav(){
 function openDrawer(){ $('#nav').classList.add('open'); $('#navBackdrop').classList.add('show'); }
 function closeDrawer(){ $('#nav').classList.remove('open'); $('#navBackdrop').classList.remove('show'); }
 window.openDrawer=openDrawer; window.closeDrawer=closeDrawer;
-function go(tab){
+let _navStack=[];   // histórico de abas pra seta de voltar
+function goBack(){ if(_navStack.length){ go(_navStack.pop(), true); } else { go('inicio', true); } }
+window.goBack=goBack;
+function go(tab, isBack){
   closeDrawer();
+  if(!isBack && activeTab && activeTab!==tab){ _navStack.push(activeTab); if(_navStack.length>25) _navStack.shift(); }
+  else if(isBack){ /* veio da seta: não empilha */ }
   activeTab=tab; renderNav();
   $$('.screen').forEach(s=>s.classList.remove('active'));
   $('#scr-'+tab).classList.add('active');
@@ -1111,6 +1127,7 @@ function renderInicio(){
       <div class="home-topline">
         <div style="display:flex;align-items:center;gap:11px">
           <button class="hamb" onclick="openDrawer()">☰</button>
+          ${backBtnHTML()}
           <img src="redzone-wordmark.png" alt="REDZONE" class="wordmark-img" style="height:26px;width:auto;display:block">
         </div>
         ${homeClockHTML()}
@@ -1458,7 +1475,8 @@ function resumoDetalheSheet(tipo){
 }
 
 /* ---------- helper de topo neutro ---------- */
-function topbar(title){ return `<div class="topbar"><div style="display:flex;align-items:center;gap:10px"><button class="hamb" onclick="openDrawer()">☰</button><div class="brand">${title}</div></div>${homeClockHTML()}</div>`; }
+function backBtnHTML(){ return _navStack.length ? `<button class="hamb backbtn" onclick="goBack()" aria-label="Voltar">‹</button>` : ''; }
+function topbar(title){ return `<div class="topbar"><div style="display:flex;align-items:center;gap:10px"><button class="hamb" onclick="openDrawer()">☰</button>${backBtnHTML()}<div class="brand">${title}</div></div>${homeClockHTML()}</div>`; }
 function editToggleHint(){ return S.config.editMode ? `<span class="chip" style="border-color:var(--accent2);color:var(--accent2)">✏️ MODO EDIÇÃO ON</span>` : ''; }
 
 /* =========================================================================
@@ -2577,7 +2595,7 @@ async function renderBatalha(){
   const badge = notif.naoLidas>0 ? `<span class="notif-badge">${notif.naoLidas>9?'9+':notif.naoLidas}</span>` : '';
   const dmBadge = dmN.naoLidas>0 ? `<span class="notif-badge">${dmN.naoLidas>9?'9+':dmN.naoLidas}</span>` : '';
   $('#scr-batalha').innerHTML=`
-    <div class="topbar"><div style="display:flex;align-items:center;gap:10px"><button class="hamb" onclick="openDrawer()">☰</button><div class="brand">BATALHA</div></div>
+    <div class="topbar"><div style="display:flex;align-items:center;gap:10px"><button class="hamb" onclick="openDrawer()">☰</button>${backBtnHTML()}<div class="brand">BATALHA</div></div>
       <div style="display:flex;align-items:center;gap:10px">
         <button class="icobtn" id="dmBtn">${svgIcon('i-dm')}${dmBadge}</button>
         <button class="icobtn" id="sinoBtn">${svgIcon('i-sino')}${badge}</button>${homeClockHTML()}
