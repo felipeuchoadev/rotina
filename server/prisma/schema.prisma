@@ -107,6 +107,7 @@ model Notificacao {
   tipo         String   // 'seguidor' | 'curtida' | 'comentario' | 'aviso'
   texto        String
   deUsername   String?
+  alvoPostId   Int?     // deep-link: post que originou a notificação (curtida/comentário)
   lida         Boolean  @default(false)
   criadoEm     DateTime @default(now())
 

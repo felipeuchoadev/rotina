@@ -17,8 +17,19 @@
    por **pergunta de segurança** já cobre todos os usuários agora. Quando houver
    domínio, configurar SPF/DKIM no Resend e trocar `MAIL_FROM`.
 2. **Landing** `/rotina/landing.html`: existe rebrandeada; falta screenshots reais.
-3. **Deep-link pra post específico** (hoje cai no perfil/feed).
-4. Polir o que o Felipe apontar ao usar no celular.
+3. Polir o que o Felipe apontar ao usar no celular.
+
+## ONDA 6 — no ar (deep-link pra post específico) ✅
+- **Backend**: novo `GET /batalha/feed/:id(\d+)` (post único, respeita bloqueio/privacidade;
+  404 se não existe, 403 se indisponível). Coluna **não-destrutiva** `alvoPostId Int?` em
+  `Notificacao` (`prisma db push` sem data-loss). `notificar()` agora aceita `postId`:
+  curtida/comentário gravam `alvoPostId` e o push vai pra `#post=<id>` (antes caía no perfil).
+- **Frontend**: `handleDeepLink()` trata `#post=<id>` → `abrirPost(id)` (sheet com o post +
+  comentários + curtir/comentar). Notificação in-app de curtida/comentário abre o post
+  específico (`abrirNotifAlvo` usa `alvoPostId`). Botão **🔗 compartilhar** em cada post
+  (Web Share API + copiar link `…/rotina/#post=<id>`), no feed e no sheet do post.
+- **Testado ao vivo** na VM: login→feed→`GET /feed/26` OK (usuario/likes/coms), `/feed/999999`=404,
+  `/feed/26/comentarios`=200 (regex `\d+` não colidiu). App live já serve o código novo; SW `redzone-v7`.
 
 ## Ondas mais recentes já entregues (além da lista original)
 - **Alimentação semanal**: banner "feche a semana passada" + "Finalizar semana" arquiva %saudável/%ruim em `alim:hist` e zera as refeições; gráfico de evolução por semana.

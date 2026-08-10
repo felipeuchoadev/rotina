@@ -2551,12 +2551,25 @@ function feedPostHTML(post){
     <div class="post-actions">
       <span data-like="${post.id}" style="cursor:pointer">${liked?'❤️':'🤍'} <b>${(post.likes||[]).length}</b></span>
       ${post.comentariosOff?'<span class="muted small">💬 comentários off</span>':`<span data-comment="${post.id}" style="cursor:pointer">💬 <b>${nCom}</b></span>`}
+      <span data-share="${post.id}" style="cursor:pointer;margin-left:auto" title="Copiar link da publicação">🔗</span>
     </div>
   </div>`;
+}
+function postLink(id){
+  const base = location.pathname.includes('/rotina') ? (location.origin+'/rotina/') : (location.origin+location.pathname);
+  return base + '#post=' + id;
+}
+async function compartilharPost(id){
+  const url=postLink(id);
+  try{
+    if(navigator.share){ await navigator.share({ title:'REDZONE', text:'Olha essa publicação no REDZONE', url }); return; }
+    await navigator.clipboard.writeText(url); toast('Link copiado! 🔗');
+  }catch(e){ try{ await navigator.clipboard.writeText(url); toast('Link copiado! 🔗'); }catch(_){ toast(url); } }
 }
 function bindFeedActions(){
   $$('#feed [data-like]').forEach(el=>el.onclick=async()=>{ try{ await api('/batalha/feed/'+el.dataset.like+'/like',{method:'POST'}); renderBatalha(); }catch(e){ toast('Falha ao curtir.'); } });
   $$('#feed [data-comment]').forEach(el=>el.onclick=()=>openComentarios(el.dataset.comment));
+  $$('#feed [data-share]').forEach(el=>el.onclick=()=>compartilharPost(el.dataset.share));
   $$('#feed [data-perfil], #ranking [data-perfil]').forEach(el=>el.onclick=()=>abrirPerfil(el.dataset.perfil));
   $$('#feed [data-menu]').forEach(el=>el.onclick=()=>postMenu(el.dataset.menu, el.dataset.off==='1', el.dataset.priv==='1'));
 }
@@ -2647,18 +2660,20 @@ async function abrirNotificacoes(){
 // clicar na notificação cai direto no assunto
 function abrirNotifAlvo(n){
   if(!n) return;
+  if(n.alvoPostId && (n.tipo==='curtida'||n.tipo==='comentario')){ abrirPost(n.alvoPostId); return; }
   if(n.deUsername && (n.tipo==='seguidor'||n.tipo==='curtida'||n.tipo==='comentario')){ abrirPerfil(n.deUsername); return; }
   if(n.tipo==='aviso'){ closeSheet(); go('inicio'); return; }
   if(n.deUsername){ abrirPerfil(n.deUsername); return; }
   closeSheet(); go('inicio');
 }
-// deep-link por hash (usado quando a notificação push abre/foca o app: #u=, #dm=, #tab=)
+// deep-link por hash (usado quando a notificação push abre/foca o app: #post=, #u=, #dm=, #tab=)
 function handleDeepLink(){
   const h=location.hash||''; if(h.length<2) return;
   const parts=Object.fromEntries(h.slice(1).split('&').map(kv=>{ const [k,v]=kv.split('='); return [k, decodeURIComponent(v||'')]; }));
   try{
     if(parts.reset){ resetarSenhaSheet(parts.reset); return; }
-    if(parts.u){ go('batalha'); abrirPerfil(parts.u); }
+    if(parts.post){ go('batalha'); abrirPost(parts.post); }
+    else if(parts.u){ go('batalha'); abrirPerfil(parts.u); }
     else if(parts.dm){ go('batalha'); abrirChat(parts.dm); }
     else if(parts.noti!==undefined){ go('batalha'); setTimeout(abrirNotificacoes,250); }
     else if(parts.tab){ go(parts.tab); }
@@ -2687,6 +2702,44 @@ async function openComentarios(postId){
     catch(e){ toast('Falha ao comentar.'); }
     finally{ btn.disabled=false; }
   };
+}
+// abre UMA publicação específica (deep-link #post= / notificação de curtida ou comentário)
+async function abrirPost(postId){
+  openSheet('<button class="sheet-close" onclick="closeSheet()">×</button><p class="muted" style="padding:20px 0">Carregando publicação…</p>');
+  let post; try{ post=await api('/batalha/feed/'+encodeURIComponent(postId)); }
+  catch(e){ $('#sheet').innerHTML='<button class="sheet-close" onclick="closeSheet()">×</button><p class="err" style="padding:20px 0">Publicação indisponível (removida, privada ou bloqueada).</p>'; return; }
+  const off = !!post.comentariosOff;
+  openSheet(`<h3>Publicação</h3>
+    <div id="postUnico">${feedPostHTML(post)}</div>
+    <div id="comLista" class="muted small" style="margin:12px 0">Carregando comentários…</div>
+    ${off?'<p class="muted small">Comentários desativados nesta publicação.</p>':`
+    <div class="field" style="margin:0 0 10px"><textarea id="comTxt" class="auto" placeholder="Escreve um comentário, soldado..."></textarea></div>
+    <button class="btn ok" id="comEnviar">Comentar</button>`}`);
+  // ações do próprio post (curtir / comentar via ícone / abrir perfil / menu)
+  $$('#postUnico [data-like]').forEach(el=>el.onclick=async()=>{ try{ await api('/batalha/feed/'+el.dataset.like+'/like',{method:'POST'}); abrirPost(postId); if(activeTab==='batalha') renderBatalha(); }catch(e){ toast('Falha ao curtir.'); } });
+  $$('#postUnico [data-perfil]').forEach(el=>el.onclick=()=>abrirPerfil(el.dataset.perfil));
+  $$('#postUnico [data-comment]').forEach(el=>el.onclick=()=>{ const t=$('#comTxt'); if(t) t.focus(); });
+  $$('#postUnico [data-share]').forEach(el=>el.onclick=()=>compartilharPost(el.dataset.share));
+  $$('#postUnico [data-menu]').forEach(el=>el.onclick=()=>postMenu(el.dataset.menu, el.dataset.off==='1', el.dataset.priv==='1'));
+  async function carregar(){
+    try{ const cs=await api('/batalha/feed/'+encodeURIComponent(postId)+'/comentarios');
+      $('#comLista').innerHTML = cs.length
+        ? cs.map(c=>`<div class="rowitem"><div class="txt"><div class="t">${esc(c.usuario?.nomeGuerra||'—')} <span class="muted" style="font-weight:400">@${esc(c.usuario?.username||'')}</span></div><div class="s" style="color:var(--text)">${esc(c.texto)}</div></div></div>`).join('')
+        : '<p class="muted small">Sem comentários ainda. Seja o primeiro.</p>';
+    }catch(e){ $('#comLista').innerHTML='<p class="err">Falha ao carregar comentários.</p>'; }
+  }
+  carregar();
+  if(!off){
+    const ta=$('#comTxt'); autoGrow(ta); ta.oninput=()=>autoGrow(ta);
+    $('#comEnviar').onclick=async()=>{
+      const texto=ta.value.trim(); if(!texto) return;
+      const btn=$('#comEnviar'); btn.disabled=true;
+      try{ await api('/batalha/feed/'+encodeURIComponent(postId)+'/comentar',{method:'POST',body:{texto}});
+        ta.value=''; autoGrow(ta); await carregar(); if(activeTab==='batalha') renderBatalha(); }
+      catch(e){ toast('Falha ao comentar.'); }
+      finally{ btn.disabled=false; }
+    };
+  }
 }
 function composePost(prefill=''){
   openSheet(`<h3>Nova publicação</h3>

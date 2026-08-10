@@ -11,12 +11,15 @@ batalhaRouter.use(exigirAuth);
 
 const pubSel = { id: true, username: true, nomeGuerra: true, fotoUrl: true, genero: true, privado: true, xp: true };
 
-async function notificar(usuarioId, tipo, texto, deUsername) {
+async function notificar(usuarioId, tipo, texto, deUsername, alvoPostId) {
   if (!usuarioId) return;
-  try { await prisma.notificacao.create({ data: { usuarioId, tipo, texto, deUsername } }); } catch {}
+  try { await prisma.notificacao.create({ data: { usuarioId, tipo, texto, deUsername, alvoPostId: alvoPostId || null } }); } catch {}
   emitToUser(usuarioId, 'notif:nova', { tipo, texto });
-  // deep-link: clicar na notificação cai direto no assunto (perfil de quem interagiu, ou o feed)
-  const url = deUsername ? ('/rotina/#u=' + encodeURIComponent(deUsername)) : '/rotina/#tab=batalha';
+  // deep-link: clicar na notificação cai direto no assunto
+  // curtida/comentário → o post específico; seguidor → perfil de quem seguiu; senão → o feed
+  const url = alvoPostId ? ('/rotina/#post=' + alvoPostId)
+    : deUsername ? ('/rotina/#u=' + encodeURIComponent(deUsername))
+    : '/rotina/#tab=batalha';
   enviarPush(usuarioId, { title: 'DISCIPLINA', body: texto, tag: 'notif', url });
 }
 async function contextoSocial(userId) {
@@ -53,6 +56,21 @@ batalhaRouter.get('/feed', async (req, res) => {
     (p.usuarioId === req.userId || (!p.privado && (!p.usuario.privado || sigoSet.has(p.usuarioId))))
   ).slice(0, 50);
   res.json(visiveis);
+});
+
+// ---- Post único (deep-link #post=<id>) ----
+batalhaRouter.get('/feed/:id(\\d+)', async (req, res) => {
+  const id = Number(req.params.id);
+  const post = await prisma.feedPost.findUnique({
+    where: { id },
+    include: { usuario: { select: pubSel }, likes: { select: { usuarioId: true } }, _count: { select: { comentarios: true } } },
+  });
+  if (!post) return res.status(404).json({ erro: 'Publicação não encontrada.' });
+  const { bloqueados, sigoSet } = await contextoSocial(req.userId);
+  const visivel = !bloqueados.has(post.usuarioId) &&
+    (post.usuarioId === req.userId || (!post.privado && (!post.usuario.privado || sigoSet.has(post.usuarioId))));
+  if (!visivel) return res.status(403).json({ erro: 'Publicação indisponível.' });
+  res.json(post);
 });
 
 const postSchema = z.object({
@@ -106,7 +124,7 @@ batalhaRouter.post('/feed/:id/like', async (req, res) => {
     await prisma.feedLike.create({ data: { postId, usuarioId: req.userId } });
     if (post.usuarioId !== req.userId) {
       const me = await prisma.usuario.findUnique({ where: { id: req.userId }, select: { username: true, nomeGuerra: true } });
-      notificar(post.usuarioId, 'curtida', `${me.nomeGuerra} curtiu sua publicação`, me.username);
+      notificar(post.usuarioId, 'curtida', `${me.nomeGuerra} curtiu sua publicação`, me.username, postId);
     }
   }
   const total = await prisma.feedLike.count({ where: { postId } });
@@ -126,7 +144,7 @@ batalhaRouter.post('/feed/:id/comentar', async (req, res) => {
     data: { postId, usuarioId: req.userId, texto },
     include: { usuario: { select: { username: true, nomeGuerra: true } } },
   });
-  if (post.usuarioId !== req.userId) notificar(post.usuarioId, 'comentario', `${c.usuario.nomeGuerra} comentou: "${texto.slice(0, 40)}"`, c.usuario.username);
+  if (post.usuarioId !== req.userId) notificar(post.usuarioId, 'comentario', `${c.usuario.nomeGuerra} comentou: "${texto.slice(0, 40)}"`, c.usuario.username, postId);
   emitFeed('post:comentario', { postId });
   res.status(201).json(c);
 });
