@@ -1499,16 +1499,24 @@ function weekProgressSheet(i){
     const e=w.exec[d]; const ok=e&&e.done;
     const dt=new Date(start); dt.setDate(dt.getDate()+di);
     const dataStr=dt.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'});
-    const prova = e&&e.prova ? `<img src="${e.prova}" alt="" style="width:46px;height:46px;object-fit:cover;border-radius:9px;border:1px solid var(--line)">` : '';
+    const prova = e&&e.prova ? `<div class="rec-cell" data-prova="${esc(e.prova)}" style="width:48px;height:48px;flex:0 0 48px;aspect-ratio:auto;border:1px solid var(--line)"><img src="${e.prova}" alt="" onerror="this.style.opacity=.15"></div>` : '';
     return `<div class="rowitem ${ok?'done':''}">
       <div class="chk">${ok?'✓':''}</div>
-      <div class="txt"><div class="t">${DIAS_NOME[d]}</div><div class="s mono">${dataStr}${ok&&e.at?` · concluído`:' · não treinou'}</div></div>
+      <div class="txt"><div class="t">${DIAS_NOME[d]}</div><div class="s mono">${dataStr}${ok&&e.at?` · concluído`:' · não treinou'}${e&&e.prova?' · 📷 toque pra ver':''}</div></div>
       ${prova}
     </div>`;
   }).join('');
   openSheet(`<h3>Semana ${i+1} — progresso</h3>
     <p class="small muted">${done}/7 dias cumpridos${done>=7?' · 🏆 semana perfeita!':''}. Início ${start.toLocaleDateString('pt-BR')}.</p>
     ${linhas}`);
+  $$('#sheet [data-prova]').forEach(el=>el.onclick=()=>verMidiaSimples(el.dataset.prova));
+}
+// visualizador simples de mídia (comprovação de treino) com download
+function verMidiaSimples(url){
+  const isVid=/\.(mp4|webm|mov|m4v)(\?|$)/i.test(url);
+  openSheet(`<h3>Comprovação</h3>
+    <div style="border-radius:12px;overflow:hidden;background:#000">${isVid?`<video src="${url}" controls playsinline style="width:100%;max-height:60vh"></video>`:`<img src="${url}" style="width:100%;max-height:60vh;object-fit:contain">`}</div>
+    <a class="btn sm" href="${url}" download style="margin-top:10px;text-decoration:none;text-align:center;display:block">⬇️ Baixar</a>`);
 }
 function currentWeekIndex(){ const now=new Date(); now.setHours(0,0,0,0);
   let idx=0; S.treinoWeeks.forEach((w,i)=>{ const s=new Date(w.startISO); s.setHours(0,0,0,0); if(s<=now) idx=i; }); return idx; }
@@ -1765,18 +1773,27 @@ function posEstudo(sess){
     </div></div>
     <p class="small muted">Marque os conteúdos que você concluiu:</p>
     ${pend.length?pend.map(c=>`<label class="rowitem"><input type="checkbox" data-cid="${c.id}" style="width:22px;height:22px"><div class="txt"><div class="t">${esc(c.nome)}</div></div></label>`).join(''):'<p class="muted">Nenhum conteúdo pendente nessa matéria.</p>'}
+    <label style="font-size:12.5px;color:var(--text-dim);font-weight:700">Foto/vídeo do estudo (opcional)</label>
+    <div id="estProva" style="margin:7px 0 6px"></div>
+    <label class="rowitem" style="cursor:pointer"><input type="checkbox" id="estPostar" style="width:22px;height:22px"><div class="txt"><div class="t">Postar no feed</div><div class="s">Depois de finalizar, escolhe legenda e público/privado.</div></div></label>
     <button class="btn ok" id="finEstudo">✅ Finalizar e registrar</button>
   `);
+  let prova=null;
+  renderProvaPicker($('#estProva'), (url,tipo)=>{ prova={url,tipo}; });
   $('#finEstudo').onclick=()=>{
     const marcados=$$('#sheet [data-cid]').filter(c=>c.checked).map(c=>c.dataset.cid);
     if(m){
-      // distribui o tempo ativo da sessão entre os conteúdos concluídos (ou tudo na matéria se nenhum marcado)
       const fatia = marcados.length ? Math.round(sess.ativoMs/marcados.length) : 0;
       m.conteudos.forEach(c=>{ if(marcados.includes(c.id)){ c.done=true; c.tempoMs=(c.tempoMs||0)+fatia; c.concluidoEm=todayISO(); } });
       save('estudo:materias');
     }
-    S.estudoLogs.push({ materia:m?.nome||'Estudo', materiaId:sess.refId, dateISO:todayISO(), ativoMs:sess.ativoMs, pausaMs:sess.pausedMs, conteudos:marcados });
-    save('estudo:logs'); reportXP(); closeSheet(); toast('Estudo registrado. Continue, recruta.'); renderEstudos();
+    S.estudoLogs.push({ materia:m?.nome||'Estudo', materiaId:sess.refId, dateISO:todayISO(), ativoMs:sess.ativoMs, pausaMs:sess.pausedMs, conteudos:marcados, prova:prova?.url });
+    save('estudo:logs'); reportXP();
+    let rec=null;
+    if(prova){ addRecordacao({tipo:'estudo', url:prova.url, midiaTipo:prova.tipo==='video'?'video':'image', texto:`Estudo: ${m?.nome||''}`}); rec=S.recordacoes[0]; }
+    const postar=$('#estPostar')?.checked;
+    closeSheet(); toast('Estudo registrado. Continue, recruta.'); renderEstudos();
+    if(postar && rec) setTimeout(()=>compartilharNoFeedSheet(rec), 300);
   };
 }
 
