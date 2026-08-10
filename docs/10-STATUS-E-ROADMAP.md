@@ -19,6 +19,28 @@
 2. **Landing** `/rotina/landing.html`: existe rebrandeada; falta screenshots reais.
 3. Polir o que o Felipe apontar ao usar no celular.
 
+## ONDA 7 — no ar (bateria de correções do feedback do Felipe) ✅
+Tudo testado ao vivo na VM, SW `redzone-v8`.
+- **Treino/contagem**: semana só estampa "SEMANA CONCLUÍDA ✅" com **7/7 real**; janela vencida com menos
+  dias vira card **"encerrada — X/7"** (sem check falso). `renderTreinoWeeks`/`currentWeekIndex` agora usam
+  `brasiliaNow()` (fim do descasamento de fuso com `weekContainingToday`).
+- **Try Hard**: hábito passa a ter **horário OPCIONAL** (acabou o default `06:30` forçado que fazia tudo virar
+  "atrasado" o dia todo). Só cobra/treme/apita item **com horário definido que já passou**. A frase agora **cita o
+  item** ("🔥 PASSOU DO HORÁRIO: {item}") via novo pool `ESC_ATRASO` — antes reusava `ESC_TRAVADA` ("furar fila"),
+  que era o "pulando etapas" que aparecia por cima da tela de peso (**não era validação de peso nenhuma**).
+- **Stories 24h**: `addRecordacao` grava `at` como **instante real UTC** (`new Date().toISOString()`), não mais
+  `brasiliaNow()` — a janela de 24h fica exata em qualquer fuso.
+- **Pergunta de segurança**: já é no cadastro (etapa 2, escolhe pergunta + resposta); agora **obrigatória no schema**
+  do backend. Resposta com **match EXATO case-sensitive** (removido `toLowerCase` do `normResp`; só apara bordas).
+  *Obs.: respostas antigas foram hasheadas em minúsculo — a do teste foi re-setada pra "Flamengo".*
+- **Gerar publicação**: agora inclui **alimentação** (refeições feitas hoje + análise), **peso do dia**, **atividades
+  da rotina do dia** e treino/estudo **mesmo sem cronômetro** (antes filtrava `min>0` e ignorava `alimSemana`).
+- **Notificações úteis**: o lembrete cita **o item/horário e a matéria específica** ("Você ainda não estudou {X}
+  hoje", "Não deixe de fazer {item} ({hora})") em vez de frase genérica de pool.
+- **Rotina, dias futuros**: dia futuro = **só visualização** (planeja no modo edição, mas não finaliza antes de
+  chegar); calendário deixa futuros **claros/esbranquiçados** e troca o **anel vermelho** do dia planejado por um
+  anel branco suave.
+
 ## ONDA 6 — no ar (deep-link pra post específico) ✅
 - **Backend**: novo `GET /batalha/feed/:id(\d+)` (post único, respeita bloqueio/privacidade;
   404 se não existe, 403 se indisponível). Coluna **não-destrutiva** `alvoPostId Int?` em
