@@ -3383,7 +3383,7 @@ function connectSocket(){
     _socket.on('state:changed', (d)=>{ if(!d || d.src===CLIENT_ID) return; applyRemoteState(d.chave, d.valor); });
     _socket.on('profile:changed', (d)=>{ if(!d || d.src===CLIENT_ID) return; applyRemoteProfile(d.usuario); });
     // AUTOUPDATE ao vivo: desenvolvedor subiu versão nova → recarrega na hora (HTML é network-first, pega o novo)
-    _socket.on('app:update', ()=>{ if(window.__appReloading) return; window.__appReloading=true; try{ toast('🔄 Nova versão chegou — atualizando…'); }catch(e){} setTimeout(()=>{ try{ location.reload(); }catch(e){} }, 600); });
+    _socket.on('app:update', ()=>{ if(window.__appReloading) return; window.__appReloading=true; try{ sessionStorage.setItem('rz:reloadAt', String(Date.now())); }catch(e){} try{ toast('🔄 Nova versão chegou — atualizando…'); }catch(e){} setTimeout(()=>{ try{ location.reload(); }catch(e){} }, 600); });
     _socket.on('dm:nova', (m)=>{
       const nome=m.de?.nomeGuerra||'Alguém';
       if(_chatUser && m.de && m.de.username===_chatUser && $('#chatMsgs')){
@@ -3433,7 +3433,12 @@ async function subscribePush(){
     navigator.serviceWorker.register('service-worker.js').catch(()=>{});
     // autoupdate: quando uma versão nova assume, recarrega sozinho (sem F5)
     let _reloaded=false;
-    navigator.serviceWorker.addEventListener('controllerchange', ()=>{ if(_reloaded) return; _reloaded=true; location.reload(); });
+    navigator.serviceWorker.addEventListener('controllerchange', ()=>{
+      if(_reloaded) return;
+      // se o socket 'app:update' já recarregou agora há pouco, NÃO recarrega de novo (evita reload duplo/lentidão)
+      try{ if(Date.now()-(+sessionStorage.getItem('rz:reloadAt')||0) < 12000){ return; } }catch(e){}
+      _reloaded=true; location.reload();
+    });
     // checa por atualização periodicamente (app aberto por muito tempo)
     setInterval(()=>{ navigator.serviceWorker.getRegistration().then(r=>r&&r.update()).catch(()=>{}); }, 60000);
   }
