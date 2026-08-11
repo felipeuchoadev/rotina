@@ -2916,7 +2916,7 @@ async function abrirChat(username){
   $('#chatFile').onchange=async e=>{ const f=e.target.files[0]; if(!f)return; toast('Enviando mídia…'); try{ const up=await uploadMedia(f); await enviar({url:up.url,tipo:up.tipo||(f.type.startsWith('video')?'video':'image')}); }catch(x){ toast('Falha ao enviar mídia.'); } };
 }
 function feedPostHTML(post){
-  const media = post.midiaTipo==='video'? `<video class="post-media" data-feed-video src="${post.midiaUrl}" muted loop playsinline preload="metadata"></video>` : (post.midiaUrl?`<img class="post-media" src="${post.midiaUrl}" loading="lazy">`:'');
+  const media = post.midiaTipo==='video'? `<video class="post-media" data-feed-video src="${post.midiaUrl}" muted loop controls playsinline preload="metadata"></video>` : (post.midiaUrl?`<img class="post-media" src="${post.midiaUrl}" loading="lazy">`:'');
   const meuId=S.profile?.id;
   const meu = (post.usuarioId===meuId) || (post.usuario?.id===meuId);
   const liked = (post.likes||[]).some(l=>l.usuarioId===meuId);
@@ -2949,24 +2949,36 @@ async function compartilharPost(id){
   }catch(e){ try{ await navigator.clipboard.writeText(url); toast('Link copiado! 🔗'); }catch(_){ toast(url); } }
 }
 function bindFeedActions(){
-  $$('#feed [data-like]').forEach(el=>el.onclick=async()=>{ try{ await api('/batalha/feed/'+el.dataset.like+'/like',{method:'POST'}); renderBatalha(); }catch(e){ toast('Falha ao curtir.'); } });
+  $$('#feed [data-like]').forEach(el=>el.onclick=()=>alternarCurtidaPost(el.dataset.like));
   $$('#feed [data-comment]').forEach(el=>el.onclick=()=>openComentarios(el.dataset.comment));
   $$('#feed [data-share]').forEach(el=>el.onclick=()=>compartilharPost(el.dataset.share));
   $$('#feed [data-perfil], #ranking [data-perfil]').forEach(el=>el.onclick=()=>abrirPerfil(el.dataset.perfil));
   $$('#feed [data-menu]').forEach(el=>el.onclick=()=>postMenu(el.dataset.menu, el.dataset.off==='1', el.dataset.priv==='1'));
   bindFeedVideos();
   $$('#feed [data-double-like]').forEach(zona=>{
-    const curtir=async()=>{ if(zona.dataset.liked==='1') return; zona.dataset.liked='1'; const heart=$('.double-heart',zona); if(heart){ heart.classList.remove('on'); void heart.offsetWidth; heart.classList.add('on'); } const botao=$(`[data-like="${zona.dataset.doubleLike}"]`,zona.closest('.post')); if(botao){ botao.firstChild.textContent='❤️ '; const n=$('b',botao); if(n) n.textContent=String((+n.textContent||0)+1); } try{ const r=await api('/batalha/feed/'+zona.dataset.doubleLike+'/like',{method:'POST'}); if(botao&&$('b',botao)) $('b',botao).textContent=r.total; }catch(e){ zona.dataset.liked='0'; toast('Falha ao curtir.'); } };
+    const curtir=async()=>{ const id=zona.dataset.doubleLike, heart=$('.double-heart',zona); if(heart){ heart.classList.remove('on'); void heart.offsetWidth; heart.classList.add('on'); } if(zona.dataset.liked==='1'||_likesBusy.has(String(id))) return; _likesBusy.add(String(id)); zona.dataset.liked='1'; const botao=$(`[data-like="${id}"]`,zona.closest('.post')), numero=botao?$('b',botao):null, anterior=+(numero?.textContent||0); aplicarCurtidaPostDOM(id,true,anterior+1); try{ const r=await api('/batalha/feed/'+id+'/like',{method:'POST',body:{curtir:true}}); aplicarCurtidaPostDOM(id,r.curtido,r.total); }catch(e){ aplicarCurtidaPostDOM(id,false,anterior); toast('Falha ao curtir.'); }finally{ _likesBusy.delete(String(id)); } };
     zona.addEventListener('dblclick',e=>{ e.preventDefault(); curtir(); });
     let ultimoToque=0; zona.addEventListener('touchend',()=>{ const agora=Date.now(); if(agora-ultimoToque<330){ ultimoToque=0; curtir(); } else ultimoToque=agora; },{passive:true});
   });
 }
+const _likesBusy=new Set();
+function aplicarCurtidaPostDOM(id,curtido,total){
+  $$(`[data-like="${id}"]`).forEach(el=>{ if(el.firstChild) el.firstChild.textContent=curtido?'❤️ ':'🤍 '; const n=$('b',el); if(n&&total!=null)n.textContent=total; });
+  $$(`[data-double-like="${id}"]`).forEach(el=>el.dataset.liked=curtido?'1':'0');
+}
+async function alternarCurtidaPost(id){
+  id=String(id); if(_likesBusy.has(id)) return; _likesBusy.add(id);
+  try{ const r=await api('/batalha/feed/'+id+'/like',{method:'POST'}); aplicarCurtidaPostDOM(id,r.curtido,r.total); }
+  catch(e){ toast('Falha ao curtir.'); }
+  finally{ _likesBusy.delete(id); }
+}
 let _feedVideoObserver=null;
-function pausarVideosFeed(){ $$('[data-feed-video]').forEach(v=>{ try{v.pause();}catch(e){} }); }
+function pausarVideosFeed(){ $$('[data-feed-video]').forEach(pausaAutomaticaVideo); }
+function pausaAutomaticaVideo(v){ try{ v._rzAutoPause=true; v.pause(); setTimeout(()=>{v._rzAutoPause=false;},0); }catch(e){} }
 function bindFeedVideos(){
   if(_feedVideoObserver) _feedVideoObserver.disconnect();
-  _feedVideoObserver=new IntersectionObserver(entries=>entries.forEach(e=>{ const v=e.target, emSheet=$('#sheet')?.contains(v); if(e.isIntersecting&&e.intersectionRatio>=.65&&activeTab==='batalha'&&(!$('#overlay').classList.contains('show')||emSheet)){ $$('[data-feed-video]').forEach(o=>{if(o!==v)o.pause();}); v.play().catch(()=>{}); } else v.pause(); }),{threshold:[0,.65,1]});
-  $$('[data-feed-video]').forEach(v=>_feedVideoObserver.observe(v));
+  _feedVideoObserver=new IntersectionObserver(entries=>entries.forEach(e=>{ const v=e.target, emSheet=$('#sheet')?.contains(v); if(e.isIntersecting&&e.intersectionRatio>=.65&&activeTab==='batalha'&&(!$('#overlay').classList.contains('show')||emSheet)){ $$('[data-feed-video]').forEach(o=>{if(o!==v)pausaAutomaticaVideo(o);}); if(v.dataset.userPaused!=='1') v.play().catch(()=>{}); } else pausaAutomaticaVideo(v); }),{threshold:[0,.65,1]});
+  $$('[data-feed-video]').forEach(v=>{ v.addEventListener('pause',()=>{ if(!v._rzAutoPause) v.dataset.userPaused='1'; }); v.addEventListener('play',()=>{ v.dataset.userPaused='0'; }); _feedVideoObserver.observe(v); });
   $$('[data-video-sound]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); const v=$('[data-feed-video]',b.parentElement); if(!v)return; v.muted=!v.muted; b.textContent=v.muted?'🔇':'🔊'; if(!v.paused)v.play().catch(()=>{}); });
 }
 document.addEventListener('visibilitychange',()=>{ if(document.hidden) pausarVideosFeed(); });
@@ -3125,7 +3137,7 @@ async function abrirPost(postId,focusCommentId=null){
     <button class="btn ok" id="comEnviar">Comentar</button></div>`}`);
   bindFeedVideos();
   // ações do próprio post (curtir / comentar via ícone / abrir perfil / menu)
-  $$('#postUnico [data-like]').forEach(el=>el.onclick=async()=>{ try{ await api('/batalha/feed/'+el.dataset.like+'/like',{method:'POST'}); abrirPost(postId); if(activeTab==='batalha') renderBatalha(); }catch(e){ toast('Falha ao curtir.'); } });
+  $$('#postUnico [data-like]').forEach(el=>el.onclick=()=>alternarCurtidaPost(el.dataset.like));
   $$('#postUnico [data-perfil]').forEach(el=>el.onclick=()=>abrirPerfil(el.dataset.perfil));
   $$('#postUnico [data-comment]').forEach(el=>el.onclick=()=>{ const t=$('#comTxt'); if(t) t.focus(); });
   $$('#postUnico [data-share]').forEach(el=>el.onclick=()=>compartilharPost(el.dataset.share));
@@ -3604,11 +3616,10 @@ function connectSocket(){
   const src = origin + base + '/socket.io/socket.io.js';
   const boot=()=>{ try{
     _socket = io(origin, { path: base + '/socket.io', auth:{ token:authToken }, transports:['websocket','polling'] });
-    const refresh=()=>{ if(activeTab==='batalha') renderBatalha(); };
-    _socket.on('post:novo', refresh);
-    _socket.on('post:like', refresh);
-    _socket.on('post:comentario', refresh);
-    _socket.on('notif:nova',()=>{ if(activeTab==='batalha'&&!$('#overlay').classList.contains('show')) renderBatalha(); });
+    _socket.on('post:novo',()=>{ if(activeTab==='batalha') toast('Nova publicação no feed. Toque em ↻ Atualizar quando quiser ver.'); });
+    _socket.on('post:like',d=>{ if(!d)return; $$(`[data-post="${d.postId}"] [data-like]`).forEach(el=>{ const n=$('b',el); if(n)n.textContent=d.total; }); });
+    _socket.on('post:comentario',d=>{ if(!d||d.total==null)return; $$(`[data-post="${d.postId}"] [data-comment]`).forEach(el=>{ const n=$('b',el); if(n)n.textContent=d.total; }); });
+    _socket.on('notif:nova',()=>{ const btn=$('#sinoBtn'); if(!btn)return; let b=$('.notif-badge',btn); if(!b){b=document.createElement('span');b.className='notif-badge';btn.appendChild(b);} const n=Math.min(99,(parseInt(b.textContent)||0)+1); b.textContent=n>9?'9+':n; });
     // SYNC AO VIVO ponta a ponta: mudou num aparelho → reflete nos outros na hora (sem F5)
     _socket.on('state:changed', (d)=>{ if(!d || d.src===CLIENT_ID) return; applyRemoteState(d.chave, d.valor); });
     _socket.on('profile:changed', (d)=>{ if(!d || d.src===CLIENT_ID) return; applyRemoteProfile(d.usuario); });
@@ -3623,7 +3634,7 @@ function connectSocket(){
         api('/dm/'+encodeURIComponent(_chatUser)).then(atualizarBadgeDM).catch(()=>{}); limparNotifDM(_chatUser);
       } else {
         toast('💬 '+nome+': '+(m.texto||'Enviou uma mídia').slice(0,40));
-        if(activeTab==='batalha') renderBatalha();
+        atualizarBadgeDM();
       }
     });
     _socket.on('dm:lida',()=>{ if(_chatUser) $$('[data-dm-tick]').forEach(x=>{ x.textContent='✓✓'; x.style.color='#7dd3fc'; }); });

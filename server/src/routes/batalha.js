@@ -119,9 +119,11 @@ batalhaRouter.post('/feed/:id/like', async (req, res) => {
   const post = await prisma.feedPost.findUnique({ where: { id: postId } });
   if (!post) return res.status(404).json({ erro: 'Post não encontrado.' });
   const existe = await prisma.feedLike.findUnique({ where: { postId_usuarioId: { postId, usuarioId: req.userId } } });
-  if (existe) await prisma.feedLike.delete({ where: { postId_usuarioId: { postId, usuarioId: req.userId } } });
+  const forcarCurtir = req.body?.curtir === true;
+  let curtido = true;
+  if (existe && !forcarCurtir) { await prisma.feedLike.delete({ where: { postId_usuarioId: { postId, usuarioId: req.userId } } }); curtido = false; }
   else {
-    let criou=true; try{ await prisma.feedLike.create({ data: { postId, usuarioId: req.userId } }); }
+    let criou=false; try{ if(!existe){ await prisma.feedLike.create({ data: { postId, usuarioId: req.userId } }); criou=true; } }
     catch(e){ if(e?.code==='P2002') criou=false; else throw e; }
     if (criou && post.usuarioId !== req.userId) {
       const me = await prisma.usuario.findUnique({ where: { id: req.userId }, select: { username: true, nomeGuerra: true } });
@@ -130,7 +132,7 @@ batalhaRouter.post('/feed/:id/like', async (req, res) => {
   }
   const total = await prisma.feedLike.count({ where: { postId } });
   emitFeed('post:like', { postId, total });
-  res.json({ curtido: !existe, total });
+  res.json({ curtido, total });
 });
 
 // Comentar (respeita comentários desativados)
@@ -150,7 +152,8 @@ batalhaRouter.post('/feed/:id/comentar', async (req, res) => {
   });
   if(parent && parent.usuarioId!==req.userId) notificar(parent.usuarioId,'resposta',`${c.usuario.nomeGuerra} respondeu ao seu comentário: "${texto.slice(0,40)}"`,c.usuario.username,postId,c.id);
   if (post.usuarioId !== req.userId && (!parent || post.usuarioId!==parent.usuarioId)) notificar(post.usuarioId, parent?'resposta':'comentario', parent?`${c.usuario.nomeGuerra} respondeu um comentário na sua publicação`:`${c.usuario.nomeGuerra} comentou: "${texto.slice(0, 40)}"`, c.usuario.username, postId,c.id);
-  emitFeed('post:comentario', { postId });
+  const total=await prisma.feedComment.count({where:{postId}});
+  emitFeed('post:comentario', { postId,total });
   res.status(201).json(c);
 });
 batalhaRouter.get('/feed/:id/comentarios', async (req, res) => {
