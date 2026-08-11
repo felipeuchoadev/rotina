@@ -34,6 +34,7 @@ model Usuario {
   xp         Int      @default(0) // auto-reportado pelo cliente, usado no ranking
   privado    Boolean  @default(false)
   criadoEm   DateTime @default(now())
+  ultimoAcesso DateTime?
 
   states      UserState[]
   posts       FeedPost[]
@@ -70,6 +71,8 @@ model Mensagem {
   para     Usuario  @relation("para", fields: [paraId], references: [id], onDelete: Cascade)
   paraId   String
   texto    String
+  midiaUrl String?
+  midiaTipo String?
   lida     Boolean  @default(false)
   criadoEm DateTime @default(now())
 

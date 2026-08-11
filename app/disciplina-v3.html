@@ -258,6 +258,13 @@ textarea.auto{resize:none; overflow:hidden; min-height:48px;}
 .overlay{position:fixed; inset:0; z-index:60; background:rgba(0,0,0,.62); display:none; align-items:flex-end;}
 .overlay.show{display:flex;}
 .sheet{background:var(--surface); width:100%; max-width:520px; margin:0 auto; border-radius:26px 26px 0 0; padding:20px 16px calc(24px + env(safe-area-inset-bottom)); max-height:90vh; overflow-y:auto; box-shadow:0 -24px 54px rgba(0,0,0,.5);}
+.overlay.chat-full{align-items:stretch;background:var(--bg)}
+.overlay.chat-full .sheet{max-width:none;height:100dvh;max-height:none;border-radius:0;padding:calc(14px + env(safe-area-inset-top)) 14px calc(10px + env(safe-area-inset-bottom));display:flex;flex-direction:column;overflow:hidden}
+.chat-head{display:flex;align-items:center;gap:10px;padding:2px 44px 10px 0;border-bottom:1px solid var(--line)}
+.chat-messages{flex:1;min-height:0;overflow-y:auto;padding:12px 2px}
+.chat-compose{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;gap:7px;align-items:end;padding-top:8px;border-top:1px solid var(--line)}
+.chat-compose input{min-width:0;width:100%;background:var(--surface2);border:1.5px solid var(--line);border-radius:18px;padding:12px;color:var(--text)}
+.chat-media{display:block;max-width:min(280px,70vw);max-height:300px;border-radius:10px;margin-bottom:5px}
 .sheet h3{font-weight:800; font-size:20px; margin-bottom:6px;}
 .sheet-close{float:right; background:rgba(255,255,255,.06); border:none; color:var(--text-dim); font-size:19px; line-height:1; width:32px; height:32px; border-radius:50%;}
 
@@ -1125,6 +1132,13 @@ window.openDrawer=openDrawer; window.closeDrawer=closeDrawer;
 let _navStack=[];   // histórico de abas pra seta de voltar
 function goBack(){ if(_navStack.length){ go(_navStack.pop(), true); } else { go('inicio', true); } }
 window.goBack=goBack;
+let _popNavegando=false;
+window.addEventListener('popstate',(e)=>{
+  if($('#overlay')?.classList.contains('show')){ closeSheet(true); return; }
+  const tab=e.state&&e.state.rzTab;
+  if(tab&&TABS.some(t=>t.id===tab)){ _popNavegando=true; go(tab,true); _popNavegando=false; return; }
+  if(activeTab!=='inicio'){ _popNavegando=true; goBack(); _popNavegando=false; }
+});
 function viewKey(tipo,tab=activeTab){ return `rz:view:${currentUser||'anon'}:${tipo}:${tab}`; }
 function salvarPosicaoAtual(){
   if(!activeTab) return;
@@ -1142,6 +1156,7 @@ function go(tab, isBack, restaurarSalvo=false){
   if(!isBack && anterior && anterior!==tab){ _navStack.push(anterior); if(_navStack.length>25) _navStack.shift(); }
   else if(isBack){ /* veio da seta: não empilha */ }
   activeTab=tab; renderNav();
+  if(!_popNavegando&&!restaurarSalvo){ try{ history.pushState({rzTab:tab},'',location.href); }catch(e){} }
   try{ sessionStorage.setItem(`rz:view:${currentUser||'anon'}:tab`,tab); }catch(e){}
   $$('.screen').forEach(s=>s.classList.remove('active'));
   $('#scr-'+tab).classList.add('active');
@@ -1157,6 +1172,7 @@ async function enterApp(){
   let abaSalva='inicio';
   try{ const x=sessionStorage.getItem(`rz:view:${currentUser||'anon'}:tab`); if(TABS.some(t=>t.id===x)) abaSalva=x; }catch(e){}
   activeTab=abaSalva; renderNav(); go(abaSalva,true,true);
+  try{ history.replaceState({rzTab:abaSalva},'',location.href); }catch(e){}
   startClock(); startTryHard(); connectSocket(); reportXP(); flushQueue();
   if(S.config.notif) subscribePush();
   // pede permissão de notificação logo ao entrar (uma vez); se aceitar, liga notificações + push
@@ -1554,7 +1570,12 @@ function resumoDetalheSheet(tipo){
 /* ---------- helper de topo neutro ---------- */
 function backBtnHTML(){ return _navStack.length ? `<button class="hamb backbtn" onclick="goBack()" aria-label="Voltar">‹</button>` : ''; }
 function topbar(title){ return `<div class="topbar"><div style="display:flex;align-items:center;gap:10px"><button class="hamb" onclick="openDrawer()">☰</button>${backBtnHTML()}<div class="brand">${title}</div></div>${homeClockHTML()}</div>`; }
-function editToggleHint(){ return S.config.editMode ? `<span class="chip" style="border-color:var(--accent2);color:var(--accent2)">✏️ MODO EDIÇÃO ON</span>` : ''; }
+async function desligarModoEdicao(){
+  if(!S.config.editMode) return;
+  S.config.editMode=false; await save('config'); toast('Modo edição desativado.'); go(activeTab);
+}
+window.desligarModoEdicao=desligarModoEdicao;
+function editToggleHint(){ return S.config.editMode ? `<button class="chip" onclick="desligarModoEdicao()" aria-label="Desativar modo edição" style="border-color:var(--accent2);color:var(--accent2);cursor:pointer;background:transparent">✏️ MODO EDIÇÃO ON</button>` : ''; }
 
 /* =========================================================================
    TREINOS
@@ -2811,25 +2832,31 @@ async function abrirDMs(){
       </div>`).join('') : '<p class="muted small">Nenhuma conversa ainda. Abra o perfil de alguém e toque em Mensagem.</p>'}`);
   $$('#sheet [data-chat]').forEach(el=>el.onclick=()=>abrirChat(el.dataset.chat));
 }
-let _chatUser=null;
+let _chatUser=null, _chatPeerId=null, _typingTimer=null;
+function bolhaChat(m){
+  const media=m.midiaUrl?(m.midiaTipo==='video'?`<video class="chat-media" src="${esc(m.midiaUrl)}" controls playsinline></video>`:`<img class="chat-media" src="${esc(m.midiaUrl)}" alt="Mídia da conversa">`):'';
+  const ticks=m.meu?`<span data-dm-tick="${m.id}" style="color:${m.lida?'#7dd3fc':'inherit'}">${m.lida?'✓✓':'✓'}</span>`:'';
+  return `<div style="display:flex;justify-content:${m.meu?'flex-end':'flex-start'};margin:4px 0"><div style="max-width:82%;padding:9px 13px;border-radius:16px;background:${m.meu?'linear-gradient(135deg,var(--accent),var(--accent2))':'var(--surface2)'};color:${m.meu?'#fff':'var(--text)'};font-size:14.5px">${media}${m.texto?esc(m.texto):''}<div style="font-size:10px;opacity:.8;margin-top:3px;text-align:right">${timeago(m.criadoEm)} ${ticks}</div></div></div>`;
+}
+function limparNotifDM(username){ try{ navigator.serviceWorker?.controller?.postMessage({type:'CLEAR_NOTIFICATION',tag:'dm-'+username}); }catch(e){} }
 async function abrirChat(username){
   _chatUser=username;
   openSheet('<button class="sheet-close" onclick="closeSheet()">×</button><p class="muted" style="padding:20px 0">Carregando…</p>');
   let d; try{ d=await api('/dm/'+encodeURIComponent(username)); }catch(e){ $('#sheet').innerHTML='<button class="sheet-close" onclick="closeSheet()">×</button><p class="err">Conversa indisponível.</p>'; return; }
-  const bolhas=(msgs)=>msgs.map(m=>`<div style="display:flex;justify-content:${m.meu?'flex-end':'flex-start'};margin:4px 0">
-      <div style="max-width:78%;padding:9px 13px;border-radius:16px;background:${m.meu?'linear-gradient(135deg,var(--accent),var(--accent2))':'var(--surface2)'};color:${m.meu?'#fff':'var(--text)'};font-size:14.5px">${esc(m.texto)}<div style="font-size:10px;opacity:.7;margin-top:2px;text-align:right">${timeago(m.criadoEm)}</div></div></div>`).join('');
-  openSheet(`<h3>${esc(d.usuario.nomeGuerra)}</h3>
-    <div id="chatMsgs" style="max-height:52vh;overflow-y:auto;padding:6px 0;margin-bottom:10px">${d.mensagens.length?bolhas(d.mensagens):'<p class="muted small" style="text-align:center">Diga oi 👋</p>'}</div>
-    <div style="display:flex;gap:8px">
-      <input id="chatTxt" placeholder="Mensagem..." style="flex:1;background:#0c0d11;border:1.5px solid var(--line);border-radius:14px;padding:12px;color:var(--text)">
-      <button class="btn sm" id="chatSend">Enviar</button>
-    </div>`);
+  _chatPeerId=d.usuario.id; limparNotifDM(username); $('#overlay').classList.add('chat-full');
+  api('/dm/naolidas').then(x=>{ const b=$('#dmBtn .notif-badge'); if(b){ if(x.naoLidas) b.textContent=x.naoLidas>9?'9+':x.naoLidas; else b.remove(); } }).catch(()=>{});
+  openSheet(`<div class="chat-head">${avatarHTML({nome:d.usuario.nomeGuerra,foto:d.usuario.fotoUrl},'avatar sm')}<div class="txt"><div class="t">${esc(d.usuario.nomeGuerra)}</div><div class="s" id="chatPresence">verificando presença…</div></div></div>
+    <div id="chatMsgs" class="chat-messages">${d.mensagens.length?d.mensagens.map(bolhaChat).join(''):'<p class="muted small" style="text-align:center">Diga oi 👋</p>'}</div><div id="chatTyping" class="small muted" style="height:18px"></div>
+    <div class="chat-compose"><button class="icobtn" id="chatEmoji" aria-label="Emojis">😊</button><button class="icobtn" id="chatMedia" aria-label="Enviar foto ou vídeo">📎</button><input id="chatTxt" placeholder="Mensagem..." autocomplete="off"><button class="btn sm" id="chatSend">Enviar</button></div><input id="chatFile" type="file" accept="image/*,video/*" hidden>`);
   const box=$('#chatMsgs'); box.scrollTop=box.scrollHeight;
-  const enviar=async()=>{ const t=$('#chatTxt').value.trim(); if(!t) return; $('#chatTxt').value='';
-    try{ const m=await api('/dm/'+encodeURIComponent(username),{method:'POST',body:{texto:t}});
-      box.insertAdjacentHTML('beforeend', bolhas([m])); box.scrollTop=box.scrollHeight; }catch(e){ toast('Falha ao enviar.'); } };
+  if(_socket&&_chatPeerId) _socket.emit('presence:check',_chatPeerId,p=>{ const el=$('#chatPresence'); if(el) el.textContent=p.online?'online':(p.lastSeen?'visto por último '+timeago(p.lastSeen):'offline'); });
+  const enviar=async(midia=null)=>{ const t=$('#chatTxt').value.trim(); if(!t&&!midia) return; $('#chatTxt').value=''; try{ const m=await api('/dm/'+encodeURIComponent(username),{method:'POST',body:{texto:t,midiaUrl:midia?.url||null,midiaTipo:midia?.tipo||null}}); box.querySelector('.muted')?.remove(); box.insertAdjacentHTML('beforeend',bolhaChat(m)); box.scrollTop=box.scrollHeight; }catch(e){ toast('Falha ao enviar.'); } };
   $('#chatSend').onclick=enviar;
   $('#chatTxt').onkeydown=e=>{ if(e.key==='Enter') enviar(); };
+  $('#chatTxt').oninput=()=>{ if(_socket&&_chatPeerId){ _socket.emit('dm:typing',{paraId:_chatPeerId,digitando:true}); clearTimeout(_typingTimer); _typingTimer=setTimeout(()=>_socket.emit('dm:typing',{paraId:_chatPeerId,digitando:false}),1200); } };
+  $('#chatEmoji').onclick=()=>{ const escolhido=prompt('Escolha ou cole emojis:','😀 😂 😍 🥰 😎 🔥 💪 👏 ❤️ ✅ 🏃 📚 💧'); if(escolhido){ $('#chatTxt').value+=escolhido; $('#chatTxt').focus(); } };
+  $('#chatMedia').onclick=()=>$('#chatFile').click();
+  $('#chatFile').onchange=async e=>{ const f=e.target.files[0]; if(!f)return; toast('Enviando mídia…'); try{ const up=await uploadMedia(f); await enviar({url:up.url,tipo:up.tipo||(f.type.startsWith('video')?'video':'image')}); }catch(x){ toast('Falha ao enviar mídia.'); } };
 }
 function feedPostHTML(post){
   const media = post.midiaTipo==='video'? `<video class="post-media" src="${post.midiaUrl}" controls playsinline></video>` : (post.midiaUrl?`<img class="post-media" src="${post.midiaUrl}">`:'');
@@ -2953,6 +2980,7 @@ async function abrirNotificacoes(){
         ${n.deUsername||n.tipo==='aviso'?`<span class="muted" style="font-size:22px">›</span>`:''}
       </div>`;}).join('') : '<p class="muted small">Sem notificações ainda. Quando alguém te seguir, curtir ou comentar, aparece aqui.</p>'}`);
   api('/batalha/notificacoes/lidas',{method:'POST'}).catch(()=>{});
+  $('#sinoBtn .notif-badge')?.remove();
   $$('#sheet [data-noti]').forEach(el=>el.onclick=()=>abrirNotifAlvo(nots[+el.dataset.noti]));
 }
 // clicar na notificação cai direto no assunto
@@ -3191,7 +3219,7 @@ function renderPerfilConfig(){
       <label class="rowitem"><input type="checkbox" id="cfNotif" ${c.notif?'checked':''} style="width:24px;height:24px"><div class="txt"><div class="t">Permitir notificações</div><div class="s">Lembretes no horário dos hábitos.</div></div></label>
       <label class="rowitem"><input type="checkbox" id="cfTry" ${c.tryHard?'checked':''} style="width:24px;height:24px"><div class="txt"><div class="t">Modo Try Hard 🔥</div><div class="s">Aqui o bicho pega: o app floda notificação e alarme SEM PARAR até você cumprir. Desligado, ele ainda cobra — só que na metade da intensidade.</div></div></label>
       <div class="rowitem" id="cfSomNotif" style="cursor:pointer"><div class="txt"><div class="t">🔔 Som das notificações</div><div class="s">Use o som padrão ou envie o seu próprio áudio.</div></div><span class="muted" style="font-size:20px">›</span></div>
-      <div class="rowitem" id="cfTryOpts" style="cursor:pointer"><div class="txt"><div class="t">⚙️ Opções do Try Hard</div><div class="s">Sirene do alarme, vibração, intervalo, tempo de trégua…</div></div><span class="muted" style="font-size:20px">›</span></div>
+      <div class="rowitem" id="cfTryOpts" style="cursor:pointer"><div class="txt"><div class="t">⚙️ Opções do Try Hard</div><div class="s">Sirene do alarme, vibração e intervalo das cobranças.</div></div><span class="muted" style="font-size:20px">›</span></div>
     </div>
     <div class="card">
       <div class="h">Conta</div>
@@ -3203,7 +3231,7 @@ function renderPerfilConfig(){
   $('#cfEdit').onchange=e=>{ S.config.editMode=e.target.checked; save('config'); toast(e.target.checked?'Modo edição ON':'Modo edição OFF'); };
   $('#cfPriv').onchange=async e=>{ S.profile.privado=e.target.checked; try{ await api('/perfil',{method:'PATCH',body:{privado:e.target.checked}}); toast(e.target.checked?'Perfil agora é privado.':'Perfil agora é público.'); }catch(err){ toast('Falha ao salvar.'); } };
   $('#cfNotif').onchange=async e=>{ S.config.notif=e.target.checked; save('config'); if(e.target.checked && 'Notification' in window){ const perm=await Notification.requestPermission(); if(perm!=='granted'){ toast('Permissão de notificação negada no navegador.'); } else { subscribePush(); toast('Notificações ligadas — chegam até com o app fechado.'); } } };
-  $('#cfTry').onchange=e=>{ S.config.tryHard=e.target.checked; save('config'); startTryHard(); };
+  $('#cfTry').onchange=async e=>{ S.config.tryHard=e.target.checked; if(e.target.checked&&'Notification' in window&&Notification.permission!=='granted'){ const perm=await Notification.requestPermission(); if(perm==='granted'){ S.config.notif=true; subscribePush(); toast('Try Hard e notificações autorizados.'); } else toast('Try Hard ligado, mas o celular bloqueou as notificações. Autorize nas configurações do navegador.'); } save('config'); startTryHard(); };
   $('#cfSomNotif').onclick=somNotificacaoSheet;
   $('#cfTryOpts').onclick=tryHardOpcoesSheet;
   $('#cfEmail').onclick=trocarEmailSheet;
@@ -3323,7 +3351,7 @@ function segsNoApp(){ return document.visibilityState==='visible' ? (Date.now()-
 // ---- SIRENE incansável do Try Hard (loop de verdade, para só quando cumpre ou dá trégua) ----
 let _siren=null, _sirenSrc=null;
 function sirenSrcAtual(){ const o=tryOpts(); return o.somCustom || 'siren.mp3'; }
-function sirenEl(){ const src=sirenSrcAtual(); if(!_siren || _sirenSrc!==src){ if(_siren){ try{_siren.pause();}catch(e){} } _siren=new Audio(src); _siren.loop=true; _siren.volume=1.0; _sirenSrc=src; } return _siren; }
+function sirenEl(){ const src=sirenSrcAtual(); if(!_siren || _sirenSrc!==src){ if(_siren){ try{_siren.pause();_siren.currentTime=0;}catch(e){} } _siren=new Audio(src); _siren.loop=true; _siren.preload='auto'; _siren.volume=1.0; _sirenSrc=src; } return _siren; }
 function sirenPlay(){ try{ const s=sirenEl(); if(s.paused) s.play().catch(()=>{}); }catch(e){} }
 function sirenStop(){ try{ if(_siren && !_siren.paused){ _siren.pause(); _siren.currentTime=0; } }catch(e){} }
 // nome "bate" com outro (case-insensitive, um contém o outro) — pra cruzar hábito × treino × estudo
@@ -3344,12 +3372,11 @@ function atrasadosAgora(){
   ((S.rotinaDias&&S.rotinaDias[hoje])||[]).forEach(a=>{ if(a.hora && a.hora<hhmm && !itemFeitoHoje(a.nome, a.done)) out.push(a.nome); });
   return out;
 }
-// gerencia a sirene a cada 2s: toca SÓ se Try Hard ON + tem algo com horário atrasado + fora da trégua
+// gerencia a sirene: Try Hard não tem pausa; só para quando não há tarefa atrasada.
 function manageSiren(){
   const o=tryOpts();
   if(!S || !S.config.tryHard){ sirenStop(); return; }
-  const emTregua = segsNoApp() >= (o.treguaS||60);
-  if(atrasadosAgora().length && !emTregua){ sirenPlay(); } else { sirenStop(); }
+  if(atrasadosAgora().length){ sirenPlay(); } else { sirenStop(); }
 }
 let _tryTick=0, _lastGentle=0;
 function startTryHard(){
@@ -3364,15 +3391,14 @@ function startTryHard(){
     // 2) TRY HARD BRUTAL (sirene+tremor+esculacho): SÓ pra itens com horário que já PASSOU
     const atrasados=atrasadosAgora();
     if(S.config.tryHard && atrasados.length){
-      if(segsNoApp() < (o.treguaS||60)){   // sem trégua → esculacha (SÓ pra item com horário que passou)
-        _tryTick++;
-        const nomes = atrasados.slice(0,2).join(', ') + (atrasados.length>2?` +${atrasados.length-2}`:'');
-        const abre = ESC_ATRASO[_tryTick % ESC_ATRASO.length];
-        const msg = `${abre} PASSOU DO HORÁRIO: ${nomes}. CUMPRE AGORA, RECRUTA!`;
-        notify('🔥 MODO TRY HARD', msg, 'rotina');
-        toast('🔥 '+msg, 4000); tryHardFlash();
-        if(navigator.vibrate) navigator.vibrate([400,120,400,120,400,120,600]);
-      }
+      _tryTick++;
+      const nomes = atrasados.slice(0,2).join(', ') + (atrasados.length>2?` +${atrasados.length-2}`:'');
+      const abre = ESC_ATRASO[_tryTick % ESC_ATRASO.length];
+      const msg = `${abre} PASSOU DO HORÁRIO: ${nomes}. CUMPRE AGORA, RECRUTA!`;
+      notify('🔥 MODO TRY HARD', msg, 'rotina');
+      if(S.config.notif) api('/push/try-hard',{method:'POST',body:{tarefa:nomes}}).catch(()=>{});
+      toast('🔥 '+msg, 4000); tryHardFlash();
+      if(navigator.vibrate) navigator.vibrate([400,120,400,120,400,120,600]);
     }
     // 3) LEMBRETE ÚTIL (sem tremor, sem sirene), ~10min: SÓ o que o usuário cadastrou/planejou pra HOJE.
     //    Nada de informação inventada — cada linha vem de um dado real do próprio usuário.
@@ -3423,7 +3449,7 @@ function somNotificacaoSheet(){
 function tryHardOpcoesSheet(){
   const o=tryOpts();
   openSheet(`<h3>⚙️ Opções do Try Hard</h3>
-    <p class="small muted">Aqui o bicho pega. No Try Hard toca uma <b>sirene incansável</b> que só para quando você cumpre o hábito daquele horário — ou fica 1 min no app (trégua).</p>
+    <p class="small muted">Aqui o bicho pega. No Try Hard toca uma <b>sirene incansável</b> que só para quando você cumpre a atividade atrasada.</p>
     <div class="field"><label>Som do alarme</label>
       <div style="display:flex;gap:8px;align-items:center">
         <div class="txt" style="flex:1"><div class="t" id="thSomNome">${o.somCustom?'Som personalizado':'Sirene de polícia (padrão)'}</div></div>
@@ -3438,19 +3464,15 @@ function tryHardOpcoesSheet(){
     <label class="rowitem" style="cursor:pointer"><input type="checkbox" id="thSomNotif" ${o.somNotif!==false?'checked':''} style="width:22px;height:22px"><div class="txt"><div class="t">Som nas notificações (modo normal)</div><div class="s">Um sino suave no horário do hábito.</div></div></label>
     <div class="field"><label>Intervalo das frases: <b id="thIntLbl">${o.intervaloS||20}s</b></label>
       <input id="thInt" type="range" min="5" max="120" step="5" value="${o.intervaloS||20}" style="width:100%"></div>
-    <div class="field"><label>Trégua depois de <b id="thTregLbl">${o.treguaS||60}s</b> no app</label>
-      <input id="thTreg" type="range" min="30" max="300" step="15" value="${o.treguaS||60}" style="width:100%">
-      <div class="s muted" style="font-size:12px">Passou esse tempo dentro do app (estudando/treinando), a sirene silencia.</div></div>
     <button class="btn" id="thSalvar">Salvar opções</button>`);
   let somCustom=o.somCustom||null;
   $('#thInt').oninput=e=>$('#thIntLbl').textContent=e.target.value+'s';
-  $('#thTreg').oninput=e=>$('#thTregLbl').textContent=e.target.value+'s';
   const testAudio=()=>{ const a=new Audio(somCustom||'siren.mp3'); a.volume=1; a.play().catch(()=>{}); window._thTest=a; };
   $('#thTest').onclick=(e)=>{ e.preventDefault(); if(window._thTest){try{window._thTest.pause();}catch(x){}} testAudio(); };
   $('#thPararTest').onclick=(e)=>{ e.preventDefault(); if(window._thTest){try{window._thTest.pause();window._thTest.currentTime=0;}catch(x){}} };
   $('#thUpload').onclick=async(e)=>{ e.preventDefault(); const f=await escolherMidia('audio/*'); if(!f) return; toast('Enviando som…'); try{ const up=await uploadMedia(f); somCustom=up.url; $('#thSomNome').textContent='Som personalizado'; toast('Som carregado. Toque em ▶ testar.'); }catch(err){ toast('Falha ao enviar o som.'); } };
   if($('#thPadrao')) $('#thPadrao').onclick=(e)=>{ e.preventDefault(); somCustom=null; $('#thSomNome').textContent='Sirene de polícia (padrão)'; toast('Voltou pro som padrão.'); };
-  $('#thSalvar').onclick=()=>{ S.config.tryOpts={ som:o.som||'alarme', somCustom, vibrar:$('#thVibrar').checked, somNotif:$('#thSomNotif').checked, intervaloS:+$('#thInt').value, treguaS:+$('#thTreg').value }; save('config'); _siren=null; startTryHard(); closeSheet(); toast('Opções salvas.'); };
+  $('#thSalvar').onclick=()=>{ sirenStop(); S.config.tryOpts={ som:o.som||'alarme', somCustom, vibrar:$('#thVibrar').checked, somNotif:$('#thSomNotif').checked, intervaloS:+$('#thInt').value, treguaS:0 }; save('config'); _siren=null; _sirenSrc=null; startTryHard(); closeSheet(); toast('Opções salvas.'); };
 }
 
 /* =========================================================================
@@ -3467,8 +3489,8 @@ function bindPasswordEyes(root){
     wrap.appendChild(btn);
   });
 }
-function openSheet(html){ $('#sheet').innerHTML=`<button class="sheet-close" onclick="closeSheet()">×</button>`+html; $('#overlay').classList.add('show'); bindPasswordEyes($('#sheet')); }
-function closeSheet(){ $('#overlay').classList.remove('show'); }
+function openSheet(html){ const estava=$('#overlay').classList.contains('show'); $('#sheet').innerHTML=`<button class="sheet-close" onclick="closeSheet()">×</button>`+html; $('#overlay').classList.add('show'); if(!estava){ try{ history.pushState({rzSheet:true,rzTab:activeTab},'',location.href); }catch(e){} } bindPasswordEyes($('#sheet')); }
+function closeSheet(fromPop=false){ const aberto=$('#overlay').classList.contains('show'); $('#overlay').classList.remove('show','chat-full'); _chatUser=null; _chatPeerId=null; if(aberto&&!fromPop&&history.state?.rzSheet){ try{ history.back(); }catch(e){} } }
 $('#overlay').addEventListener('click',e=>{ if(e.target.id==='overlay') closeSheet(); });
 window.closeSheet=closeSheet;
 /* ENTER global: confirma/envia. Em <input> dentro de um sheet, dispara o botão principal.
@@ -3500,6 +3522,7 @@ function connectSocket(){
     _socket.on('post:novo', refresh);
     _socket.on('post:like', refresh);
     _socket.on('post:comentario', refresh);
+    _socket.on('notif:nova',()=>{ if(activeTab==='batalha'&&!$('#overlay').classList.contains('show')) renderBatalha(); });
     // SYNC AO VIVO ponta a ponta: mudou num aparelho → reflete nos outros na hora (sem F5)
     _socket.on('state:changed', (d)=>{ if(!d || d.src===CLIENT_ID) return; applyRemoteState(d.chave, d.valor); });
     _socket.on('profile:changed', (d)=>{ if(!d || d.src===CLIENT_ID) return; applyRemoteProfile(d.usuario); });
@@ -3508,14 +3531,18 @@ function connectSocket(){
     _socket.on('dm:nova', (m)=>{
       const nome=m.de?.nomeGuerra||'Alguém';
       if(_chatUser && m.de && m.de.username===_chatUser && $('#chatMsgs')){
-        $('#chatMsgs').insertAdjacentHTML('beforeend', `<div style="display:flex;justify-content:flex-start;margin:4px 0"><div style="max-width:78%;padding:9px 13px;border-radius:16px;background:var(--surface2);font-size:14.5px">${esc(m.texto)}</div></div>`);
+        $('#chatMsgs').querySelector('.muted')?.remove();
+        $('#chatMsgs').insertAdjacentHTML('beforeend',bolhaChat({...m,meu:false,lida:true}));
         $('#chatMsgs').scrollTop=$('#chatMsgs').scrollHeight;
+        api('/dm/'+encodeURIComponent(_chatUser)).catch(()=>{}); limparNotifDM(_chatUser);
       } else {
-        toast('💬 '+nome+': '+m.texto.slice(0,40));
-        notify('Mensagem de '+nome, m.texto, '#dm='+(m.de?.username||''), true);
+        toast('💬 '+nome+': '+(m.texto||'Enviou uma mídia').slice(0,40));
         if(activeTab==='batalha') renderBatalha();
       }
     });
+    _socket.on('dm:lida',()=>{ if(_chatUser) $$('[data-dm-tick]').forEach(x=>{ x.textContent='✓✓'; x.style.color='#7dd3fc'; }); });
+    _socket.on('dm:typing',d=>{ if(_chatPeerId&&d.deId===_chatPeerId&&$('#chatTyping')) $('#chatTyping').textContent=d.digitando?'digitando…':''; });
+    _socket.on('presence:update',d=>{ if(_chatPeerId&&d.userId===_chatPeerId&&$('#chatPresence')) $('#chatPresence').textContent=d.online?'online':(d.lastSeen?'visto por último '+timeago(d.lastSeen):'offline'); });
   }catch(e){} };
   if(window.io){ boot(); return; }
   const s=document.createElement('script'); s.src=src; s.onload=boot; s.onerror=()=>{}; document.head.appendChild(s);

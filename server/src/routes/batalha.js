@@ -20,7 +20,7 @@ async function notificar(usuarioId, tipo, texto, deUsername, alvoPostId) {
   const url = alvoPostId ? ('/rotina/#post=' + alvoPostId)
     : deUsername ? ('/rotina/#u=' + encodeURIComponent(deUsername))
     : '/rotina/#tab=batalha';
-  enviarPush(usuarioId, { title: 'DISCIPLINA', body: texto, tag: 'notif', url });
+  enviarPush(usuarioId, { title: 'REDZONE', body: texto, tag: `${tipo}-${alvoPostId||deUsername||'social'}-${Date.now()}`, url });
 }
 async function contextoSocial(userId) {
   const [blkEu, blkMe, sigo] = await Promise.all([

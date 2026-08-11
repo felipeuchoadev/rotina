@@ -3,7 +3,7 @@
    Sempre que você subir código novo no host, muda a versão do CACHE abaixo
    (ou a lógica de fetch pega o novo do servidor). O app se atualiza sozinho
    na próxima abertura. */
-const CACHE = 'redzone-v28';
+const CACHE = 'redzone-v29';
 
 // ---- Web Push: recebe notificação mesmo com o app fechado ----
 self.addEventListener('push', (e) => {
@@ -16,6 +16,8 @@ self.addEventListener('push', (e) => {
     tag: d.tag || 'disciplina',
     data: { url: d.url || '/rotina/' },
     vibrate: [80, 40, 80],
+    renotify: true,
+    requireInteraction: !!d.requireInteraction,
   }));
 });
 self.addEventListener('notificationclick', (e) => {
@@ -30,6 +32,11 @@ self.addEventListener('notificationclick', (e) => {
     }
     if (clients.openWindow) return clients.openWindow(url);
   }));
+});
+self.addEventListener('message',(e)=>{
+  if(e.data?.type==='CLEAR_NOTIFICATION'&&e.data.tag){
+    e.waitUntil(self.registration.getNotifications({tag:e.data.tag}).then(ns=>ns.forEach(n=>n.close())));
+  }
 });
 const CORE = [
   './disciplina-v3.html',

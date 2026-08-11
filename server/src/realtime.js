@@ -1,8 +1,11 @@
 import { Server } from 'socket.io';
 import jwt from 'jsonwebtoken';
 import fs from 'node:fs';
+import { prisma } from './lib/db.js';
 
 let io = null;
+const online = new Map();
+const vistoPorUltimo = new Map();
 
 // Observa o diretório do app e, quando o front muda (novo deploy), empurra 'app:update'
 // pra TODOS os aparelhos conectados recarregarem na hora (autoupdate em ms, sem baixar nada).
@@ -43,6 +46,14 @@ export function initRealtime(httpServer, corsOrigins) {
   io.on('connection', (socket) => {
     socket.join('feed'); // todos recebem eventos do feed/ranking ao vivo
     if (socket.userId) socket.join('user:' + socket.userId); // sala pessoal (DM/notificações)
+    online.set(socket.userId,(online.get(socket.userId)||0)+1);
+    io.to('feed').emit('presence:update',{userId:socket.userId,online:true});
+    socket.on('presence:check',async(userId,cb)=>{ if(typeof cb!=='function') return; let lastSeen=vistoPorUltimo.get(userId)||null; if(!lastSeen){ try{ lastSeen=(await prisma.usuario.findUnique({where:{id:userId},select:{ultimoAcesso:true}}))?.ultimoAcesso||null; }catch{} } cb({online:!!online.get(userId),lastSeen}); });
+    socket.on('dm:typing',(d)=>{ if(d&&d.paraId) io.to('user:'+d.paraId).emit('dm:typing',{deId:socket.userId,digitando:!!d.digitando}); });
+    socket.on('disconnect',()=>{
+      const n=Math.max(0,(online.get(socket.userId)||1)-1);
+      if(n) online.set(socket.userId,n); else { online.delete(socket.userId); const at=new Date().toISOString(); vistoPorUltimo.set(socket.userId,at); prisma.usuario.update({where:{id:socket.userId},data:{ultimoAcesso:new Date(at)}}).catch(()=>{}); io.to('feed').emit('presence:update',{userId:socket.userId,online:false,lastSeen:at}); }
+    });
   });
 
   return io;
