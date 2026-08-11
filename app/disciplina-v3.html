@@ -857,6 +857,7 @@ async function loadUserData(){
     datas:          g('datas', []),   // aniversários + datas importantes
     recordacoes:    g('recordacoes', []),   // memórias: mídia por data (treino/alim/estudo)
   };
+  await garantirSemanaAlimAtual(false); // segunda-feira: arquiva e inicia a nova semana sem depender de botão
   if(!S.treinoWeeks){ S.treinoWeeks = [{ id:uid(), startISO:mondayOfISO(todayISO()), exec:{} }]; await save('treino:weeks'); }
   currentUser = u.username;
   applyTheme(S.profile.tema||'red');
@@ -1124,22 +1125,38 @@ window.openDrawer=openDrawer; window.closeDrawer=closeDrawer;
 let _navStack=[];   // histórico de abas pra seta de voltar
 function goBack(){ if(_navStack.length){ go(_navStack.pop(), true); } else { go('inicio', true); } }
 window.goBack=goBack;
-function go(tab, isBack){
+function viewKey(tipo,tab=activeTab){ return `rz:view:${currentUser||'anon'}:${tipo}:${tab}`; }
+function salvarPosicaoAtual(){
+  if(!activeTab) return;
+  try{ sessionStorage.setItem(viewKey('scroll'), String(window.scrollY||document.documentElement.scrollTop||0)); }catch(e){}
+}
+let _viewScrollTimer=null;
+window.addEventListener('scroll',()=>{ clearTimeout(_viewScrollTimer); _viewScrollTimer=setTimeout(salvarPosicaoAtual,120); },{passive:true});
+window.addEventListener('beforeunload',salvarPosicaoAtual);
+function go(tab, isBack, restaurarSalvo=false){
   closeDrawer();
-  if(!isBack && activeTab && activeTab!==tab){ _navStack.push(activeTab); if(_navStack.length>25) _navStack.shift(); }
+  const anterior=activeTab, mesmaAba=anterior===tab;
+  const yAtual=window.scrollY||document.documentElement.scrollTop||0;
+  let ySalvo=0; try{ ySalvo=+(sessionStorage.getItem(viewKey('scroll',tab))||0); }catch(e){}
+  if(anterior && !(restaurarSalvo&&mesmaAba)) salvarPosicaoAtual();
+  if(!isBack && anterior && anterior!==tab){ _navStack.push(anterior); if(_navStack.length>25) _navStack.shift(); }
   else if(isBack){ /* veio da seta: não empilha */ }
   activeTab=tab; renderNav();
+  try{ sessionStorage.setItem(`rz:view:${currentUser||'anon'}:tab`,tab); }catch(e){}
   $$('.screen').forEach(s=>s.classList.remove('active'));
   $('#scr-'+tab).classList.add('active');
-  window.scrollTo(0,0);
   ({inicio:renderInicio, treinos:renderTreinos, alimentacao:renderAlimentacao, estudos:renderEstudos, rotina:renderRotina, recordacoes:renderRecordacoes, batalha:renderBatalha, perfil:renderPerfil})[tab]();
+  const destino=mesmaAba?yAtual:((isBack||restaurarSalvo)?ySalvo:0);
+  requestAnimationFrame(()=>requestAnimationFrame(()=>window.scrollTo(0,Math.max(0,destino))));
 }
 
 async function enterApp(){
   await loadUserData();
   $('#auth').classList.add('hidden');
   $('#app').classList.remove('hidden');
-  renderNav(); go('inicio');
+  let abaSalva='inicio';
+  try{ const x=sessionStorage.getItem(`rz:view:${currentUser||'anon'}:tab`); if(TABS.some(t=>t.id===x)) abaSalva=x; }catch(e){}
+  activeTab=abaSalva; renderNav(); go(abaSalva,true,true);
   startClock(); startTryHard(); connectSocket(); reportXP(); flushQueue();
   if(S.config.notif) subscribePush();
   // pede permissão de notificação logo ao entrar (uma vez); se aceitar, liga notificações + push
@@ -1167,7 +1184,10 @@ function startClock(){ clearInterval(window._clk); _curDay=todayISO(); window._c
   $$('.homeclock .hc-date').forEach(c=>{ c.textContent=fmtDataLonga(d); });
   // virou o dia com o app aberto → re-renderiza a tela ativa (água/rotina/treino do novo dia zeram)
   const hoje=todayISO();
-  if(hoje!==_curDay){ _curDay=hoje; try{ if(activeTab) go(activeTab); }catch(e){} }
+  if(hoje!==_curDay){
+    _curDay=hoje; alimDiaData=hoje; alimDiaSel=hojeDia();
+    garantirSemanaAlimAtual(true).finally(()=>{ try{ if(activeTab) go(activeTab); }catch(e){} });
+  }
 },1000); }
 
 /* ---------- INÍCIO ---------- */
@@ -1625,7 +1645,7 @@ function editRecordeSheet(id){
     save('treino:recordes'); closeSheet(); renderRecordes();
   };
 }
-function dayChip(d, sel){ const today=DIAS[(new Date().getDay()+6)%7];
+function dayChip(d, sel){ const today=hojeDia();
   return `<div class="day ${d===sel?'sel':''} ${d===today?'today':''}" data-d="${d}"><div class="dn">${DIAS_AB[d]}</div><div class="dd">${d===today?'hoje':''}</div></div>`; }
 
 function renderTreinoDia(){
@@ -2140,29 +2160,69 @@ function renderRelatorio(elId, tipo){
 /* =========================================================================
    ALIMENTAÇÃO
 ========================================================================= */
-let alimDiaSel = DIAS[(new Date().getDay()+6)%7];
+let alimDiaData=todayISO();
+let alimDiaSel=hojeDia();
 let alimPrecisaFechar=false;
 function weekLabel(iso){ const s=new Date(iso+'T00:00:00'); const e=new Date(s); e.setDate(e.getDate()+6); return `${s.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})}–${e.toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})}`; }
-function analiseAlimAtual(){ let bom=0,ruim=0,neutro=0,total=0; DIAS.forEach(d=>(S.alimSemana[d]||[]).forEach(r=>{ total++; const q=qualidadeAuto(r); if(q==='bom')bom++; else if(q==='ruim')ruim++; else neutro++; })); return {total,bom,ruim,neutro,pctBom:total?Math.round(bom/total*100):0,pctRuim:total?Math.round(ruim/total*100):0}; }
-function checarSemanaAlim(){ const wk=weekStartISO(); if(!S.alimHist) S.alimHist={ref:null,hist:[]};
-  if(!S.alimHist.ref){ S.alimHist.ref=wk; save('alim:hist'); alimPrecisaFechar=false; return; }
-  alimPrecisaFechar = (S.alimHist.ref!==wk) && (analiseAlimAtual().total>0);
+function dataMaisDias(iso,dias){ const d=new Date(iso+'T00:00:00'); d.setDate(d.getDate()+dias); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
+function sincronizarDiaAlimentacao(){ const hoje=todayISO(); if(alimDiaData!==hoje){ alimDiaData=hoje; alimDiaSel=hojeDia(); } if(!S.agua||typeof S.agua!=='object'||Array.isArray(S.agua)) S.agua={}; }
+function refeicoesAlimPeriodo(ref=weekStartISO()){
+  const fim=dataMaisDias(ref,7), out=[];
+  DIAS.forEach(d=>(S.alimSemana[d]||[]).forEach(r=>{ if(r.done&&r.done>=ref&&r.done<fim) out.push({dia:d,nome:r.nome||'Refeição',desc:r.desc||'',done:r.done,qualidade:qualidadeAuto(r)}); }));
+  return out;
 }
+function analiseAlimPeriodo(ref=weekStartISO()){
+  const refeicoes=refeicoesAlimPeriodo(ref); let bom=0,ruim=0,neutro=0;
+  refeicoes.forEach(r=>{ if(r.qualidade==='bom') bom++; else if(r.qualidade==='ruim') ruim++; else neutro++; });
+  const total=refeicoes.length;
+  return {total,bom,ruim,neutro,pctBom:total?Math.round(bom/total*100):0,pctRuim:total?Math.round(ruim/total*100):0,refeicoes};
+}
+function analiseAlimAtual(){ return analiseAlimPeriodo(S.alimHist?.ref||weekStartISO()); }
+let _fechandoAlimAuto=false;
+async function finalizarSemanaAlimDados(ref,automatico=false){
+  if(_fechandoAlimAuto) return false; _fechandoAlimAuto=true;
+  try{
+    if(!S.alimHist) S.alimHist={ref:null,hist:[]};
+    if(!Array.isArray(S.alimHist.hist)) S.alimHist.hist=[];
+    const a=analiseAlimPeriodo(ref);
+    const jaArquivada=S.alimHist.hist.some(h=>h.weekStartISO===ref);
+    if(a.total>0&&!jaArquivada) S.alimHist.hist.push({weekStartISO:ref,...a});
+    const wkAtual=weekStartISO(brasiliaNow()), fimAtual=dataMaisDias(wkAtual,7), novaSemana=DEFAULT_TREINO_TEMPLATE();
+    DIAS.forEach(d=>{ novaSemana[d]=(S.alimSemana[d]||[]).map(r=>{
+      const feitoNestaSemana=automatico&&r.done&&r.done>=wkAtual&&r.done<fimAtual;
+      return {...r,done:feitoNestaSemana?r.done:null};
+    }); });
+    S.alimSemana=novaSemana; S.alimHist.ref=wkAtual; alimPrecisaFechar=false;
+    alimDiaData=todayISO(); alimDiaSel=hojeDia();
+    await Promise.all([save('alim:semana'),save('alim:hist')]);
+    if(automatico) try{ toast(`Semana ${weekLabel(ref)} finalizada automaticamente.`); }catch(e){}
+    return true;
+  }finally{ _fechandoAlimAuto=false; }
+}
+async function garantirSemanaAlimAtual(avisar=false){
+  const wk=weekStartISO(brasiliaNow());
+  if(!S.alimHist) S.alimHist={ref:null,hist:[]};
+  if(!Array.isArray(S.alimHist.hist)) S.alimHist.hist=[];
+  if(!S.alimHist.ref){ S.alimHist.ref=wk; await save('alim:hist'); return false; }
+  if(S.alimHist.ref===wk) return false;
+  return finalizarSemanaAlimDados(S.alimHist.ref,avisar);
+}
+function checarSemanaAlim(){ alimPrecisaFechar=false; }
 function fecharSemanaAlim(){
-  const a=analiseAlimAtual();
+  const ref=S.alimHist?.ref||weekStartISO(brasiliaNow()), a=analiseAlimPeriodo(ref);
   openSheet(`<h3>Fechar a semana</h3>
-    <p class="small muted">Vou guardar a análise dessa semana no gráfico e <b>zerar as refeições</b> pra você registrar a próxima do zero.</p>
+    <p class="small muted">Vou guardar a análise dessa semana e <b>zerar somente as marcações</b>. Suas refeições cadastradas continuam prontas para a próxima semana.</p>
     <div class="card"><p style="margin:0">Semana: <b>${a.total}</b> refeições · <b style="color:var(--ok)">${a.pctBom}%</b> saudáveis · <b style="color:var(--accent2)">${a.pctRuim}%</b> ruins</p></div>
     <button class="btn" id="fsConfirm">Fechar semana e começar nova</button>`);
   $('#fsConfirm').onclick=async()=>{
-    if(a.total>0) S.alimHist.hist.push({weekStartISO:(S.alimHist.ref||weekStartISO()), ...a});
-    S.alimSemana=DEFAULT_TREINO_TEMPLATE(); S.alimHist.ref=weekStartISO(); alimPrecisaFechar=false;
-    await save('alim:semana'); await save('alim:hist'); closeSheet(); toast('Semana fechada. Bora pra próxima!'); renderAlimentacao();
+    await finalizarSemanaAlimDados(ref,false); closeSheet(); toast('Semana fechada. Bora pra próxima!'); renderAlimentacao();
   };
 }
 function renderAlimentacao(){
   const edit=S.config.editMode; const p=S.profile;
-  const aguaHoje=S.agua[todayISO()]||0;
+  sincronizarDiaAlimentacao();
+  const hoje=todayISO(), aguaHoje=Number(S.agua[hoje])||0;
+  const dataAgua=new Date(hoje+'T00:00:00').toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'2-digit'});
   checarSemanaAlim();
   $('#scr-alimentacao').innerHTML=`
     ${topbar('ALIMENTAÇÃO')}
@@ -2182,6 +2242,7 @@ function renderAlimentacao(){
 
     <h2 class="section-title">Meta de água</h2>
     <div class="card">
+      <p class="small muted" style="text-transform:capitalize">Hoje · ${dataAgua}</p>
       <p class="small muted">Fórmula: peso × 35ml. Sua meta: <b>${p.metaAgua} ml/dia</b>.</p>
       <div style="display:flex;align-items:baseline;gap:6px;margin:4px 0 10px">
         <div class="mono" style="font-size:32px">${aguaHoje}</div><div class="muted">/ ${p.metaAgua} ml hoje</div>
@@ -2206,7 +2267,7 @@ function renderAlimentacao(){
     <h2 class="section-title">Peso & evolução</h2>
     <div id="alimPeso"></div>
 
-    <h2 class="section-title">Relatório alimentar</h2>
+    <h2 class="section-title">Relatório crítico alimentar</h2>
     <div id="alimRel"></div>
   `;
   $$('#alimDays .day').forEach(c=>c.onclick=()=>{ alimDiaSel=c.dataset.d; $$('#alimDays .day').forEach(x=>x.classList.toggle('sel',x.dataset.d===alimDiaSel)); renderAlimDia(); });
@@ -2324,12 +2385,44 @@ function renderAlimPeso(){
   $('#pesoSave').onclick=()=>{ const v=numBR($('#pesoInput').value); if(!(v>=30&&v<=250)) return toast('Peso inválido (30–250 kg). Use vírgula, ex: 89,50.');
     S.pesos.push({dateISO:todayISO(), peso:v}); S.profile.peso=v; save('alim:pesos'); saveProfile(); renderAlimPeso(); };
 }
+function trocasParaRefeicao(r){
+  const t=`${r.nome||''} ${r.desc||''}`.toLowerCase(); const dicas=[];
+  const tem=(xs)=>xs.some(x=>t.includes(x));
+  if(tem(['refrigerante','coca-cola','coca cola'])) dicas.push('Troque o refrigerante por água com gás e limão, água saborizada ou suco sem açúcar.');
+  if(tem(['fritura','frito','fritas','batata frita','pastel','coxinha','nuggets'])) dicas.push('Prefira a versão assada, grelhada ou feita na air fryer e inclua salada ou legumes.');
+  if(tem(['hamburg','fast food','fast-food'])) dicas.push('Monte um lanche caseiro com pão integral, carne magra ou frango, queijo em pouca quantidade e salada.');
+  if(tem(['pizza'])) dicas.push('Reduza a quantidade e prefira massa fina com frango, atum, vegetais e menos queijo; complete com salada.');
+  if(tem(['miojo','lámen','lamen'])) dicas.push('Troque por arroz, macarrão comum ou batata com ovo/frango e legumes; evite o tempero pronto rico em sódio.');
+  if(tem(['sorvete','biscoito recheado','salgadinho'])) dicas.push('No lanche, use fruta com iogurte, aveia, castanhas ou pipoca caseira sem excesso de óleo.');
+  if(tem(['bacon','linguiça','salsicha'])) dicas.push('Substitua o embutido por ovos, frango, atum ou carne magra para reduzir gordura e sódio.');
+  if(tem(['cerveja','álcool','alcool'])) dicas.push('Intercale com água e evite usar bebida alcoólica como parte frequente da rotina alimentar.');
+  if(!dicas.length&&r.qualidade==='ruim') dicas.push('Mantenha a mesma refeição, mas reduza ultraprocessados e acrescente proteína magra, legumes e uma fonte de carboidrato simples.');
+  if(!dicas.length&&r.qualidade==='neutro') dicas.push('A descrição não permite avaliar bem. Informe os alimentos e tente montar o prato com proteína, carboidrato e vegetais.');
+  return [...new Set(dicas)];
+}
 function renderAlimRelatorio(){
-  // reaproveita layout de barras: refeições saudáveis por dia da semana
-  const buckets={}; DIAS.forEach(d=>{ const list=S.alimSemana[d]||[]; buckets[DIAS_AB[d]]=list.filter(r=>qualidadeAuto(r)==='bom').length; });
-  const max=Math.max(1,...Object.values(buckets));
-  $('#alimRel').innerHTML=`<div class="card"><div class="h">Refeições saudáveis por dia</div>
-    <div class="report-bars">${DIAS.map(d=>`<div class="bar" style="height:${Math.round(buckets[DIAS_AB[d]]/max*110)+3}px"><b>${buckets[DIAS_AB[d]]}</b><span>${DIAS_AB[d]}</span></div>`).join('')}</div></div>`;
+  const box=$('#alimRel'); if(!box) return;
+  const ref=S.alimHist?.ref||weekStartISO(brasiliaNow());
+  let dados=analiseAlimPeriodo(ref), periodo=weekLabel(ref), origem='Semana atual';
+  if(!dados.total){
+    const ult=[...((S.alimHist&&S.alimHist.hist)||[])].reverse().find(x=>Array.isArray(x.refeicoes)&&x.refeicoes.length);
+    if(ult){ dados=ult; periodo=weekLabel(ult.weekStartISO); origem='Última semana finalizada'; }
+  }
+  if(!dados.total){
+    box.innerHTML=`<div class="card"><div class="h">Críticas e sugestões</div><p class="muted small">Marque as refeições que realmente consumiu e descreva o que comeu. O relatório vai apontar excessos e sugerir trocas possíveis.</p></div>`;
+    return;
+  }
+  const ruins=dados.refeicoes.filter(r=>r.qualidade==='ruim');
+  const neutras=dados.refeicoes.filter(r=>r.qualidade==='neutro');
+  let resumo=ruins.length
+    ? `${ruins.length} de ${dados.total} refeição(ões) precisa(m) de ajuste. As críticas abaixo usam exatamente o que foi registrado.`
+    : `Nenhuma refeição classificada como ruim em ${dados.total} registro(s). Continue variando proteínas, vegetais e carboidratos.`;
+  const criticas=[...ruins,...neutras].map(r=>{
+    const dicas=trocasParaRefeicao(r);
+    const rotulo=r.qualidade==='ruim'?'Precisa melhorar':'Descrição incompleta';
+    return `<div class="rowitem" style="align-items:flex-start"><div style="font-size:22px">${r.qualidade==='ruim'?'⚠️':'🔎'}</div><div class="txt"><div class="t">${esc(r.nome)} · ${DIAS_NOME[r.dia]||''}</div><div class="s" style="margin:3px 0 7px"><span class="chip ${r.qualidade}">${rotulo}</span> ${esc(r.desc||'Sem descrição dos alimentos.')}</div>${dicas.map(d=>`<div class="small" style="margin-top:6px;color:var(--text)">→ ${esc(d)}</div>`).join('')}</div></div>`;
+  }).join('');
+  box.innerHTML=`<div class="card"><div class="h">Críticas e sugestões</div><p class="small muted" style="margin:2px 0 4px">${origem} · ${periodo}</p><p style="line-height:1.5">${resumo}</p>${criticas||'<p class="small" style="color:var(--ok)">✅ O conjunto registrado está equilibrado. Mantenha constância e variedade.</p>'}</div>`;
 }
 
 /* =========================================================================
@@ -3390,7 +3483,7 @@ function connectSocket(){
     _socket.on('state:changed', (d)=>{ if(!d || d.src===CLIENT_ID) return; applyRemoteState(d.chave, d.valor); });
     _socket.on('profile:changed', (d)=>{ if(!d || d.src===CLIENT_ID) return; applyRemoteProfile(d.usuario); });
     // AUTOUPDATE ao vivo: desenvolvedor subiu versão nova → recarrega na hora (HTML é network-first, pega o novo)
-    _socket.on('app:update', ()=>{ if(window.__appReloading) return; window.__appReloading=true; try{ sessionStorage.setItem('rz:reloadAt', String(Date.now())); }catch(e){} try{ toast('🔄 Nova versão chegou — atualizando…'); }catch(e){} setTimeout(()=>{ try{ location.reload(); }catch(e){} }, 600); });
+    _socket.on('app:update', ()=>{ if(window.__appReloading) return; window.__appReloading=true; salvarPosicaoAtual(); try{ sessionStorage.setItem('rz:reloadAt', String(Date.now())); }catch(e){} try{ toast('🔄 Nova versão chegou — atualizando…'); }catch(e){} setTimeout(()=>{ try{ location.reload(); }catch(e){} }, 600); });
     _socket.on('dm:nova', (m)=>{
       const nome=m.de?.nomeGuerra||'Alguém';
       if(_chatUser && m.de && m.de.username===_chatUser && $('#chatMsgs')){
