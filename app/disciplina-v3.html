@@ -139,6 +139,13 @@ a{color:var(--accent2);}
 .btn.ok{background:linear-gradient(135deg,#1f9e57,var(--ok)); box-shadow:none;}
 .btn:disabled{opacity:.45;}
 
+/* Controle de água: o input pode encolher e os botões nunca escapam do card. */
+.agua-ajuste{display:grid; grid-template-columns:minmax(0,1fr) 54px 54px; gap:8px; align-items:stretch;}
+.agua-ajuste input{width:100%; min-width:0; background:#0c0d11; border:1.5px solid var(--line); border-radius:12px; padding:12px; color:var(--text);}
+.agua-ajuste .btn{width:54px; min-width:54px; height:52px; padding:0; font-size:22px;}
+.agua-acoes{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:8px; margin-top:8px;}
+.agua-acoes .btn{width:100%; min-width:0; padding-left:8px; padding-right:8px; white-space:nowrap;}
+
 /* Inputs */
 .field{margin:14px 0;}
 .field label{display:block; font-size:12.5px; color:var(--text-dim); margin-bottom:7px; font-weight:700;}
@@ -2185,12 +2192,12 @@ function renderAlimentacao(){
         <button class="btn sm" data-agua="500">＋500</button>
       </div>
       <p class="small muted" style="margin:12px 0 6px">Ou digite a quantidade e escolha somar ou remover:</p>
-      <div style="display:flex;gap:8px">
-        <input id="aguaQtd" type="number" inputmode="numeric" placeholder="quantidade (ml)" style="flex:1;background:#0c0d11;border:1.5px solid var(--line);border-radius:12px;padding:12px;color:var(--text)">
+      <div class="agua-ajuste">
+        <input id="aguaQtd" type="number" inputmode="numeric" placeholder="quantidade (ml)">
         <button class="btn sm" id="aguaMais">＋</button>
         <button class="btn sm ghost" id="aguaMenos">－</button>
       </div>
-      <div style="display:flex;gap:8px;margin-top:8px">
+      <div class="agua-acoes">
         <button class="btn sm ghost" id="aguaDefinir">Definir total</button>
         <button class="btn sm ghost" id="aguaZerar">🗑️ Zerar hoje</button>
       </div>
