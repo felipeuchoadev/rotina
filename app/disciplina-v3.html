@@ -60,10 +60,10 @@ a{color:var(--accent2);}
 .topbar{
   display:flex; align-items:center; justify-content:space-between;
   padding:18px 4px 12px; position:sticky; top:0; z-index:20;
-  /* semi-transparente + blur: deixa o fundo do tema (com o brilho) aparecer atrás,
-     em vez de um retângulo de cor sólida diferente. Fica frosted e se encaixa. */
-  background:linear-gradient(180deg, color-mix(in srgb, var(--bg2) 55%, transparent) 0%, transparent 100%);
-  backdrop-filter:blur(12px); -webkit-backdrop-filter:blur(12px);
+  /* Um único fundo contínuo em toda a viewport. Qualquer camada/blur só na largura
+     central do app cria uma emenda vertical visível nos temas e telas largas. */
+  background:transparent;
+  backdrop-filter:none; -webkit-backdrop-filter:none;
 }
 .brand{font-weight:800; font-size:20px; letter-spacing:-.01em;}
 .brand .dot{color:var(--accent);}
