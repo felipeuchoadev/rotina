@@ -2524,6 +2524,23 @@ function renderCalendarioRotina(){
   };
 }
 function isoDeData(x){ return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`; }
+function campoHorario(id,valor=''){
+  return `<input id="${id}" type="text" inputmode="numeric" maxlength="5" autocomplete="off" value="${esc(valor)}" placeholder="Ex: 08:00" aria-label="Horário no formato horas e minutos">`;
+}
+function normalizarHorario(valor){
+  const original=String(valor||'').trim(); if(!original) return '';
+  const digitos=original.replace(/\D/g,'');
+  let hora='';
+  if(/^\d{3}$/.test(digitos)) hora=`0${digitos[0]}:${digitos.slice(1)}`;
+  else if(/^\d{4}$/.test(digitos)) hora=`${digitos.slice(0,2)}:${digitos.slice(2)}`;
+  else if(/^\d{1,2}:\d{2}$/.test(original)){ const [h,m]=original.split(':'); hora=`${h.padStart(2,'0')}:${m}`; }
+  if(!/^([01]\d|2[0-3]):[0-5]\d$/.test(hora)) return null;
+  return hora;
+}
+function ativarCampoHorario(id){
+  const el=$('#'+id); if(!el) return;
+  el.addEventListener('blur',()=>{ const hora=normalizarHorario(el.value); if(hora!==null) el.value=hora; });
+}
 // clicar num dia: editar atividades (modo edição) ou visualizar
 function diaRotinaSheet(iso){
   const hoje=todayISO();
@@ -2549,7 +2566,7 @@ function diaRotinaSheet(iso){
     if(isFuturo) sheet+=`<p class="small muted" style="margin-top:10px">Dia futuro: dá pra <b>planejar</b>, mas não dá pra marcar como feito antes de chegar o dia.</p>`;
     sheet+=`<div class="section-title" style="margin-top:12px">Adicionar atividade</div>
       <div class="field" style="margin:6px 0"><input id="actNome" placeholder="Ex: Corrida 5km, estudar Português..."></div>
-      <div class="field" style="margin:6px 0"><label>Horário (opcional)</label><input id="actHora" type="time"></div>
+      <div class="field" style="margin:6px 0"><label>Horário (opcional · HH:MM)</label>${campoHorario('actHora')}</div>
       <button class="btn" id="actAdd">＋ Adicionar</button>
       ${acts.length?`<div class="section-title" style="margin-top:14px">Repetir essas atividades em</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -2562,9 +2579,10 @@ function diaRotinaSheet(iso){
     sheet+=`<p class="small muted" style="margin-top:10px">${past?'Dia passado — só visualização.':'Dia futuro — ative o Modo de Edição pra planejar.'}</p>`;
   }
   openSheet(sheet);
+  ativarCampoHorario('actHora');
   $$('#sheet [data-actchk]').forEach(b=>b.onclick=()=>{ if(!podeMarcar) return; const a=(S.rotinaDias[iso]||[]).find(x=>x.id===b.dataset.actchk); if(a){ a.done=!a.done; save('rotina:dias'); if(iso===hoje){ atualizaRotinaHist(); renderRotinaList(); } diaRotinaSheet(iso); renderCalendarioRotina(); } });
   if(editable){
-    $('#actAdd').onclick=()=>{ const nome=$('#actNome').value.trim(); if(!nome) return toast('Qual a atividade?'); const hora=$('#actHora').value||''; if(!S.rotinaDias[iso]) S.rotinaDias[iso]=[]; S.rotinaDias[iso].push({id:uid(),nome,hora,done:false}); save('rotina:dias'); if(iso===hoje){ atualizaRotinaHist(); renderRotinaList(); } diaRotinaSheet(iso); renderCalendarioRotina(); };
+    $('#actAdd').onclick=()=>{ const nome=$('#actNome').value.trim(); if(!nome) return toast('Qual a atividade?'); const hora=normalizarHorario($('#actHora').value); if(hora===null) return toast('Horário inválido. Use HH:MM, por exemplo 08:00.'); if(!S.rotinaDias[iso]) S.rotinaDias[iso]=[]; S.rotinaDias[iso].push({id:uid(),nome,hora,done:false}); save('rotina:dias'); if(iso===hoje){ atualizaRotinaHist(); renderRotinaList(); } diaRotinaSheet(iso); renderCalendarioRotina(); };
     $$('#sheet [data-actdel]').forEach(b=>b.onclick=()=>{ S.rotinaDias[iso]=(S.rotinaDias[iso]||[]).filter(x=>x.id!==b.dataset.actdel); if(!S.rotinaDias[iso].length) delete S.rotinaDias[iso]; save('rotina:dias'); if(iso===hoje){ atualizaRotinaHist(); renderRotinaList(); } diaRotinaSheet(iso); renderCalendarioRotina(); });
     $$('#sheet [data-fill]').forEach(b=>b.onclick=()=>aplicarRotinaDias(iso, b.dataset.fill));
   }
@@ -2603,11 +2621,13 @@ function editHabitoSheet(id){
   if(!r) return;
   openSheet(`<h3>${id?'Editar':'Nova'} atividade de hoje</h3>
     <div class="field"><label>Atividade</label><input id="hbNome" value="${esc(r.nome)}" placeholder="Ex: Corrida, estudar Português..."></div>
-    <div class="field"><label>Horário (opcional)</label><input id="hbHora" type="time" value="${r.hora||''}">
+    <div class="field"><label>Horário (opcional · HH:MM)</label>${campoHorario('hbHora',r.hora||'')}
       <p class="small muted" style="margin:4px 2px 0">Esta atividade também aparecerá no dia de hoje do calendário.</p></div>
     <button class="btn" id="hbSave">Salvar</button>`);
+  ativarCampoHorario('hbHora');
   $('#hbSave').onclick=()=>{ const nome=$('#hbNome').value.trim(); if(!nome) return toast('Nome do hábito?');
-    if(id){ r.nome=nome; r.hora=$('#hbHora').value; } else S.rotinaDias[hoje].push({id:uid(),nome,hora:$('#hbHora').value,done:false});
+    const hora=normalizarHorario($('#hbHora').value); if(hora===null) return toast('Horário inválido. Use HH:MM, por exemplo 08:00.');
+    if(id){ r.nome=nome; r.hora=hora; } else S.rotinaDias[hoje].push({id:uid(),nome,hora,done:false});
     save('rotina:dias'); atualizaRotinaHist(); closeSheet(); renderRotinaList(); renderCalendarioRotina(); };
 }
 
