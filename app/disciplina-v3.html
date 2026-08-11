@@ -1504,7 +1504,8 @@ function resumoHojeHTML(){
   const treinoFeitos = treinoPlan.filter(ex=>treinoFeitoHoje(ex.id)).length;
   const estudoPlan = (S.estudoSemana[dia]||[]);
   const estudoFeitos = estudoPlan.filter(mid=>estudoFeitoHoje(mid)).length;
-  const rotinaTotal = S.rotina.length, rotinaFeita = S.rotina.filter(r=>r.done===todayISO()).length;
+  const rotinaHoje = rotinaDoDia(todayISO());
+  const rotinaTotal = rotinaHoje.length, rotinaFeita = rotinaHoje.filter(r=>r.done).length;
   const aguaHoje = S.agua[todayISO()]||0;
   const aguaPct = Math.min(100, Math.round(aguaHoje/(S.profile.metaAgua||2500)*100));
   const pct = (a,b)=> b ? Math.round(a/b*100) : 0;
@@ -1536,9 +1537,10 @@ function resumoDetalheSheet(tipo){
     }).join('') : '<p class="muted small">Nenhuma matéria pra hoje.</p>';
   } else if(tipo==='rotina'){
     titulo='Rotina de hoje';
-    corpo = S.rotina.length ? [...S.rotina].sort((a,b)=>(a.hora||'').localeCompare(b.hora||'')).map(r=>{ const f=r.done===hoje;
+    const rotinaHoje=rotinaDoDia(hoje);
+    corpo = rotinaHoje.length ? rotinaHoje.map(r=>{ const f=!!r.done;
       return `<div class="rowitem ${f?'done':''}"><div class="chk">${f?'✓':''}</div><div class="txt"><div class="t">${esc(r.nome)}</div><div class="s mono">${r.hora||'--:--'} ${f?'· ✅ feito':'· ⏳ pendente'}</div></div></div>`;
-    }).join('') : '<p class="muted small">Sem hábitos na rotina.</p>';
+    }).join('') : '<p class="muted small">Nenhuma atividade planejada para hoje.</p>';
   } else {
     titulo='Água de hoje';
     const ml=S.agua[hoje]||0; const meta=S.profile.metaAgua;
@@ -2434,9 +2436,9 @@ function renderRotina(){
   $('#scr-rotina').innerHTML=`
     ${topbar('ROTINA')}
     <div style="display:flex;justify-content:space-between;align-items:center;margin:4px 2px">
-      <h2 class="section-title" style="margin:0">Hábitos diários ${edit?`<button class="btn sm" id="addHabito">＋</button>`:''}</h2>${editToggleHint()}
+      <h2 class="section-title" style="margin:0">Atividades de hoje ${edit?`<button class="btn sm" id="addHabito">＋</button>`:''}</h2>${editToggleHint()}
     </div>
-    <p class="small muted">Hábitos que se repetem todo dia. Marque ✅ ao cumprir.</p>
+    <p class="small muted">A mesma rotina planejada no dia de hoje do calendário. Marque ✅ ao cumprir.</p>
     <div class="rotina-wrap">
       <div class="rotina-col"><div id="rotinaList"></div></div>
       <div class="rotina-cal">
@@ -2452,17 +2454,19 @@ function renderRotina(){
   if(edit && $('#rotLimpar')) $('#rotLimpar').onclick=()=>{ rotClearMode=!rotClearMode; rotClearSel=new Set(); renderRotina(); };
   renderRotinaList(); renderCalendarioRotina();
 }
-// status de um dia: usa atividades por dia; se não houver, cai no histórico de hábitos
+// status de um dia: sempre usa as mesmas atividades exibidas no calendário
 function diaStatusRotina(iso){
   const acts=(S.rotinaDias&&S.rotinaDias[iso])||[];
   if(acts.length) return {total:acts.length, done:acts.filter(a=>a.done).length};
-  const h=(S.rotinaHist||{})[iso];
-  if(h && h.total>0) return {total:h.total, done:h.done};
   return {total:0, done:0};
 }
+function rotinaDoDia(iso=todayISO()){
+  return [...((S.rotinaDias&&S.rotinaDias[iso])||[])].sort((a,b)=>(a.hora||'~').localeCompare(b.hora||'~'));
+}
 function atualizaRotinaHist(){
-  const total=S.rotina.length;
-  const done=S.rotina.filter(r=>r.done===todayISO()).length;
+  const lista=rotinaDoDia(todayISO());
+  const total=lista.length;
+  const done=lista.filter(r=>r.done).length;
   if(!S.rotinaHist) S.rotinaHist={};
   S.rotinaHist[todayISO()]={done,total};
   save('rotina:hist');
@@ -2558,10 +2562,10 @@ function diaRotinaSheet(iso){
     sheet+=`<p class="small muted" style="margin-top:10px">${past?'Dia passado — só visualização.':'Dia futuro — ative o Modo de Edição pra planejar.'}</p>`;
   }
   openSheet(sheet);
-  $$('#sheet [data-actchk]').forEach(b=>b.onclick=()=>{ if(!podeMarcar) return; const a=(S.rotinaDias[iso]||[]).find(x=>x.id===b.dataset.actchk); if(a){ a.done=!a.done; save('rotina:dias'); diaRotinaSheet(iso); renderCalendarioRotina(); } });
+  $$('#sheet [data-actchk]').forEach(b=>b.onclick=()=>{ if(!podeMarcar) return; const a=(S.rotinaDias[iso]||[]).find(x=>x.id===b.dataset.actchk); if(a){ a.done=!a.done; save('rotina:dias'); if(iso===hoje){ atualizaRotinaHist(); renderRotinaList(); } diaRotinaSheet(iso); renderCalendarioRotina(); } });
   if(editable){
-    $('#actAdd').onclick=()=>{ const nome=$('#actNome').value.trim(); if(!nome) return toast('Qual a atividade?'); const hora=$('#actHora').value||''; if(!S.rotinaDias[iso]) S.rotinaDias[iso]=[]; S.rotinaDias[iso].push({id:uid(),nome,hora,done:false}); save('rotina:dias'); diaRotinaSheet(iso); renderCalendarioRotina(); };
-    $$('#sheet [data-actdel]').forEach(b=>b.onclick=()=>{ S.rotinaDias[iso]=(S.rotinaDias[iso]||[]).filter(x=>x.id!==b.dataset.actdel); if(!S.rotinaDias[iso].length) delete S.rotinaDias[iso]; save('rotina:dias'); diaRotinaSheet(iso); renderCalendarioRotina(); });
+    $('#actAdd').onclick=()=>{ const nome=$('#actNome').value.trim(); if(!nome) return toast('Qual a atividade?'); const hora=$('#actHora').value||''; if(!S.rotinaDias[iso]) S.rotinaDias[iso]=[]; S.rotinaDias[iso].push({id:uid(),nome,hora,done:false}); save('rotina:dias'); if(iso===hoje){ atualizaRotinaHist(); renderRotinaList(); } diaRotinaSheet(iso); renderCalendarioRotina(); };
+    $$('#sheet [data-actdel]').forEach(b=>b.onclick=()=>{ S.rotinaDias[iso]=(S.rotinaDias[iso]||[]).filter(x=>x.id!==b.dataset.actdel); if(!S.rotinaDias[iso].length) delete S.rotinaDias[iso]; save('rotina:dias'); if(iso===hoje){ atualizaRotinaHist(); renderRotinaList(); } diaRotinaSheet(iso); renderCalendarioRotina(); });
     $$('#sheet [data-fill]').forEach(b=>b.onclick=()=>aplicarRotinaDias(iso, b.dataset.fill));
   }
 }
@@ -2575,34 +2579,36 @@ function aplicarRotinaDias(iso, tipo){
   else if(tipo==='x'){ const n=parseInt(prompt('Aplicar aos próximos quantos dias?','7')||'0',10); if(!(n>0)) return; for(let i=1;i<=n;i++){ const x=new Date(d0); x.setDate(d0.getDate()+i); dias.push(x); } }
   const hoje=todayISO(); let count=0;
   dias.forEach(x=>{ const k=isoDeData(x); if(k<hoje) return; S.rotinaDias[k]=base.map(b=>({id:uid(),nome:b.nome,hora:b.hora,done:false})); count++; });
-  save('rotina:dias'); closeSheet(); toast(`Rotina aplicada a ${count} dia(s).`); renderCalendarioRotina();
+  save('rotina:dias'); closeSheet(); toast(`Rotina aplicada a ${count} dia(s).`); renderRotinaList(); renderCalendarioRotina();
 }
 function renderRotinaList(){
   const edit=S.config.editMode;
-  const list=[...S.rotina].sort((a,b)=>(a.hora||'').localeCompare(b.hora||''));
+  const hoje=todayISO(), list=rotinaDoDia(hoje);
   $('#rotinaList').innerHTML = list.length? list.map(r=>{
-    const done=r.done===todayISO();
+    const done=!!r.done;
     return `<div class="rowitem ${done?'done':''}">
       <div class="chk" data-togh="${r.id}">${done?'✓':''}</div>
       <div class="txt"><div class="t">${esc(r.nome)}</div><div class="s mono">${r.hora||'--:--'}</div></div>
       ${edit?`<button class="pencil" data-edh="${r.id}">✏️</button><button class="pencil" data-delh="${r.id}">🗑️</button>`:''}
     </div>`; }).join('') : `<p class="muted small">Sem hábitos. ${edit?'Adicione (ex: Tomar banho 06:30).':'Ative o modo edição pra montar.'}</p>`;
-  $$('#rotinaList [data-togh]').forEach(b=>b.onclick=()=>{ const r=S.rotina.find(x=>x.id===b.dataset.togh); r.done=r.done===todayISO()?null:todayISO(); save('rotina'); atualizaRotinaHist(); renderRotinaList(); if($('#rotinaCal')) renderCalendarioRotina(); });
+  $$('#rotinaList [data-togh]').forEach(b=>b.onclick=()=>{ const r=(S.rotinaDias[hoje]||[]).find(x=>x.id===b.dataset.togh); if(!r) return; r.done=!r.done; save('rotina:dias'); atualizaRotinaHist(); renderRotinaList(); if($('#rotinaCal')) renderCalendarioRotina(); });
   if(edit){
     $$('#rotinaList [data-edh]').forEach(b=>b.onclick=()=>editHabitoSheet(b.dataset.edh));
-    $$('#rotinaList [data-delh]').forEach(b=>b.onclick=()=>{ S.rotina=S.rotina.filter(x=>x.id!==b.dataset.delh); save('rotina'); renderRotinaList(); });
+    $$('#rotinaList [data-delh]').forEach(b=>b.onclick=()=>{ S.rotinaDias[hoje]=(S.rotinaDias[hoje]||[]).filter(x=>x.id!==b.dataset.delh); if(!S.rotinaDias[hoje].length) delete S.rotinaDias[hoje]; save('rotina:dias'); atualizaRotinaHist(); renderRotinaList(); renderCalendarioRotina(); });
   }
 }
 function editHabitoSheet(id){
-  const r=id?S.rotina.find(x=>x.id===id):{nome:'',hora:''};
-  openSheet(`<h3>${id?'Editar':'Novo'} hábito</h3>
-    <div class="field"><label>Hábito</label><input id="hbNome" value="${esc(r.nome)}" placeholder="Ex: Escovar os dentes"></div>
+  const hoje=todayISO(); if(!S.rotinaDias) S.rotinaDias={}; if(!S.rotinaDias[hoje]) S.rotinaDias[hoje]=[];
+  const r=id?S.rotinaDias[hoje].find(x=>x.id===id):{nome:'',hora:'',done:false};
+  if(!r) return;
+  openSheet(`<h3>${id?'Editar':'Nova'} atividade de hoje</h3>
+    <div class="field"><label>Atividade</label><input id="hbNome" value="${esc(r.nome)}" placeholder="Ex: Corrida, estudar Português..."></div>
     <div class="field"><label>Horário (opcional)</label><input id="hbHora" type="time" value="${r.hora||''}">
-      <p class="small muted" style="margin:4px 2px 0">Só cobra no Try Hard se você definir um horário. Sem horário = fica só na lista, sem alarme.</p></div>
+      <p class="small muted" style="margin:4px 2px 0">Esta atividade também aparecerá no dia de hoje do calendário.</p></div>
     <button class="btn" id="hbSave">Salvar</button>`);
   $('#hbSave').onclick=()=>{ const nome=$('#hbNome').value.trim(); if(!nome) return toast('Nome do hábito?');
-    if(id){ r.nome=nome; r.hora=$('#hbHora').value; } else S.rotina.push({id:uid(),nome,hora:$('#hbHora').value,done:null});
-    save('rotina'); closeSheet(); renderRotinaList(); };
+    if(id){ r.nome=nome; r.hora=$('#hbHora').value; } else S.rotinaDias[hoje].push({id:uid(),nome,hora:$('#hbHora').value,done:false});
+    save('rotina:dias'); atualizaRotinaHist(); closeSheet(); renderRotinaList(); renderCalendarioRotina(); };
 }
 
 /* =========================================================================
@@ -3043,9 +3049,8 @@ async function gerarPublicacaoDoDia(){
   Object.entries(estAgg).filter(([n,a])=>a.min>0||a.c>0).forEach(([nome,a])=>{ itens.push({txt:`📚 Estudei ${nome}${a.min>0?` — ${a.min} min`:''}${a.c?` (${a.c} conteúdo(s))`:''}`}); });
   // ALIMENTAÇÃO — refeições marcadas como feitas hoje (com a análise automática)
   DIAS.forEach(d=>(S.alimSemana[d]||[]).forEach(r=>{ if(r.done===hoje){ const q=qualidadeAuto(r); itens.push({txt:`🍽️ ${r.nome}${q?` — ${q}`:''}`}); } }));
-  // ROTINA — atividades do dia concluídas + hábitos
+  // ROTINA — exatamente as atividades concluídas no dia do calendário
   ((S.rotinaDias&&S.rotinaDias[hoje])||[]).filter(a=>a.done).forEach(a=>{ itens.push({txt:`✅ ${a.nome}${a.hora?` (${a.hora})`:''}`}); });
-  const rFeita=S.rotina.filter(r=>r.done===hoje); if(rFeita.length) itens.push({txt:`⏰ Cumpri ${rFeita.length}/${S.rotina.length} hábitos`});
   // ÁGUA
   const agua=S.agua[hoje]||0; if(agua) itens.push({txt:`💧 Bebi ${agua}ml de água`});
   // PESO — se registrou hoje
@@ -3312,11 +3317,10 @@ function itemFeitoHoje(nome, doneFlag){
   if((S.estudoLogs||[]).some(l=>l.dateISO===hoje && _nomeBate(l.materia,nome))) return true;
   return false;
 }
-// itens COM HORÁRIO que já passaram e ainda NÃO foram feitos hoje (hábitos + atividades do dia)
+// itens COM HORÁRIO que já passaram e ainda NÃO foram feitos hoje (somente o calendário de hoje)
 function atrasadosAgora(){
   if(!S) return []; const now=brasiliaNow(); const hhmm=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0'); const hoje=todayISO();
   const out=[];
-  (S.rotina||[]).forEach(r=>{ if(r.hora && r.hora<hhmm && !itemFeitoHoje(r.nome, r.done)) out.push(r.nome); });
   ((S.rotinaDias&&S.rotinaDias[hoje])||[]).forEach(a=>{ if(a.hora && a.hora<hhmm && !itemFeitoHoje(a.nome, a.done)) out.push(a.nome); });
   return out;
 }
@@ -3335,8 +3339,7 @@ function startTryHard(){
   window._tryTimer=setInterval(()=>{
     if(!S) return;
     const now=brasiliaNow(); const hhmm=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0'); const hoje=todayISO();
-    // 1) AVISO no minuto exato do horário (hábitos + atividades do dia)
-    (S.rotina||[]).forEach(r=>{ if(r.hora===hhmm && !itemFeitoHoje(r.nome,r.done)){ notify('REDZONE — '+r.nome, 'Está no horário. Cumpra agora, recruta.', 'rotina', true); if(o.vibrar&&navigator.vibrate) navigator.vibrate(200); } });
+    // 1) AVISO no minuto exato do horário das atividades planejadas no calendário de hoje
     ((S.rotinaDias&&S.rotinaDias[hoje])||[]).forEach(a=>{ if(a.hora===hhmm && !itemFeitoHoje(a.nome,a.done)){ notify('REDZONE — '+a.nome, 'Tá no horário. Cumpra agora, recruta.', 'rotina', true); if(o.vibrar&&navigator.vibrate) navigator.vibrate(200); } });
     // 2) TRY HARD BRUTAL (sirene+tremor+esculacho): SÓ pra itens com horário que já PASSOU
     const atrasados=atrasadosAgora();
@@ -3360,14 +3363,12 @@ function startTryHard(){
       const msgs=[];
       // (a) atividades que VOCÊ marcou pra hoje e ainda não fez (se tem horário, só quando já chegou)
       ((S.rotinaDias&&S.rotinaDias[hoje])||[]).forEach(a=>{ if(a && a.nome && !itemFeitoHoje(a.nome,a.done) && (!a.hora || a.hora<=hhmm)) msgs.push({t:`Não deixe de fazer: ${a.nome}${a.hora?` (${a.hora})`:''}.`, alvo:'rotina'}); });
-      // (b) hábitos COM horário que já chegou e ainda não cumpriu hoje (já feito no treino/estudo NÃO cobra)
-      (S.rotina||[]).forEach(r=>{ if(r && r.nome && r.hora && r.hora<=hhmm && !itemFeitoHoje(r.nome,r.done)) msgs.push({t:`Falta o hábito: ${r.nome} (${r.hora}).`, alvo:'rotina'}); });
-      // (c) ESTUDO: só as matérias que você AGENDOU pra hoje (estudo por dia da semana) e ainda não estudou
+      // (b) ESTUDO: só as matérias que você AGENDOU pra hoje (estudo por dia da semana) e ainda não estudou
       const estIdsHoje=new Set(S.estudoLogs.filter(l=>l.dateISO===hoje).map(l=>l.materiaId));
       (S.estudoSemana[dia]||[]).forEach(mid=>{ const m=(S.materias||[]).find(x=>x.id===mid); if(m && m.nome && !estIdsHoje.has(mid)) msgs.push({t:`Você planejou estudar ${m.nome} hoje e ainda não abriu. Bora, recruta.`, alvo:'estudos'}); });
-      // (d) TREINO: só se há treino MONTADO pra hoje no template e você ainda não treinou
+      // (c) TREINO: só se há treino MONTADO pra hoje no template e você ainda não treinou
       if((S.treinoTemplate[dia]||[]).length && !S.treinoLogs.some(l=>l.dateISO===hoje)) msgs.push({t:'Você tem treino marcado pra hoje e ainda não fez. Levanta, recruta.', alvo:'treinos'});
-      // (e) ÁGUA: só se tem meta definida e está abaixo dela
+      // (d) ÁGUA: só se tem meta definida e está abaixo dela
       if(S.profile.metaAgua>0 && (S.agua[hoje]||0) < S.profile.metaAgua) msgs.push({t:`Falta água pra bater a meta de hoje (${S.agua[hoje]||0}/${S.profile.metaAgua}ml). Hidrata. 💧`, alvo:'alimentacao'});
       if(msgs.length){ _lastGentle=Date.now(); const pick=msgs[Math.floor(Date.now()/600000) % msgs.length]; notify('REDZONE', pick.t, pick.alvo, true); }
     }
