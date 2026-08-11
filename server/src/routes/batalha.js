@@ -11,13 +11,13 @@ batalhaRouter.use(exigirAuth);
 
 const pubSel = { id: true, username: true, nomeGuerra: true, fotoUrl: true, genero: true, privado: true, xp: true };
 
-async function notificar(usuarioId, tipo, texto, deUsername, alvoPostId) {
+async function notificar(usuarioId, tipo, texto, deUsername, alvoPostId, alvoCommentId = null) {
   if (!usuarioId) return;
-  try { await prisma.notificacao.create({ data: { usuarioId, tipo, texto, deUsername, alvoPostId: alvoPostId || null } }); } catch {}
+  try { await prisma.notificacao.create({ data: { usuarioId, tipo, texto, deUsername, alvoPostId: alvoPostId || null, alvoCommentId } }); } catch {}
   emitToUser(usuarioId, 'notif:nova', { tipo, texto });
   // deep-link: clicar na notificação cai direto no assunto
   // curtida/comentário → o post específico; seguidor → perfil de quem seguiu; senão → o feed
-  const url = alvoPostId ? ('/rotina/#post=' + alvoPostId)
+  const url = alvoPostId ? ('/rotina/#post=' + alvoPostId + (alvoCommentId ? '&comment=' + alvoCommentId : ''))
     : deUsername ? ('/rotina/#u=' + encodeURIComponent(deUsername))
     : '/rotina/#tab=batalha';
   enviarPush(usuarioId, { title: 'REDZONE', body: texto, tag: `${tipo}-${alvoPostId||deUsername||'social'}-${Date.now()}`, url });
@@ -136,15 +136,19 @@ batalhaRouter.post('/feed/:id/like', async (req, res) => {
 batalhaRouter.post('/feed/:id/comentar', async (req, res) => {
   const postId = Number(req.params.id);
   const texto = String(req.body.texto || '').trim();
+  const parentId = req.body.parentId ? Number(req.body.parentId) : null;
   if (!texto) return res.status(400).json({ erro: 'Comentário vazio.' });
   const post = await prisma.feedPost.findUnique({ where: { id: postId } });
   if (!post) return res.status(404).json({ erro: 'Post não encontrado.' });
   if (post.comentariosOff) return res.status(403).json({ erro: 'Comentários desativados nesta publicação.' });
+  let parent=null;
+  if(parentId){ parent=await prisma.feedComment.findUnique({where:{id:parentId},include:{usuario:{select:{username:true,nomeGuerra:true}}}}); if(!parent||parent.postId!==postId) return res.status(400).json({erro:'Comentário de origem inválido.'}); }
   const c = await prisma.feedComment.create({
-    data: { postId, usuarioId: req.userId, texto },
+    data: { postId, usuarioId: req.userId, texto, parentId },
     include: { usuario: { select: { username: true, nomeGuerra: true } } },
   });
-  if (post.usuarioId !== req.userId) notificar(post.usuarioId, 'comentario', `${c.usuario.nomeGuerra} comentou: "${texto.slice(0, 40)}"`, c.usuario.username, postId);
+  if(parent && parent.usuarioId!==req.userId) notificar(parent.usuarioId,'resposta',`${c.usuario.nomeGuerra} respondeu ao seu comentário: "${texto.slice(0,40)}"`,c.usuario.username,postId,c.id);
+  if (post.usuarioId !== req.userId && (!parent || post.usuarioId!==parent.usuarioId)) notificar(post.usuarioId, parent?'resposta':'comentario', parent?`${c.usuario.nomeGuerra} respondeu um comentário na sua publicação`:`${c.usuario.nomeGuerra} comentou: "${texto.slice(0, 40)}"`, c.usuario.username, postId,c.id);
   emitFeed('post:comentario', { postId });
   res.status(201).json(c);
 });
@@ -152,9 +156,25 @@ batalhaRouter.get('/feed/:id/comentarios', async (req, res) => {
   const postId = Number(req.params.id);
   const c = await prisma.feedComment.findMany({
     where: { postId }, orderBy: { criadoEm: 'asc' },
-    include: { usuario: { select: { username: true, nomeGuerra: true } } },
+    include: { usuario: { select: { username: true, nomeGuerra: true, fotoUrl:true, genero:true } }, likes:{select:{usuarioId:true}} },
   });
   res.json(c);
+});
+
+batalhaRouter.post('/comentarios/:id/like',async(req,res)=>{
+  const commentId=Number(req.params.id);
+  const comentario=await prisma.feedComment.findUnique({where:{id:commentId},include:{post:true}});
+  if(!comentario) return res.status(404).json({erro:'Comentário não encontrado.'});
+  const key={commentId_usuarioId:{commentId,usuarioId:req.userId}};
+  const existe=await prisma.feedCommentLike.findUnique({where:key});
+  if(existe) await prisma.feedCommentLike.delete({where:key});
+  else {
+    await prisma.feedCommentLike.create({data:{commentId,usuarioId:req.userId}});
+    if(comentario.usuarioId!==req.userId){ const me=await prisma.usuario.findUnique({where:{id:req.userId},select:{username:true,nomeGuerra:true}}); notificar(comentario.usuarioId,'curtida_comentario',`${me.nomeGuerra} curtiu seu comentário`,me.username,comentario.postId,commentId); }
+  }
+  const total=await prisma.feedCommentLike.count({where:{commentId}});
+  emitFeed('post:comentario',{postId:comentario.postId});
+  res.json({curtido:!existe,total});
 });
 
 // ---- Buscar pessoas ----

@@ -40,6 +40,7 @@ model Usuario {
   posts       FeedPost[]
   likes       FeedLike[]
   comentarios FeedComment[]
+  commentLikes FeedCommentLike[]
   seguindo    Follow[]      @relation("seguidor")
   seguidores  Follow[]      @relation("seguido")
   bloqueados  Block[]       @relation("bloqueador")
@@ -111,6 +112,7 @@ model Notificacao {
   texto        String
   deUsername   String?
   alvoPostId   Int?     // deep-link: post que originou a notificação (curtida/comentário)
+  alvoCommentId Int?
   lida         Boolean  @default(false)
   criadoEm     DateTime @default(now())
 
@@ -171,7 +173,23 @@ model FeedComment {
   usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
   usuarioId String
   texto     String
+  parentId  Int?
+  parent    FeedComment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies   FeedComment[] @relation("CommentReplies")
+  likes     FeedCommentLike[]
   criadoEm  DateTime @default(now())
 
+  @@index([postId, parentId])
   @@map("feed_comments")
+}
+
+model FeedCommentLike {
+  comment   FeedComment @relation(fields: [commentId], references: [id], onDelete: Cascade)
+  commentId Int
+  usuario   Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  usuarioId String
+  criadoEm  DateTime @default(now())
+
+  @@id([commentId, usuarioId])
+  @@map("feed_comment_likes")
 }
