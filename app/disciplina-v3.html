@@ -65,6 +65,7 @@ a{color:var(--accent2);}
   background:transparent;
   backdrop-filter:none; -webkit-backdrop-filter:none;
 }
+.topbar>div{min-width:0}.topbar>div:first-child{flex:1}.topbar .brand{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.topbar .homeclock{flex:0 0 auto;min-width:0}
 .brand{font-weight:800; font-size:20px; letter-spacing:-.01em;}
 .brand .dot{color:var(--accent);}
 .home-logo{height:72px; width:72px; object-fit:cover; border-radius:16px; filter:drop-shadow(0 6px 18px color-mix(in srgb,var(--accent) 50%, transparent));}
@@ -228,6 +229,7 @@ textarea.auto{resize:none; overflow:hidden; min-height:48px;}
 .post-top .n{font-weight:800; font-size:15px;}
 .post-top .t{font-size:12px; color:var(--text-dim);}
 .post-media{width:100%; max-height:70vh; object-fit:contain; display:block; background:#000;}
+.post-sound{position:absolute;right:10px;bottom:10px;z-index:4;width:38px;height:38px;border-radius:50%;border:0;background:rgba(0,0,0,.62);color:#fff;font-size:18px}
 .post-like-zone{position:relative;overflow:hidden;touch-action:manipulation}
 .double-heart{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(.2);font-size:84px;opacity:0;pointer-events:none;filter:drop-shadow(0 5px 12px rgba(0,0,0,.5))}
 .double-heart.on{animation:doubleHeart .75s ease}@keyframes doubleHeart{0%{opacity:0;transform:translate(-50%,-50%) scale(.2)}25%{opacity:1;transform:translate(-50%,-50%) scale(1.18)}65%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.35)}}
@@ -426,6 +428,7 @@ body.th-shake{animation:thshake .55s;}
 .story .ring2 > *{width:100%; height:100%; border-radius:50%; object-fit:cover; border:2px solid var(--bg,#0b0d10); display:block; background:#0c0d11;}
 .story .slbl{font-size:10.5px; color:var(--text-dim); margin-top:4px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;}
 .story.add .ring2{background:var(--line);} .story.add .ring2 > div{display:flex;align-items:center;justify-content:center;font-size:26px;color:var(--accent2);}
+.story.seen .ring2{background:var(--line)}
 
 /* Story viewer (fullscreen) */
 .storyview{position:fixed; inset:0; z-index:80; background:#000; display:none; flex-direction:column;}
@@ -439,12 +442,14 @@ body.th-shake{animation:thshake .55s;}
 .storyview .navzone{position:absolute; top:60px; bottom:0; width:40%;}
 .storyview .navL{left:0;} .storyview .navR{right:0;}
 .storyview .closev{position:absolute; top:12px; right:14px; z-index:2; background:rgba(0,0,0,.4); border:none; color:#fff; width:36px; height:36px; border-radius:50%; font-size:20px;}
+.storyview .menuv{position:absolute;top:12px;right:58px;z-index:3;background:rgba(0,0,0,.45);border:0;color:#fff;width:36px;height:36px;border-radius:50%;font-size:22px}
 
 /* ============================================================
    RESPONSIVO
 ============================================================ */
 /* CELULAR estreito: dá respiro pros números do Início (não colar um no outro) */
 @media (max-width:430px){
+  .topbar{gap:5px}.topbar>div{gap:7px!important}.topbar .icobtn{width:36px;height:36px;border-radius:10px}.topbar .homeclock .hc-time{font-size:19px}.topbar .homeclock .hc-date{display:none}.topbar .brand{font-size:18px}
   .biorow{gap:8px; margin:14px 0 4px;}
   .biocard{padding:14px 6px; border-radius:14px;}
   .biocard b{font-size:17px; margin-bottom:6px;}
@@ -543,6 +548,7 @@ body.th-shake{animation:thshake .55s;}
 <div class="storyview" id="storyview">
   <div class="bars" id="storyBars"></div>
   <button class="closev" onclick="fecharStories()">×</button>
+  <button class="menuv" id="storyMenu" hidden>⋯</button>
   <div class="media" id="storyMedia"></div>
   <div class="cap" id="storyCap"></div>
   <div class="navzone navL" onclick="storyNav(-1)"></div>
@@ -1182,6 +1188,7 @@ window.addEventListener('beforeunload',salvarPosicaoAtual);
 function go(tab, isBack, restaurarSalvo=false){
   closeDrawer();
   const anterior=activeTab, mesmaAba=anterior===tab;
+  if(anterior==='batalha'&&tab!=='batalha') pausarVideosFeed();
   const yAtual=window.scrollY||document.documentElement.scrollTop||0;
   let ySalvo=0; try{ ySalvo=+(sessionStorage.getItem(viewKey('scroll',tab))||0); }catch(e){}
   if(anterior && !(restaurarSalvo&&mesmaAba)) salvarPosicaoAtual();
@@ -1314,15 +1321,17 @@ function aniversarioUserSheet(){
   const dn=S.profile.dataNasc;
   if(!dn){ openSheet('<h3>Aniversário</h3><p class="muted small">Cadastre sua data de nascimento no Perfil pra eu contar os dias.</p>'); return; }
   const [Y,M,D]=String(dn).split('-').map(Number);
-  const h=brasiliaNow(); h.setHours(0,0,0,0);
-  let occ=new Date(h.getFullYear(),M-1,D); occ.setHours(0,0,0,0);
-  if(occ<h) occ=new Date(h.getFullYear()+1,M-1,D);
-  const dias=Math.round((occ-h)/86400000);
+  const h=brasiliaNow();
+  let occ=new Date(h.getFullYear(),M-1,D,0,0,0);
+  const ehHoje=h.getMonth()===M-1&&h.getDate()===D;
+  if(ehHoje) occ=new Date(h); else if(occ<h) occ=new Date(h.getFullYear()+1,M-1,D);
   const idade=idadeDe(dn); const faraIdade=occ.getFullYear()-Y;
-  const txt = dias===0 ? `🎂 É HOJE! Parabéns, você está fazendo ${faraIdade} anos!` : `Faltam <b>${dias}</b> dia(s) pro seu aniversário (${occ.toLocaleDateString('pt-BR',{day:'2-digit',month:'long'})}). Você vai fazer <b>${faraIdade}</b>.`;
   openSheet(`<h3>Seu aniversário</h3>
     <p class="small muted">Hoje você tem ${idade} anos.</p>
-    <div class="card"><p style="margin:0">🎉 ${txt}</p></div>`);
+    <div class="card"><div class="h" id="bdayTitle"></div><div id="bdayCount" class="grid2" style="margin-top:12px"></div><p class="small muted" id="bdayExact" style="margin-top:12px"></p></div>`);
+  clearInterval(window._bdayTimer);
+  const tick=()=>{ if(!$('#bdayCount')){ clearInterval(window._bdayTimer); return; } const agora=brasiliaNow(), ms=Math.max(0,occ-agora); const totalDias=Math.floor(ms/86400000), horas=Math.floor(ms%86400000/3600000), minutos=Math.floor(ms%3600000/60000), segundos=Math.floor(ms%60000/1000); let meses=(occ.getFullYear()-agora.getFullYear())*12+(occ.getMonth()-agora.getMonth()); let ancora=new Date(agora.getFullYear(),agora.getMonth()+meses,agora.getDate(),agora.getHours(),agora.getMinutes(),agora.getSeconds()); if(ancora>occ){ meses--; ancora=new Date(agora.getFullYear(),agora.getMonth()+meses,agora.getDate(),agora.getHours(),agora.getMinutes(),agora.getSeconds()); } const anos=Math.floor(meses/12), mesesRest=Math.max(0,meses%12), diasRest=Math.max(0,Math.floor((occ-ancora)/86400000)); $('#bdayTitle').textContent=ms<1000?`🎂 É hoje! Você está fazendo ${faraIdade} anos!`:`🎉 Contagem para os ${faraIdade} anos`; const partes=[]; if(anos) partes.push(['Anos',anos]); if(mesesRest) partes.push(['Meses',mesesRest]); if(diasRest||(!anos&&!mesesRest&&totalDias>0)) partes.push(['Dias',diasRest||totalDias]); if(totalDias<2&&ms>=1000) partes.push(['Horas',horas]); if(totalDias<1&&ms>=1000) partes.push(['Minutos',minutos],['Segundos',segundos]); $('#bdayCount').innerHTML=partes.map(([l,v])=>`<div class="card" style="text-align:center;margin:0"><div class="mono" style="font-size:26px;color:var(--accent2)">${v}</div><div class="small muted">${l}</div></div>`).join(''); $('#bdayExact').textContent=`Data: ${occ.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'})}.`; };
+  tick(); window._bdayTimer=setInterval(tick,1000);
 }
 // clicar no peso → relatório/evolução de peso
 function pesoRelatorioSheet(){
@@ -1590,8 +1599,8 @@ function resumoDetalheSheet(tipo){
   } else if(tipo==='estudo'){
     titulo='Estudo de hoje';
     const plan=(S.estudoSemana[dia]||[]);
-    corpo = plan.length ? plan.map(mid=>{ const m=S.materias.find(x=>x.id===mid); if(!m) return ''; const f=estudoFeitoHoje(m.id); const min=f?minsHojeItem(S.estudoLogs,'materiaId',m.id):0;
-      return `<div class="rowitem ${f?'done':''}"><div class="chk">${f?'✓':''}</div><div class="txt"><div class="t">${esc(m.nome)}</div><div class="s">${f?`✅ Estudado · ${min} min`:'⏳ Ainda não estudado hoje'}</div></div></div>`;
+    corpo = plan.length ? plan.map(mid=>{ const m=S.materias.find(x=>x.id===mid); if(!m) return ''; const logs=(S.estudoLogs||[]).filter(l=>l.dateISO===hoje&&l.materiaId===m.id), f=logs.length>0, min=f?minsHojeItem(S.estudoLogs,'materiaId',m.id):0; const ids=new Set(logs.flatMap(l=>l.conteudos||[])); const nomes=(m.conteudos||[]).filter(c=>ids.has(c.id)).map(c=>c.nome);
+      return `<div class="rowitem ${f?'done':''}" style="align-items:flex-start"><div class="chk">${f?'✓':''}</div><div class="txt"><div class="t">${esc(m.nome)}</div><div class="s">${f?`✅ Estudado · ${min} min`:'⏳ Ainda não estudado hoje'}</div>${nomes.length?`<div class="small" style="margin-top:7px;color:var(--text)"><b>Conteúdos:</b> ${nomes.map(esc).join(' • ')}</div>`:(f?'<div class="small muted" style="margin-top:6px">Sessão registrada sem conteúdo marcado.</div>':'')}</div></div>`;
     }).join('') : '<p class="muted small">Nenhuma matéria pra hoje.</p>';
   } else if(tipo==='rotina'){
     titulo='Rotina de hoje';
@@ -1984,11 +1993,10 @@ function renderProvaPicker(container, onReady){
     </div>
     <div id="provaPreview"></div>`;
   const enviar=async(inp)=>{ const f=inp.files[0]; if(!f) return;
-    $('#provaPreview').innerHTML='<p class="muted small">Enviando mídia…</p>';
+    const local=URL.createObjectURL(f), isVideo=f.type.startsWith('video/');
+    $('#provaPreview').innerHTML=(isVideo?`<video src="${local}" controls playsinline preload="metadata" style="border-radius:12px;max-height:260px;width:100%"></video>`:`<img src="${local}" style="border-radius:12px;max-height:260px;max-width:100%">`)+`<p class="muted small" id="provaStatus">Enviando mídia… você já pode conferir a prévia.</p>`;
     try{ const up=await uploadMedia(f);
-      $('#provaPreview').innerHTML = up.tipo==='video'
-        ? `<video src="${up.url}" controls playsinline style="border-radius:12px;max-height:260px;width:100%"></video>`
-        : `<img src="${up.url}" style="border-radius:12px;max-height:260px">`;
+      if($('#provaStatus')) $('#provaStatus').textContent='✅ Mídia pronta para publicar.';
       onReady(up.url, up.tipo);
     }catch(e){ $('#provaPreview').innerHTML='<p class="err">Falha ao enviar a mídia. Tente de novo.</p>'; }
   };
@@ -2776,14 +2784,15 @@ function storiesHTML(){
   const add=`<div class="story add" data-storyadd><div class="ring2"><div>＋</div></div><div class="slbl">Adicionar</div></div>`;
   if(!recentes.length) return `<div class="stories">${add}</div>`;
   const capa=recentes[recentes.length-1]; // mais recente como capa
-  const bubble=`<div class="story" data-storyall><div class="ring2">${capa.midiaTipo==='video'?`<video src="${capa.url}" muted playsinline></video>`:`<img src="${capa.url}">`}</div><div class="slbl">Meu dia (${recentes.length})</div></div>`;
+  let vistos=[]; try{ vistos=JSON.parse(localStorage.getItem(`rz:stories:vistos:${currentUser}`)||'[]'); }catch(e){} const tudoVisto=recentes.every(r=>vistos.includes(r.id));
+  const bubble=`<div class="story ${tudoVisto?'seen':''}" data-storyall><div class="ring2">${capa.midiaTipo==='video'?`<video src="${capa.url}" muted playsinline></video>`:`<img src="${capa.url}">`}</div><div class="slbl">Meu dia (${recentes.length})</div></div>`;
   return `<div class="stories">${add}${bubble}</div>`;
 }
 function bindStories(){
   $$('#scr-batalha [data-storyadd]').forEach(el=>el.onclick=()=>adicionarMemoria('outro'));
   $$('#scr-batalha [data-storyall]').forEach(el=>el.onclick=()=>abrirStories(recordsStories(),0));
 }
-let _story={items:[], i:0, timer:null};
+let _story={items:[], i:0, timer:null}; let _feedPostedUrls=new Set();
 function abrirStories(items, startIdx=0){
   if(!items||!items.length) return;
   _story.items=items; _story.i=startIdx||0;
@@ -2791,18 +2800,20 @@ function abrirStories(items, startIdx=0){
 }
 function storyShow(){
   const r=_story.items[_story.i]; if(!r){ fecharStories(); return; }
+  try{ const k=`rz:stories:vistos:${currentUser}`, vistos=JSON.parse(localStorage.getItem(k)||'[]'); if(!vistos.includes(r.id)){ vistos.push(r.id); localStorage.setItem(k,JSON.stringify(vistos.slice(-300))); } }catch(e){}
   clearTimeout(_story.timer);
   $('#storyBars').innerHTML=_story.items.map((x,k)=>`<i><b style="width:${k<_story.i?100:0}%" ${k===_story.i?'id="storyBarActive"':''}></b></i>`).join('');
   const isVideo=r.midiaTipo==='video';
   $('#storyMedia').innerHTML = isVideo ? `<video src="${r.url}" autoplay playsinline id="storyVid"></video>` : `<img src="${r.url}">`;
   $('#storyCap').textContent = r.texto || (REC_TIPOS[r.tipo]||'');
+  const menu=$('#storyMenu'); menu.hidden=_feedPostedUrls.has(r.url); menu.onclick=()=>{ clearTimeout(_story.timer); fecharStories(); compartilharNoFeedSheet(r); };
   const dur = isVideo ? 15000 : 7000;
   const bar=$('#storyBarActive');
   if(bar){ bar.style.transition='none'; bar.style.width='0%'; requestAnimationFrame(()=>{ bar.style.transition=`width ${dur}ms linear`; bar.style.width='100%'; }); }
   _story.timer=setTimeout(()=>storyNav(1), dur);
 }
 function storyNav(dir){ _story.i+=dir; if(_story.i>=_story.items.length){ fecharStories(); return; } if(_story.i<0) _story.i=0; storyShow(); }
-function fecharStories(){ clearTimeout(_story.timer); $('#storyview').classList.remove('on'); $('#storyMedia').innerHTML=''; }
+function fecharStories(){ clearTimeout(_story.timer); const v=$('#storyVid'); if(v) v.pause(); $('#storyview').classList.remove('on'); $('#storyMedia').innerHTML=''; $('#scr-batalha [data-storyall]')?.classList.add('seen'); }
 document.addEventListener('keydown',(e)=>{ if(!$('#storyview').classList.contains('on')) return; if(e.key==='ArrowRight'||e.key===' ') storyNav(1); else if(e.key==='ArrowLeft') storyNav(-1); else if(e.key==='Escape') fecharStories(); });
 window.fecharStories=fecharStories; window.storyNav=storyNav;
 
@@ -2827,6 +2838,7 @@ async function renderBatalha(){
   let board=[], feed=[], notif={naoLidas:0}, dmN={naoLidas:0};
   try{ board=await api('/batalha/ranking'); }catch(e){}
   try{ feed=await api('/batalha/feed'); }catch(e){}
+  _feedPostedUrls=new Set(feed.filter(p=>p.usuarioId===S.profile?.id||p.usuario?.id===S.profile?.id).map(p=>p.midiaUrl).filter(Boolean));
   try{ notif=await api('/batalha/notificacoes'); }catch(e){}
   try{ dmN=await api('/dm/naolidas'); }catch(e){}
   const badge = notif.naoLidas>0 ? `<span class="notif-badge">${notif.naoLidas>9?'9+':notif.naoLidas}</span>` : '';
@@ -2874,6 +2886,9 @@ async function abrirDMs(){
       </div>`).join('') : '<p class="muted small">Nenhuma conversa ainda. Abra o perfil de alguém e toque em Mensagem.</p>'}`);
   $$('#sheet [data-chat]').forEach(el=>el.onclick=()=>abrirChat(el.dataset.chat));
 }
+async function atualizarBadgeDM(){
+  try{ const x=await api('/dm/naolidas'), btn=$('#dmBtn'); if(!btn)return x.naoLidas; let b=$('.notif-badge',btn); if(!x.naoLidas){ b?.remove(); } else { if(!b){ b=document.createElement('span'); b.className='notif-badge'; btn.appendChild(b); } b.textContent=x.naoLidas>9?'9+':x.naoLidas; } return x.naoLidas; }catch(e){ return null; }
+}
 let _chatUser=null, _chatPeerId=null, _typingTimer=null;
 function bolhaChat(m){
   const media=m.midiaUrl?(m.midiaTipo==='video'?`<video class="chat-media" src="${esc(m.midiaUrl)}" controls playsinline></video>`:`<img class="chat-media" src="${esc(m.midiaUrl)}" alt="Mídia da conversa">`):'';
@@ -2886,7 +2901,7 @@ async function abrirChat(username){
   openSheet('<button class="sheet-close" onclick="closeSheet()">×</button><p class="muted" style="padding:20px 0">Carregando…</p>');
   let d; try{ d=await api('/dm/'+encodeURIComponent(username)); }catch(e){ $('#sheet').innerHTML='<button class="sheet-close" onclick="closeSheet()">×</button><p class="err">Conversa indisponível.</p>'; return; }
   _chatPeerId=d.usuario.id; limparNotifDM(username); $('#overlay').classList.add('chat-full');
-  api('/dm/naolidas').then(x=>{ const b=$('#dmBtn .notif-badge'); if(b){ if(x.naoLidas) b.textContent=x.naoLidas>9?'9+':x.naoLidas; else b.remove(); } }).catch(()=>{});
+  await atualizarBadgeDM();
   openSheet(`<div class="chat-head">${avatarHTML({nome:d.usuario.nomeGuerra,foto:d.usuario.fotoUrl},'avatar sm')}<div class="txt"><div class="t">${esc(d.usuario.nomeGuerra)}</div><div class="s" id="chatPresence">verificando presença…</div></div></div>
     <div id="chatMsgs" class="chat-messages">${d.mensagens.length?d.mensagens.map(bolhaChat).join(''):'<p class="muted small" style="text-align:center">Diga oi 👋</p>'}</div><div id="chatTyping" class="small muted" style="height:18px"></div>
     <div class="chat-compose"><button class="icobtn" id="chatEmoji" aria-label="Emojis">😊</button><button class="icobtn" id="chatMedia" aria-label="Enviar foto ou vídeo">📎</button><input id="chatTxt" placeholder="Mensagem..." autocomplete="off"><button class="btn sm" id="chatSend">Enviar</button></div><input id="chatFile" type="file" accept="image/*,video/*" hidden>`);
@@ -2901,7 +2916,7 @@ async function abrirChat(username){
   $('#chatFile').onchange=async e=>{ const f=e.target.files[0]; if(!f)return; toast('Enviando mídia…'); try{ const up=await uploadMedia(f); await enviar({url:up.url,tipo:up.tipo||(f.type.startsWith('video')?'video':'image')}); }catch(x){ toast('Falha ao enviar mídia.'); } };
 }
 function feedPostHTML(post){
-  const media = post.midiaTipo==='video'? `<video class="post-media" src="${post.midiaUrl}" controls playsinline></video>` : (post.midiaUrl?`<img class="post-media" src="${post.midiaUrl}">`:'');
+  const media = post.midiaTipo==='video'? `<video class="post-media" data-feed-video src="${post.midiaUrl}" muted loop playsinline preload="metadata"></video>` : (post.midiaUrl?`<img class="post-media" src="${post.midiaUrl}" loading="lazy">`:'');
   const meuId=S.profile?.id;
   const meu = (post.usuarioId===meuId) || (post.usuario?.id===meuId);
   const liked = (post.likes||[]).some(l=>l.usuarioId===meuId);
@@ -2913,7 +2928,7 @@ function feedPostHTML(post){
       <span class="who-link" data-perfil="${esc(un)}">${avatarHTML(prof,'avatar xs')}<div><div class="n">${esc(prof.nome)}</div><div class="t">@${esc(un)} · ${timeago(post.criadoEm)}</div></div></span>
       ${meu?`<button class="post-menu" data-menu="${post.id}" data-off="${post.comentariosOff?1:0}" data-priv="${post.privado?1:0}">⋯</button>`:''}
     </div>
-    ${media?`<div class="post-like-zone" data-double-like="${post.id}" data-liked="${liked?1:0}">${media}<span class="double-heart">❤️</span></div>`:''}
+    ${media?`<div class="post-like-zone" data-double-like="${post.id}" data-liked="${liked?1:0}">${media}${post.midiaTipo==='video'?'<button class="post-sound" data-video-sound aria-label="Ativar ou desativar som">🔇</button>':''}<span class="double-heart">❤️</span></div>`:''}
     ${post.texto?`<div class="post-body ${media?'':'post-like-zone'}" ${media?'':`data-double-like="${post.id}" data-liked="${liked?1:0}"`}>${esc(post.texto)}${media?'':'<span class="double-heart">❤️</span>'}</div>`:''}
     <div class="post-actions">
       <span data-like="${post.id}" style="cursor:pointer">${liked?'❤️':'🤍'} <b>${(post.likes||[]).length}</b></span>
@@ -2939,12 +2954,22 @@ function bindFeedActions(){
   $$('#feed [data-share]').forEach(el=>el.onclick=()=>compartilharPost(el.dataset.share));
   $$('#feed [data-perfil], #ranking [data-perfil]').forEach(el=>el.onclick=()=>abrirPerfil(el.dataset.perfil));
   $$('#feed [data-menu]').forEach(el=>el.onclick=()=>postMenu(el.dataset.menu, el.dataset.off==='1', el.dataset.priv==='1'));
+  bindFeedVideos();
   $$('#feed [data-double-like]').forEach(zona=>{
     const curtir=async()=>{ if(zona.dataset.liked==='1') return; zona.dataset.liked='1'; const heart=$('.double-heart',zona); if(heart){ heart.classList.remove('on'); void heart.offsetWidth; heart.classList.add('on'); } const botao=$(`[data-like="${zona.dataset.doubleLike}"]`,zona.closest('.post')); if(botao){ botao.firstChild.textContent='❤️ '; const n=$('b',botao); if(n) n.textContent=String((+n.textContent||0)+1); } try{ const r=await api('/batalha/feed/'+zona.dataset.doubleLike+'/like',{method:'POST'}); if(botao&&$('b',botao)) $('b',botao).textContent=r.total; }catch(e){ zona.dataset.liked='0'; toast('Falha ao curtir.'); } };
     zona.addEventListener('dblclick',e=>{ e.preventDefault(); curtir(); });
     let ultimoToque=0; zona.addEventListener('touchend',()=>{ const agora=Date.now(); if(agora-ultimoToque<330){ ultimoToque=0; curtir(); } else ultimoToque=agora; },{passive:true});
   });
 }
+let _feedVideoObserver=null;
+function pausarVideosFeed(){ $$('[data-feed-video]').forEach(v=>{ try{v.pause();}catch(e){} }); }
+function bindFeedVideos(){
+  if(_feedVideoObserver) _feedVideoObserver.disconnect();
+  _feedVideoObserver=new IntersectionObserver(entries=>entries.forEach(e=>{ const v=e.target, emSheet=$('#sheet')?.contains(v); if(e.isIntersecting&&e.intersectionRatio>=.65&&activeTab==='batalha'&&(!$('#overlay').classList.contains('show')||emSheet)){ $$('[data-feed-video]').forEach(o=>{if(o!==v)o.pause();}); v.play().catch(()=>{}); } else v.pause(); }),{threshold:[0,.65,1]});
+  $$('[data-feed-video]').forEach(v=>_feedVideoObserver.observe(v));
+  $$('[data-video-sound]').forEach(b=>b.onclick=e=>{ e.stopPropagation(); const v=$('[data-feed-video]',b.parentElement); if(!v)return; v.muted=!v.muted; b.textContent=v.muted?'🔇':'🔊'; if(!v.paused)v.play().catch(()=>{}); });
+}
+document.addEventListener('visibilitychange',()=>{ if(document.hidden) pausarVideosFeed(); });
 function postMenu(id, off, priv){
   openSheet(`<h3>Publicação</h3>
     <button class="btn ghost" id="pmPriv">${priv?'🌎 Tornar pública':'🔒 Tornar privada (só eu)'}</button>
@@ -3098,6 +3123,7 @@ async function abrirPost(postId,focusCommentId=null){
     ${off?'<p class="muted small">Comentários desativados nesta publicação.</p>':`
     <div class="keyboard-actions"><div class="field" style="margin:0 0 10px"><textarea id="comTxt" class="auto" placeholder="Escreve um comentário, soldado..."></textarea></div>
     <button class="btn ok" id="comEnviar">Comentar</button></div>`}`);
+  bindFeedVideos();
   // ações do próprio post (curtir / comentar via ícone / abrir perfil / menu)
   $$('#postUnico [data-like]').forEach(el=>el.onclick=async()=>{ try{ await api('/batalha/feed/'+el.dataset.like+'/like',{method:'POST'}); abrirPost(postId); if(activeTab==='batalha') renderBatalha(); }catch(e){ toast('Falha ao curtir.'); } });
   $$('#postUnico [data-perfil]').forEach(el=>el.onclick=()=>abrirPerfil(el.dataset.perfil));
@@ -3253,11 +3279,14 @@ function renderPerfilConta(){
     if(!dataNasc || idade==null || idade<5 || idade>100) return err.textContent='Data de nascimento inválida.';
     if(!(peso>0)) return err.textContent='Peso inválido (ex: 89,50).';
     if(!(altura>0)) return err.textContent='Altura inválida (ex: 176 ou 1,76).';
-    try{
-      await api('/perfil',{method:'PATCH',body:{ nomeGuerra:nome, username, idade, dataNasc, genero, pesoKg:peso, alturaCm:altura, metaAgua:Math.round(peso*35) }});
+    const salvar=async(senhaConfirmacao=null)=>{ try{
+      await api('/perfil',{method:'PATCH',body:{ nomeGuerra:nome, username, idade, dataNasc, genero, pesoKg:peso, alturaCm:altura, metaAgua:Math.round(peso*35), senhaConfirmacao }});
       p.nome=nome; p.username=username; p.idade=idade; p.dataNasc=dataNasc; p.genero=genero; p.peso=peso; p.altura=altura; p.metaAgua=Math.round(peso*35); currentUser=username;
-      err.textContent=''; toast('Dados atualizados.'); renderPerfil();
-    }catch(e){ err.textContent = e.status===409 ? 'Esse username já existe.' : (e.data?.erro||'Falha ao salvar.'); }
+      err.textContent=''; closeSheet(); toast('Identidade e dados atualizados. 🪖'); renderPerfil();
+    }catch(e){ const msg=e.data?.erro||'Falha ao salvar.'; if($('#idErr')) $('#idErr').textContent=msg; else err.textContent=msg; } };
+    const mudouIdentidade=nome.toLowerCase()!==String(p.nome||'').toLowerCase()||username!==p.username;
+    if(mudouIdentidade){ openSheet(`<h3>Confirmar identidade</h3><p class="small muted">Nome de guerra e username são sua identidade no REDZONE. Digite sua senha para autorizar a mudança.</p><div class="field"><label>Senha atual</label><input id="idSenha" type="password" placeholder="••••••••"></div><div class="err" id="idErr"></div><button class="btn" id="idConfirm">Confirmar e salvar</button>`); $('#idConfirm').onclick=()=>{ const s=$('#idSenha').value; if(!s)return $('#idErr').textContent='Digite sua senha para continuar.'; salvar(s); }; }
+    else salvar();
   };
 }
 function renderPerfilConfig(){
@@ -3546,8 +3575,8 @@ function bindPasswordEyes(root){
     wrap.appendChild(btn);
   });
 }
-function openSheet(html){ const estava=$('#overlay').classList.contains('show'); $('#sheet').classList.remove('keyboard-fit'); $('#sheet').innerHTML=`<button class="sheet-close" onclick="closeSheet()">×</button>`+html; $('#overlay').classList.add('show'); ajustarViewportTeclado(); if(!estava){ try{ history.pushState({rzSheet:true,rzTab:activeTab},'',location.href); }catch(e){} } bindPasswordEyes($('#sheet')); }
-function closeSheet(fromPop=false){ const aberto=$('#overlay').classList.contains('show'); $('#overlay').classList.remove('show','chat-full'); _chatUser=null; _chatPeerId=null; if(aberto&&!fromPop&&history.state?.rzSheet){ try{ history.back(); }catch(e){} } }
+function openSheet(html){ pausarVideosFeed(); const estava=$('#overlay').classList.contains('show'); $('#sheet').classList.remove('keyboard-fit'); $('#sheet').innerHTML=`<button class="sheet-close" onclick="closeSheet()">×</button>`+html; $('#overlay').classList.add('show'); ajustarViewportTeclado(); if(!estava){ try{ history.pushState({rzSheet:true,rzTab:activeTab},'',location.href); }catch(e){} } bindPasswordEyes($('#sheet')); }
+function closeSheet(fromPop=false){ $$('#sheet video').forEach(v=>{try{v.pause();}catch(e){}}); const aberto=$('#overlay').classList.contains('show'); $('#overlay').classList.remove('show','chat-full'); _chatUser=null; _chatPeerId=null; if(aberto&&!fromPop&&history.state?.rzSheet){ try{ history.back(); }catch(e){} } }
 $('#overlay').addEventListener('click',e=>{ if(e.target.id==='overlay') closeSheet(); });
 window.closeSheet=closeSheet;
 /* ENTER global: confirma/envia. Em <input> dentro de um sheet, dispara o botão principal.
@@ -3591,7 +3620,7 @@ function connectSocket(){
         $('#chatMsgs').querySelector('.muted')?.remove();
         $('#chatMsgs').insertAdjacentHTML('beforeend',bolhaChat({...m,meu:false,lida:true}));
         $('#chatMsgs').scrollTop=$('#chatMsgs').scrollHeight;
-        api('/dm/'+encodeURIComponent(_chatUser)).catch(()=>{}); limparNotifDM(_chatUser);
+        api('/dm/'+encodeURIComponent(_chatUser)).then(atualizarBadgeDM).catch(()=>{}); limparNotifDM(_chatUser);
       } else {
         toast('💬 '+nome+': '+(m.texto||'Enviou uma mídia').slice(0,40));
         if(activeTab==='batalha') renderBatalha();

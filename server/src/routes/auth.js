@@ -33,12 +33,14 @@ authRouter.post('/cadastro', async (req, res) => {
   if (!parsed.success) return res.status(400).json({ erro: 'Dados inválidos.', detalhes: parsed.error.flatten() });
   const d = parsed.data;
 
-  const [emailExiste, userExiste] = await Promise.all([
+  const [emailExiste, userExiste, nomeExiste] = await Promise.all([
     prisma.usuario.findUnique({ where: { email: d.email } }),
     prisma.usuario.findUnique({ where: { username: d.username } }),
+    prisma.usuario.findFirst({ where: { nomeGuerra: { equals: d.nomeGuerra.trim(), mode: 'insensitive' } } }),
   ]);
   if (emailExiste) return res.status(409).json({ erro: 'E-mail já cadastrado.' });
   if (userExiste) return res.status(409).json({ erro: 'Username já existe.' });
+  if (nomeExiste) return res.status(409).json({ erro: 'Esse nome de guerra já está em missão por aqui. Escolha outro que seja só seu.' });
 
   const senhaHash = await hashSenha(d.senha);
   const usuario = await prisma.usuario.create({
@@ -55,10 +57,11 @@ authRouter.post('/cadastro', async (req, res) => {
 
 // Checagem de disponibilidade (pro front validar em tempo real)
 authRouter.get('/disponivel', async (req, res) => {
-  const { email, username } = req.query;
+  const { email, username, nomeGuerra } = req.query;
   const out = {};
   if (email) out.email = !(await prisma.usuario.findUnique({ where: { email: String(email).toLowerCase() } }));
   if (username) out.username = !(await prisma.usuario.findUnique({ where: { username: String(username).toLowerCase() } }));
+  if (nomeGuerra) out.nomeGuerra = !(await prisma.usuario.findFirst({ where: { nomeGuerra: { equals: String(nomeGuerra).trim(), mode: 'insensitive' } } }));
   res.json(out);
 });
 

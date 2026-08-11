@@ -121,8 +121,9 @@ batalhaRouter.post('/feed/:id/like', async (req, res) => {
   const existe = await prisma.feedLike.findUnique({ where: { postId_usuarioId: { postId, usuarioId: req.userId } } });
   if (existe) await prisma.feedLike.delete({ where: { postId_usuarioId: { postId, usuarioId: req.userId } } });
   else {
-    await prisma.feedLike.create({ data: { postId, usuarioId: req.userId } });
-    if (post.usuarioId !== req.userId) {
+    let criou=true; try{ await prisma.feedLike.create({ data: { postId, usuarioId: req.userId } }); }
+    catch(e){ if(e?.code==='P2002') criou=false; else throw e; }
+    if (criou && post.usuarioId !== req.userId) {
       const me = await prisma.usuario.findUnique({ where: { id: req.userId }, select: { username: true, nomeGuerra: true } });
       notificar(post.usuarioId, 'curtida', `${me.nomeGuerra} curtiu sua publicação`, me.username, postId);
     }

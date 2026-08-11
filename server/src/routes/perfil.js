@@ -4,6 +4,7 @@ import { prisma } from '../lib/db.js';
 import { exigirAuth } from '../lib/auth.js';
 import { publico } from './auth.js';
 import { emitToUser } from '../realtime.js';
+import { conferirSenha } from '../lib/auth.js';
 
 export const perfilRouter = Router();
 perfilRouter.use(exigirAuth);
@@ -21,6 +22,7 @@ const editSchema = z.object({
   xp: z.number().int().min(0).optional(),        // XP auto-reportado (ranking)
   metaAgua: z.number().int().min(500).max(8000).optional(),
   privado: z.boolean().optional(),
+  senhaConfirmacao: z.string().optional(),
 });
 
 perfilRouter.patch('/', async (req, res) => {
@@ -28,12 +30,21 @@ perfilRouter.patch('/', async (req, res) => {
   if (!parsed.success) return res.status(400).json({ erro: 'Dados inválidos.', detalhes: parsed.error.flatten() });
   const d = parsed.data;
 
+  const atual = await prisma.usuario.findUnique({ where: { id: req.userId } });
+  const mudouIdentidade = (d.username && d.username !== atual.username) || (d.nomeGuerra && d.nomeGuerra.trim().toLowerCase() !== atual.nomeGuerra.trim().toLowerCase());
+  if (mudouIdentidade && (!d.senhaConfirmacao || !(await conferirSenha(d.senhaConfirmacao, atual.senhaHash)))) return res.status(401).json({ erro: 'Senha incorreta. Sua identidade continua protegida, recruta.' });
+
   // username único (revalidado na edição, igual ao cadastro)
   if (d.username) {
     const outro = await prisma.usuario.findUnique({ where: { username: d.username } });
-    if (outro && outro.id !== req.userId) return res.status(409).json({ erro: 'Username já existe.' });
+    if (outro && outro.id !== req.userId) return res.status(409).json({ campo:'username', erro: 'Esse username já está em uso. Tente outra identificação, recruta.' });
+  }
+  if (d.nomeGuerra) {
+    const outroNome = await prisma.usuario.findFirst({ where: { nomeGuerra: { equals: d.nomeGuerra.trim(), mode: 'insensitive' }, NOT: { id: req.userId } } });
+    if (outroNome) return res.status(409).json({ campo:'nomeGuerra', erro: 'Esse nome de guerra já pertence a outro recruta. Escolha uma identidade exclusiva.' });
   }
   const data = { ...d };
+  delete data.senhaConfirmacao;
   if (d.dataNasc !== undefined) data.dataNasc = d.dataNasc ? new Date(d.dataNasc) : null;
   if (d.pesoKg != null) data.metaAgua = Math.round(d.pesoKg * 35);
 
