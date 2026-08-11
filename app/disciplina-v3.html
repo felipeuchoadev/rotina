@@ -228,8 +228,8 @@ textarea.auto{resize:none; overflow:hidden; min-height:48px;}
 /* Bottom nav (7 itens) */
 /* CELULAR: nav vira GAVETA lateral (abre no ☰). Desktop vira sidebar (media query abaixo). */
 .nav{position:fixed; top:0; left:0; bottom:0; z-index:70; width:250px; max-width:82vw; background:rgba(12,14,17,.98); backdrop-filter:blur(16px);
-  border-right:1px solid var(--line); padding:16px 0 calc(20px + env(safe-area-inset-bottom)); transform:translateX(-106%); transition:transform .25s ease; overflow-y:auto; box-shadow:8px 0 40px rgba(0,0,0,.5);}
-.nav.open{transform:translateX(0);}
+  border-right:1px solid var(--line); padding:16px 0 calc(20px + env(safe-area-inset-bottom)); transform:translateX(-106%); transition:transform .25s ease,box-shadow .25s ease; overflow-y:auto; box-shadow:none;}
+.nav.open{transform:translateX(0); box-shadow:8px 0 40px rgba(0,0,0,.5);}
 .nav-inner{display:flex; flex-direction:column; gap:4px; padding:0 10px;}
 /* wordmark REDZONE transparente (PNG) no topo do menu, no lugar do texto */
 .nav-inner::before{content:''; display:block; height:34px; margin:2px 12px 14px; background:url(redzone-wordmark.png) left center/contain no-repeat;}
