@@ -228,6 +228,9 @@ textarea.auto{resize:none; overflow:hidden; min-height:48px;}
 .post-top .n{font-weight:800; font-size:15px;}
 .post-top .t{font-size:12px; color:var(--text-dim);}
 .post-media{width:100%; max-height:70vh; object-fit:contain; display:block; background:#000;}
+.post-like-zone{position:relative;overflow:hidden;touch-action:manipulation}
+.double-heart{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%) scale(.2);font-size:84px;opacity:0;pointer-events:none;filter:drop-shadow(0 5px 12px rgba(0,0,0,.5))}
+.double-heart.on{animation:doubleHeart .75s ease}@keyframes doubleHeart{0%{opacity:0;transform:translate(-50%,-50%) scale(.2)}25%{opacity:1;transform:translate(-50%,-50%) scale(1.18)}65%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(1.35)}}
 .post-body{padding:13px;}
 .post-actions{display:flex; gap:18px; padding:2px 13px 14px; color:var(--text-dim); font-size:15px;}
 .post-actions b{color:var(--text);}
@@ -2905,8 +2908,8 @@ function feedPostHTML(post){
       <span class="who-link" data-perfil="${esc(un)}">${avatarHTML(prof,'avatar xs')}<div><div class="n">${esc(prof.nome)}</div><div class="t">@${esc(un)} · ${timeago(post.criadoEm)}</div></div></span>
       ${meu?`<button class="post-menu" data-menu="${post.id}" data-off="${post.comentariosOff?1:0}" data-priv="${post.privado?1:0}">⋯</button>`:''}
     </div>
-    ${media}
-    ${post.texto?`<div class="post-body">${esc(post.texto)}</div>`:''}
+    ${media?`<div class="post-like-zone" data-double-like="${post.id}" data-liked="${liked?1:0}">${media}<span class="double-heart">❤️</span></div>`:''}
+    ${post.texto?`<div class="post-body ${media?'':'post-like-zone'}" ${media?'':`data-double-like="${post.id}" data-liked="${liked?1:0}"`}>${esc(post.texto)}${media?'':'<span class="double-heart">❤️</span>'}</div>`:''}
     <div class="post-actions">
       <span data-like="${post.id}" style="cursor:pointer">${liked?'❤️':'🤍'} <b>${(post.likes||[]).length}</b></span>
       ${post.comentariosOff?'<span class="muted small">💬 comentários off</span>':`<span data-comment="${post.id}" style="cursor:pointer">💬 <b>${nCom}</b></span>`}
@@ -2931,6 +2934,11 @@ function bindFeedActions(){
   $$('#feed [data-share]').forEach(el=>el.onclick=()=>compartilharPost(el.dataset.share));
   $$('#feed [data-perfil], #ranking [data-perfil]').forEach(el=>el.onclick=()=>abrirPerfil(el.dataset.perfil));
   $$('#feed [data-menu]').forEach(el=>el.onclick=()=>postMenu(el.dataset.menu, el.dataset.off==='1', el.dataset.priv==='1'));
+  $$('#feed [data-double-like]').forEach(zona=>{
+    const curtir=async()=>{ if(zona.dataset.liked==='1') return; zona.dataset.liked='1'; const heart=$('.double-heart',zona); if(heart){ heart.classList.remove('on'); void heart.offsetWidth; heart.classList.add('on'); } const botao=$(`[data-like="${zona.dataset.doubleLike}"]`,zona.closest('.post')); if(botao){ botao.firstChild.textContent='❤️ '; const n=$('b',botao); if(n) n.textContent=String((+n.textContent||0)+1); } try{ const r=await api('/batalha/feed/'+zona.dataset.doubleLike+'/like',{method:'POST'}); if(botao&&$('b',botao)) $('b',botao).textContent=r.total; }catch(e){ zona.dataset.liked='0'; toast('Falha ao curtir.'); } };
+    zona.addEventListener('dblclick',e=>{ e.preventDefault(); curtir(); });
+    let ultimoToque=0; zona.addEventListener('touchend',()=>{ const agora=Date.now(); if(agora-ultimoToque<330){ ultimoToque=0; curtir(); } else ultimoToque=agora; },{passive:true});
+  });
 }
 function postMenu(id, off, priv){
   openSheet(`<h3>Publicação</h3>
@@ -3632,7 +3640,7 @@ async function subscribePush(){
       _reloaded=true; location.reload();
     });
     // checa por atualização periodicamente (app aberto por muito tempo)
-    setInterval(()=>{ navigator.serviceWorker.getRegistration().then(r=>r&&r.update()).catch(()=>{}); }, 60000);
+    setInterval(()=>{ navigator.serviceWorker.getRegistration().then(r=>r&&r.update()).catch(()=>{}); }, 5000);
   }
 })();
 </script>
