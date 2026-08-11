@@ -257,9 +257,11 @@ textarea.auto{resize:none; overflow:hidden; min-height:48px;}
 /* Overlay genérico (sheet) */
 .overlay{position:fixed; inset:0; z-index:60; background:rgba(0,0,0,.62); display:none; align-items:flex-end;}
 .overlay.show{display:flex;}
-.sheet{background:var(--surface); width:100%; max-width:520px; margin:0 auto; border-radius:26px 26px 0 0; padding:20px 16px calc(24px + env(safe-area-inset-bottom)); max-height:90vh; overflow-y:auto; box-shadow:0 -24px 54px rgba(0,0,0,.5);}
+.sheet{background:var(--surface); width:100%; max-width:520px; margin:0 auto; border-radius:26px 26px 0 0; padding:20px 16px calc(24px + env(safe-area-inset-bottom)); max-height:min(90vh,var(--app-vvh,90vh)); overflow-y:auto; overscroll-behavior:contain; box-shadow:0 -24px 54px rgba(0,0,0,.5);}
 .overlay.chat-full{align-items:stretch;background:var(--bg)}
-.overlay.chat-full .sheet{max-width:none;height:100dvh;max-height:none;border-radius:0;padding:calc(14px + env(safe-area-inset-top)) 14px calc(10px + env(safe-area-inset-bottom));display:flex;flex-direction:column;overflow:hidden}
+.overlay.chat-full .sheet{max-width:none;height:100%;max-height:none;border-radius:0;padding:calc(14px + env(safe-area-inset-top)) 14px calc(10px + env(safe-area-inset-bottom));display:flex;flex-direction:column;overflow:hidden}
+.sheet.keyboard-fit{max-height:100%;border-radius:18px 18px 0 0}
+.sheet .keyboard-actions{position:sticky;bottom:calc(-24px - env(safe-area-inset-bottom));z-index:3;background:var(--surface);padding:10px 0 calc(14px + env(safe-area-inset-bottom))}
 .chat-head{display:flex;align-items:center;gap:10px;padding:2px 44px 10px 0;border-bottom:1px solid var(--line)}
 .chat-messages{flex:1;min-height:0;overflow-y:auto;padding:12px 2px}
 .chat-compose{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;gap:7px;align-items:end;padding-top:8px;border-top:1px solid var(--line)}
@@ -598,7 +600,7 @@ const Store = {
   async set(key,val){
     try{ localStorage.setItem('disc:local:'+key, JSON.stringify(val)); }catch{}   // espelho local
     if(_syncBusy()) return true;   // veio do servidor agora → não reescreve (anti-loop)
-    try{ await api('/state/'+encodeURIComponent(key),{method:'PUT',body:{valor:val, clientId:CLIENT_ID}}); return true; }
+    try{ const r=await api('/state/'+encodeURIComponent(key),{method:'PUT',body:{valor:val, clientId:CLIENT_ID}}); if(key==='rotina:dias'&&r?.valor){ S.rotinaDias=r.valor; try{ localStorage.setItem('disc:local:'+key,JSON.stringify(r.valor)); }catch{} } return true; }
     catch(e){
       const q=offQueue().filter(i=>i.chave!==key); q.push({chave:key, valor:val}); setQueue(q);  // enfileira (última escrita vence)
       toast('📴 Offline — salvo no aparelho, sincroniza quando a internet voltar.');
@@ -611,6 +613,7 @@ const Store = {
 function applyRemoteState(chave, valor){
   if(!S) return; const prop=cameMap(chave); if(!prop) return;
   if(valor===null || valor===undefined) return;   // delete: ignora (raro; próximo load resolve)
+  if(chave==='rotina:dias') valor=mergeRotinaDiasLocal(S.rotinaDias,valor);
   S[prop]=valor;
   try{ localStorage.setItem('disc:local:'+chave, JSON.stringify(valor)); }catch{}
   // atualiza o cache do estado completo pra ficar consistente offline
@@ -618,10 +621,25 @@ function applyRemoteState(chave, valor){
   _syncHold();   // segura escritas de efeito colateral do re-render (anti-loop)
   if(activeTab && _syncPodeRender()){ try{ go(activeTab); }catch(e){} }
 }
+function mergeRotinaDiasLocal(atual,remoto){
+  if(!atual||!remoto||typeof atual!=='object'||typeof remoto!=='object') return remoto;
+  const out={...remoto};
+  Object.entries(remoto).forEach(([iso,lista])=>{ if(!Array.isArray(lista)) return; const locais=new Map((Array.isArray(atual[iso])?atual[iso]:[]).map(a=>[a.id,a])); out[iso]=lista.map(r=>{ const l=locais.get(r.id); return l&&Number(l.updatedAt||0)>Number(r.updatedAt||0)?l:r; }); });
+  return out;
+}
 
 /* ---------- HELPERS ---------- */
 const $ = (s,root=document)=>root.querySelector(s);
 const $$ = (s,root=document)=>[...root.querySelectorAll(s)];
+function ajustarViewportTeclado(){
+  const vv=window.visualViewport, h=vv?vv.height:window.innerHeight, top=vv?vv.offsetTop:0;
+  document.documentElement.style.setProperty('--app-vvh',`${Math.max(240,h)}px`);
+  const ov=$('#overlay'); if(ov){ ov.style.top=`${top}px`; ov.style.height=`${h}px`; ov.style.bottom='auto'; }
+}
+if(window.visualViewport){ visualViewport.addEventListener('resize',ajustarViewportTeclado); visualViewport.addEventListener('scroll',ajustarViewportTeclado); }
+window.addEventListener('resize',ajustarViewportTeclado); setTimeout(ajustarViewportTeclado,0);
+document.addEventListener('focusin',e=>{ if($('#overlay')?.classList.contains('show')&&/^(INPUT|TEXTAREA)$/.test(e.target?.tagName||'')){ $('#sheet')?.classList.add('keyboard-fit'); setTimeout(()=>e.target.scrollIntoView({block:'nearest',behavior:'smooth'}),180); } });
+document.addEventListener('focusout',()=>setTimeout(()=>{ if(!$('#sheet')?.contains(document.activeElement)) $('#sheet')?.classList.remove('keyboard-fit'); },120));
 function toast(m,ms=3000){ const t=$('#toast'); t.textContent=m; t.classList.add('show'); clearTimeout(window._tt); window._tt=setTimeout(()=>t.classList.remove('show'),ms); }
 function uid(){ return Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-4); }
 function esc(s){ const d=document.createElement('div'); d.textContent=s==null?'':String(s); return d.innerHTML; }
@@ -1174,6 +1192,7 @@ async function enterApp(){
   activeTab=abaSalva; renderNav(); go(abaSalva,true,true);
   try{ history.replaceState({rzTab:abaSalva},'',location.href); }catch(e){}
   startClock(); startTryHard(); connectSocket(); reportXP(); flushQueue();
+  startSyncWatchdog();
   if(S.config.notif) subscribePush();
   // pede permissão de notificação logo ao entrar (uma vez); se aceitar, liga notificações + push
   if('Notification' in window && Notification.permission==='default'){
@@ -1181,6 +1200,15 @@ async function enterApp(){
   }
   handleDeepLink();
   if(!window._dlBound){ window._dlBound=true; window.addEventListener('hashchange', handleDeepLink); }
+}
+let _syncWatchBusy=false;
+function startSyncWatchdog(){
+  clearInterval(window._syncWatchTimer);
+  window._syncWatchTimer=setInterval(async()=>{
+    if(_syncWatchBusy||!S||!authToken||document.visibilityState==='hidden'||(_socket&&_socket.connected)) return;
+    _syncWatchBusy=true;
+    try{ const remoto=await Store.get('rotina:dias'); if(remoto&&JSON.stringify(remoto)!==JSON.stringify(S.rotinaDias)) applyRemoteState('rotina:dias',remoto); }catch(e){} finally{ _syncWatchBusy=false; }
+  },2000);
 }
 
 /* Relógio de Brasília (canto sup. direito, grande, só horário) */
@@ -2601,9 +2629,9 @@ function diaRotinaSheet(iso){
   }
   openSheet(sheet);
   ativarCampoHorario('actHora');
-  $$('#sheet [data-actchk]').forEach(b=>b.onclick=()=>{ if(!podeMarcar) return; const a=(S.rotinaDias[iso]||[]).find(x=>x.id===b.dataset.actchk); if(a){ a.done=!a.done; save('rotina:dias'); if(iso===hoje){ atualizaRotinaHist(); renderRotinaList(); } diaRotinaSheet(iso); renderCalendarioRotina(); } });
+  $$('#sheet [data-actchk]').forEach(b=>b.onclick=async()=>{ if(!podeMarcar) return; const a=(S.rotinaDias[iso]||[]).find(x=>x.id===b.dataset.actchk); if(a){ a.done=!a.done; a.updatedAt=Date.now(); await save('rotina:dias'); if(iso===hoje){ atualizaRotinaHist(); renderRotinaList(); manageSiren(); } diaRotinaSheet(iso); renderCalendarioRotina(); } });
   if(editable){
-    $('#actAdd').onclick=()=>{ const nome=$('#actNome').value.trim(); if(!nome) return toast('Qual a atividade?'); const hora=normalizarHorario($('#actHora').value); if(hora===null) return toast('Horário inválido. Use HH:MM, por exemplo 08:00.'); if(!S.rotinaDias[iso]) S.rotinaDias[iso]=[]; S.rotinaDias[iso].push({id:uid(),nome,hora,done:false}); save('rotina:dias'); if(iso===hoje){ atualizaRotinaHist(); renderRotinaList(); } diaRotinaSheet(iso); renderCalendarioRotina(); };
+    $('#actAdd').onclick=()=>{ const nome=$('#actNome').value.trim(); if(!nome) return toast('Qual a atividade?'); const hora=normalizarHorario($('#actHora').value); if(hora===null) return toast('Horário inválido. Use HH:MM, por exemplo 08:00.'); if(!S.rotinaDias[iso]) S.rotinaDias[iso]=[]; S.rotinaDias[iso].push({id:uid(),nome,hora,done:false,updatedAt:Date.now()}); save('rotina:dias'); if(iso===hoje){ atualizaRotinaHist(); renderRotinaList(); } diaRotinaSheet(iso); renderCalendarioRotina(); };
     $$('#sheet [data-actdel]').forEach(b=>b.onclick=()=>{ S.rotinaDias[iso]=(S.rotinaDias[iso]||[]).filter(x=>x.id!==b.dataset.actdel); if(!S.rotinaDias[iso].length) delete S.rotinaDias[iso]; save('rotina:dias'); if(iso===hoje){ atualizaRotinaHist(); renderRotinaList(); } diaRotinaSheet(iso); renderCalendarioRotina(); });
     $$('#sheet [data-fill]').forEach(b=>b.onclick=()=>aplicarRotinaDias(iso, b.dataset.fill));
   }
@@ -2617,7 +2645,7 @@ function aplicarRotinaDias(iso, tipo){
   else if(tipo==='ano'){ const y=d0.getFullYear(); for(let m=0;m<12;m++){ const dim=new Date(y,m+1,0).getDate(); for(let dd=1;dd<=dim;dd++) dias.push(new Date(y,m,dd)); } }
   else if(tipo==='x'){ const n=parseInt(prompt('Aplicar aos próximos quantos dias?','7')||'0',10); if(!(n>0)) return; for(let i=1;i<=n;i++){ const x=new Date(d0); x.setDate(d0.getDate()+i); dias.push(x); } }
   const hoje=todayISO(); let count=0;
-  dias.forEach(x=>{ const k=isoDeData(x); if(k<hoje) return; S.rotinaDias[k]=base.map(b=>({id:uid(),nome:b.nome,hora:b.hora,done:false})); count++; });
+  dias.forEach(x=>{ const k=isoDeData(x); if(k<hoje) return; S.rotinaDias[k]=base.map(b=>({id:uid(),nome:b.nome,hora:b.hora,done:false,updatedAt:Date.now()})); count++; });
   save('rotina:dias'); closeSheet(); toast(`Rotina aplicada a ${count} dia(s).`); renderRotinaList(); renderCalendarioRotina();
 }
 function renderRotinaList(){
@@ -2630,7 +2658,7 @@ function renderRotinaList(){
       <div class="txt"><div class="t">${esc(r.nome)}</div><div class="s mono">${r.hora||'--:--'}</div></div>
       ${edit?`<button class="pencil" data-edh="${r.id}">✏️</button><button class="pencil" data-delh="${r.id}">🗑️</button>`:''}
     </div>`; }).join('') : `<p class="muted small">Sem hábitos. ${edit?'Adicione (ex: Tomar banho 06:30).':'Ative o modo edição pra montar.'}</p>`;
-  $$('#rotinaList [data-togh]').forEach(b=>b.onclick=()=>{ const r=(S.rotinaDias[hoje]||[]).find(x=>x.id===b.dataset.togh); if(!r) return; r.done=!r.done; save('rotina:dias'); atualizaRotinaHist(); renderRotinaList(); if($('#rotinaCal')) renderCalendarioRotina(); });
+  $$('#rotinaList [data-togh]').forEach(b=>b.onclick=async()=>{ const r=(S.rotinaDias[hoje]||[]).find(x=>x.id===b.dataset.togh); if(!r) return; r.done=!r.done; r.updatedAt=Date.now(); await save('rotina:dias'); atualizaRotinaHist(); renderRotinaList(); manageSiren(); if($('#rotinaCal')) renderCalendarioRotina(); });
   if(edit){
     $$('#rotinaList [data-edh]').forEach(b=>b.onclick=()=>editHabitoSheet(b.dataset.edh));
     $$('#rotinaList [data-delh]').forEach(b=>b.onclick=()=>{ S.rotinaDias[hoje]=(S.rotinaDias[hoje]||[]).filter(x=>x.id!==b.dataset.delh); if(!S.rotinaDias[hoje].length) delete S.rotinaDias[hoje]; save('rotina:dias'); atualizaRotinaHist(); renderRotinaList(); renderCalendarioRotina(); });
@@ -2648,7 +2676,7 @@ function editHabitoSheet(id){
   ativarCampoHorario('hbHora');
   $('#hbSave').onclick=()=>{ const nome=$('#hbNome').value.trim(); if(!nome) return toast('Nome do hábito?');
     const hora=normalizarHorario($('#hbHora').value); if(hora===null) return toast('Horário inválido. Use HH:MM, por exemplo 08:00.');
-    if(id){ r.nome=nome; r.hora=hora; } else S.rotinaDias[hoje].push({id:uid(),nome,hora,done:false});
+    if(id){ r.nome=nome; r.hora=hora; r.updatedAt=Date.now(); } else S.rotinaDias[hoje].push({id:uid(),nome,hora,done:false,updatedAt:Date.now()});
     save('rotina:dias'); atualizaRotinaHist(); closeSheet(); renderRotinaList(); renderCalendarioRotina(); };
 }
 
@@ -3009,8 +3037,8 @@ function handleDeepLink(){
 async function openComentarios(postId){
   openSheet(`<h3>Comentários</h3>
     <div id="comLista" class="muted small" style="margin-bottom:12px">Carregando…</div>
-    <div class="field" style="margin:0 0 10px"><textarea id="comTxt" class="auto" placeholder="Escreve um comentário, soldado..."></textarea></div>
-    <button class="btn ok" id="comEnviar">Comentar</button>`);
+    <div class="keyboard-actions"><div class="field" style="margin:0 0 10px"><textarea id="comTxt" class="auto" placeholder="Escreve um comentário, soldado..."></textarea></div>
+    <button class="btn ok" id="comEnviar">Comentar</button></div>`);
   const ta=$('#comTxt'); autoGrow(ta); ta.oninput=()=>autoGrow(ta);
   async function carregar(){
     try{ const cs=await api('/batalha/feed/'+postId+'/comentarios');
@@ -3039,8 +3067,8 @@ async function abrirPost(postId){
     <div id="postUnico">${feedPostHTML(post)}</div>
     <div id="comLista" class="muted small" style="margin:12px 0">Carregando comentários…</div>
     ${off?'<p class="muted small">Comentários desativados nesta publicação.</p>':`
-    <div class="field" style="margin:0 0 10px"><textarea id="comTxt" class="auto" placeholder="Escreve um comentário, soldado..."></textarea></div>
-    <button class="btn ok" id="comEnviar">Comentar</button>`}`);
+    <div class="keyboard-actions"><div class="field" style="margin:0 0 10px"><textarea id="comTxt" class="auto" placeholder="Escreve um comentário, soldado..."></textarea></div>
+    <button class="btn ok" id="comEnviar">Comentar</button></div>`}`);
   // ações do próprio post (curtir / comentar via ícone / abrir perfil / menu)
   $$('#postUnico [data-like]').forEach(el=>el.onclick=async()=>{ try{ await api('/batalha/feed/'+el.dataset.like+'/like',{method:'POST'}); abrirPost(postId); if(activeTab==='batalha') renderBatalha(); }catch(e){ toast('Falha ao curtir.'); } });
   $$('#postUnico [data-perfil]').forEach(el=>el.onclick=()=>abrirPerfil(el.dataset.perfil));
@@ -3489,7 +3517,7 @@ function bindPasswordEyes(root){
     wrap.appendChild(btn);
   });
 }
-function openSheet(html){ const estava=$('#overlay').classList.contains('show'); $('#sheet').innerHTML=`<button class="sheet-close" onclick="closeSheet()">×</button>`+html; $('#overlay').classList.add('show'); if(!estava){ try{ history.pushState({rzSheet:true,rzTab:activeTab},'',location.href); }catch(e){} } bindPasswordEyes($('#sheet')); }
+function openSheet(html){ const estava=$('#overlay').classList.contains('show'); $('#sheet').classList.remove('keyboard-fit'); $('#sheet').innerHTML=`<button class="sheet-close" onclick="closeSheet()">×</button>`+html; $('#overlay').classList.add('show'); ajustarViewportTeclado(); if(!estava){ try{ history.pushState({rzSheet:true,rzTab:activeTab},'',location.href); }catch(e){} } bindPasswordEyes($('#sheet')); }
 function closeSheet(fromPop=false){ const aberto=$('#overlay').classList.contains('show'); $('#overlay').classList.remove('show','chat-full'); _chatUser=null; _chatPeerId=null; if(aberto&&!fromPop&&history.state?.rzSheet){ try{ history.back(); }catch(e){} } }
 $('#overlay').addEventListener('click',e=>{ if(e.target.id==='overlay') closeSheet(); });
 window.closeSheet=closeSheet;

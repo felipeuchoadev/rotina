@@ -7,6 +7,20 @@ import { emitToUser } from '../realtime.js';
 export const stateRouter = Router();
 stateRouter.use(exigirAuth);
 
+function mergeRotinaDias(atual, recebido) {
+  if (!atual || typeof atual !== 'object' || !recebido || typeof recebido !== 'object') return recebido;
+  const out = { ...recebido };
+  for (const [iso, listaNova] of Object.entries(recebido)) {
+    if (!Array.isArray(listaNova)) continue;
+    const antigos = new Map((Array.isArray(atual[iso]) ? atual[iso] : []).map(a => [a.id, a]));
+    out[iso] = listaNova.map(novo => {
+      const velho = antigos.get(novo.id);
+      return velho && Number(velho.updatedAt || 0) > Number(novo.updatedAt || 0) ? velho : novo;
+    });
+  }
+  return out;
+}
+
 // Todos os blobs do usuário de uma vez → { chave: valor, ... }
 stateRouter.get('/', async (req, res) => {
   const rows = await prisma.userState.findMany({ where: { usuarioId: req.userId } });
@@ -25,7 +39,11 @@ stateRouter.get('/:chave', async (req, res) => {
 
 // Grava (upsert) um blob
 stateRouter.put('/:chave', async (req, res) => {
-  const valor = req.body?.valor;
+  let valor = req.body?.valor;
+  if (req.params.chave === 'rotina:dias') {
+    const existente = await prisma.userState.findUnique({ where: { usuarioId_chave: { usuarioId: req.userId, chave: req.params.chave } } });
+    valor = mergeRotinaDias(existente?.valor, valor);
+  }
   await prisma.userState.upsert({
     where: { usuarioId_chave: { usuarioId: req.userId, chave: req.params.chave } },
     update: { valor },
@@ -33,7 +51,7 @@ stateRouter.put('/:chave', async (req, res) => {
   });
   // sync ao vivo: avisa os OUTROS aparelhos do mesmo usuário (src = quem escreveu, pra não ecoar nele)
   emitToUser(req.userId, 'state:changed', { chave: req.params.chave, valor, src: req.body?.clientId || null });
-  res.json({ ok: true });
+  res.json({ ok: true, valor });
 });
 
 stateRouter.delete('/:chave', async (req, res) => {
