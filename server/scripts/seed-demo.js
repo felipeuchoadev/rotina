@@ -56,6 +56,7 @@ const recordacoes=[
   {id:'rec3',tipo:'estudo',url:vids[2],midiaTipo:'video',texto:'Resumo da sessão de estudos',dateISO:hojeIso,at:new Date(Date.now()-7200000).toISOString()},
 ];
 const states={
+  'xp:bonus':150000,
   'treino:tpl':tpl,'treino:weeks':[{id:'semana-demo',startISO:monday(hoje),exec:{}}], 'treino:logs':treinoLogs,
   'treino:recordes':[{id:'r1',nome:'Corrida 5 km',valor:'24:30',unidade:'min',historico:[{dateISO:diasAtras(30),valor:'27:10'},{dateISO:diasAtras(1),valor:'24:30'}]},{id:'r2',nome:'Flexões',valor:'48',unidade:'repetições',historico:[{dateISO:diasAtras(20),valor:'35'},{dateISO:hojeIso,valor:'48'}]}],
   'estudo:materias':materias,'estudo:semana':estudoSemana,'estudo:logs':estudoLogs,

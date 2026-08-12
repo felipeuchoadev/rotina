@@ -887,7 +887,7 @@ async function loadUserData(){
   const g = (k,d)=> st[k]!==undefined && st[k]!==null ? st[k] : d;
   S = {
     profile: { id:u.id, nome:u.nomeGuerra, username:u.username, email:u.email, foto:u.fotoUrl, genero:u.genero,
-               idade:u.idade, dataNasc:(u.dataNasc?String(u.dataNasc).slice(0,10):null), peso:u.pesoKg, altura:u.alturaCm, metaAgua:u.metaAgua, tema:u.tema, privado:u.privado, xpBonus:0 },
+               idade:u.idade, dataNasc:(u.dataNasc?String(u.dataNasc).slice(0,10):null), peso:u.pesoKg, altura:u.alturaCm, metaAgua:u.metaAgua, tema:u.tema, privado:u.privado, xpBonus:g('xp:bonus',0) },
     treinoTemplate: g('treino:tpl', DEFAULT_TREINO_TEMPLATE()),
     treinoWeeks:    g('treino:weeks', null),
     treinoLogs:     g('treino:logs', []),
@@ -939,7 +939,7 @@ function applyRemoteProfile(u){
   if(activeTab && _syncPodeRender()){ try{ go(activeTab); }catch(e){} }
 }
 async function save(k){ await Store.set(k, S[cameMap(k)]); }
-function cameMap(k){ return ({'treino:tpl':'treinoTemplate','treino:weeks':'treinoWeeks','treino:logs':'treinoLogs','treino:recordes':'recordes','estudo:materias':'materias','estudo:semana':'estudoSemana','estudo:logs':'estudoLogs','alim:semana':'alimSemana','alim:pesos':'pesos','alim:agua':'agua','alim:hist':'alimHist','rotina':'rotina','rotina:hist':'rotinaHist','rotina:plano':'rotinaPlano','rotina:dias':'rotinaDias','config':'config','datas':'datas','recordacoes':'recordacoes'})[k]; }
+function cameMap(k){ return ({'xp:bonus':'xpBonus','treino:tpl':'treinoTemplate','treino:weeks':'treinoWeeks','treino:logs':'treinoLogs','treino:recordes':'recordes','estudo:materias':'materias','estudo:semana':'estudoSemana','estudo:logs':'estudoLogs','alim:semana':'alimSemana','alim:pesos':'pesos','alim:agua':'agua','alim:hist':'alimHist','rotina':'rotina','rotina:hist':'rotinaHist','rotina:plano':'rotinaPlano','rotina:dias':'rotinaDias','config':'config','datas':'datas','recordacoes':'recordacoes'})[k]; }
 
 /* XP total do usuário = soma de logs + bônus, menos punições. Recalcula. */
 function computeXP(){
