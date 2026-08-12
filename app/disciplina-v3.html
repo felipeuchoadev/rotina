@@ -99,6 +99,10 @@ a{color:var(--accent2);}
 .avatar{width:84px; height:84px; border-radius:20px; object-fit:cover; flex:0 0 84px; background:var(--surface2);}
 .avatar.sm{width:46px; height:46px; border-radius:13px; flex-basis:46px;}
 .avatar.xs{width:40px; height:40px; border-radius:12px; flex-basis:40px;}
+.profile-photo-button{border:0;padding:0;background:transparent;color:inherit;cursor:zoom-in;display:flex;border-radius:22px;flex:0 0 auto;}
+.profile-photo-button:focus-visible{outline:3px solid var(--accent);outline-offset:4px;}
+.photo-viewer{min-height:min(72vh,680px);display:flex;align-items:center;justify-content:center;padding:16px 0 4px;}
+.photo-viewer img{display:block;max-width:100%;max-height:72vh;width:auto;height:auto;object-fit:contain;border-radius:18px;background:var(--surface2);box-shadow:0 18px 60px rgba(0,0,0,.5);}
 
 /* Patente / insígnia (perfil) */
 .patente-row{display:flex; align-items:center; gap:14px; margin:14px 0 4px; padding:16px; border-radius:20px;
@@ -1273,7 +1277,7 @@ function renderInicio(){
         ${homeClockHTML()}
       </div>
       <div class="herocard">
-        <div class="ring" style="background:conic-gradient(var(--accent) 0deg ${deg}deg, rgba(255,255,255,.08) ${deg}deg 360deg)">
+        <div class="ring" data-view-own-photo role="button" tabindex="0" aria-label="Ver foto de perfil" style="cursor:zoom-in;background:conic-gradient(var(--accent) 0deg ${deg}deg, rgba(255,255,255,.08) ${deg}deg 360deg)">
           <div class="ring-inner">${inner}</div>
         </div>
         <div style="min-width:0">
@@ -1312,6 +1316,7 @@ function renderInicio(){
   $('#patenteBtn').onclick=patenteSheet;
   $('#addData').onclick=()=>dataSheet(null);
   $('#xpPill').onclick=xpHistoricoSheet;
+  const fotoInicio=$('[data-view-own-photo]',$('#scr-inicio')); if(fotoInicio){ fotoInicio.onclick=verFotoPerfil; fotoInicio.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();verFotoPerfil();}}; }
   $$('#scr-inicio [data-bio]').forEach(c=>c.onclick=()=>{ if(c.dataset.bio==='idade') aniversarioUserSheet(); else pesoRelatorioSheet(); });
   $$('#scr-inicio [data-detalhe]').forEach(c=>c.onclick=()=>resumoDetalheSheet(c.dataset.detalhe));
   renderAgenda();
@@ -1564,6 +1569,11 @@ function avatarHTML(p, cls){
   if(ap) return `<img class="${cls}" src="${ap}" alt="" style="object-fit:cover;background:#0c0d11">`;
   const fs = cls==='avatar'?30:(cls.includes('sm')?16:14);
   return `<div class="${cls}" style="display:flex;align-items:center;justify-content:center;font-weight:800;font-size:${fs}px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff">${esc((p.nome||'?')[0].toUpperCase())}</div>`;
+}
+function verFotoPerfil(){
+  const p=S.profile, src=p.foto||avatarPadrao(p.genero);
+  if(!src){ openSheet(`<h3>Foto de perfil</h3><p class="muted small">Você ainda não adicionou uma foto.</p>`); return; }
+  openSheet(`<h3>Foto de perfil</h3><div class="photo-viewer"><img src="${esc(src)}" alt="Foto de perfil de ${esc(p.nome||'usuário')}"></div>`);
 }
 function resumoHojeHTML(){
   const dia = hojeDia();
@@ -3228,7 +3238,7 @@ function renderPerfil(){
   $('#scr-perfil').innerHTML=`
     ${topbar('PERFIL')}
     <div class="patente-row">
-      ${avatarHTML(p,'avatar')}
+      <button class="profile-photo-button" id="perfilFotoView" aria-label="Ver foto de perfil">${avatarHTML(p,'avatar')}</button>
       <div style="flex:1"><div class="hero-name" style="font-size:24px">${esc(p.nome)}</div>
         <div class="hero-user">@${esc(p.username)}</div>
         <div style="display:flex;align-items:center;gap:8px;margin-top:6px">${insignia(r.id,'insignia sm')}<span class="patente-name" style="font-size:16px">${r.name}</span></div>
@@ -3243,6 +3253,7 @@ function renderPerfil(){
     <button class="btn ghost" id="logoutBtn" style="margin-top:18px">Sair da conta</button>
   `;
   $$('#scr-perfil [data-pt]').forEach(b=>b.onclick=()=>{ perfilTab=b.dataset.pt; renderPerfil(); });
+  $('#perfilFotoView').onclick=verFotoPerfil;
   $('#logoutBtn').onclick=logout;
   ({conta:renderPerfilConta, config:renderPerfilConfig, temas:renderPerfilTemas})[perfilTab]();
 }
