@@ -2867,7 +2867,7 @@ async function renderBatalha(){
     </div>
     <div class="section-title">Ranking de disciplina</div>
     <div id="ranking">${board.length?board.map((e,i)=>{
-      const r=rankOf(e.xp||0); const prof={nome:e.nomeGuerra, foto:e.fotoUrl};
+      const r=rankOf(e.xp||0); const prof={nome:e.nomeGuerra, foto:e.fotoUrl, genero:e.genero};
       return `<div class="leader" data-perfil="${esc(e.username)}" style="cursor:pointer"><div class="pos">${i+1}</div>${insignia(r.id,'insignia sm')}${avatarHTML(prof,'avatar sm')}
         <div class="who"><div class="n">${esc(e.nomeGuerra)}</div><div class="u">@${esc(e.username)} • ${r.name}</div></div>
         <div class="xp">${(e.xp||0).toLocaleString('pt-BR')}</div></div>`;
@@ -2890,7 +2890,7 @@ async function abrirDMs(){
   openSheet(`<h3>Mensagens</h3>
     ${convs.length? convs.map(c=>`
       <div class="rowitem" data-chat="${esc(c.usuario.username)}" style="cursor:pointer">
-        ${avatarHTML({nome:c.usuario.nomeGuerra,foto:c.usuario.fotoUrl},'avatar sm')}
+        ${avatarHTML({nome:c.usuario.nomeGuerra,foto:c.usuario.fotoUrl,genero:c.usuario.genero},'avatar sm')}
         <div class="txt"><div class="t">${esc(c.usuario.nomeGuerra)} ${c.naoLidas?`<span class="notif-badge" style="position:static;display:inline-flex">${c.naoLidas}</span>`:''}</div>
           <div class="s">${c.ultimo.meu?'Você: ':''}${esc(c.ultimo.texto.slice(0,40))}</div></div>
       </div>`).join('') : '<p class="muted small">Nenhuma conversa ainda. Abra o perfil de alguém e toque em Mensagem.</p>'}`);
@@ -2912,7 +2912,7 @@ async function abrirChat(username){
   let d; try{ d=await api('/dm/'+encodeURIComponent(username)); }catch(e){ $('#sheet').innerHTML='<button class="sheet-close" onclick="closeSheet()">×</button><p class="err">Conversa indisponível.</p>'; return; }
   _chatPeerId=d.usuario.id; limparNotifDM(username); $('#overlay').classList.add('chat-full');
   await atualizarBadgeDM();
-  openSheet(`<div class="chat-head">${avatarHTML({nome:d.usuario.nomeGuerra,foto:d.usuario.fotoUrl},'avatar sm')}<div class="txt"><div class="t">${esc(d.usuario.nomeGuerra)}</div><div class="s" id="chatPresence">verificando presença…</div></div></div>
+  openSheet(`<div class="chat-head">${avatarHTML({nome:d.usuario.nomeGuerra,foto:d.usuario.fotoUrl,genero:d.usuario.genero},'avatar sm')}<div class="txt"><div class="t">${esc(d.usuario.nomeGuerra)}</div><div class="s" id="chatPresence">verificando presença…</div></div></div>
     <div id="chatMsgs" class="chat-messages">${d.mensagens.length?d.mensagens.map(bolhaChat).join(''):'<p class="muted small" style="text-align:center">Diga oi 👋</p>'}</div><div id="chatTyping" class="small muted" style="height:18px"></div>
     <div class="chat-compose"><button class="icobtn" id="chatEmoji" aria-label="Emojis">😊</button><button class="icobtn" id="chatMedia" aria-label="Enviar foto ou vídeo">📎</button><input id="chatTxt" placeholder="Mensagem..." autocomplete="off"><button class="btn sm" id="chatSend">Enviar</button></div><input id="chatFile" type="file" accept="image/*,video/*" hidden>`);
   const box=$('#chatMsgs'); box.scrollTop=box.scrollHeight;
@@ -2930,7 +2930,7 @@ function feedPostHTML(post){
   const meuId=S.profile?.id;
   const meu = (post.usuarioId===meuId) || (post.usuario?.id===meuId);
   const liked = (post.likes||[]).some(l=>l.usuarioId===meuId);
-  const prof={nome:post.usuario?.nomeGuerra||'?', foto:post.usuario?.fotoUrl};
+  const prof={nome:post.usuario?.nomeGuerra||'?', foto:post.usuario?.fotoUrl, genero:post.usuario?.genero};
   const un=post.usuario?.username||'';
   const nCom = post._count ? post._count.comentarios : 0;
   return `<div class="post" data-post="${post.id}">
@@ -3039,7 +3039,7 @@ async function abrirPerfil(username){
        : '<p class="muted small">Sem publicações ainda.</p>');
   openSheet(`<h3>@${esc(u.username)}</h3>
     <div style="display:flex;gap:14px;align-items:center;margin:8px 0 4px">
-      ${avatarHTML({nome:u.nomeGuerra,foto:u.fotoUrl},'avatar')}
+      ${avatarHTML({nome:u.nomeGuerra,foto:u.fotoUrl,genero:u.genero},'avatar')}
       <div style="flex:1;min-width:0">
         <div class="hero-name" style="font-size:22px">${esc(u.nomeGuerra)}${u.privado?' 🔒':''}</div>
         <div style="display:flex;align-items:center;gap:8px;margin-top:5px">${insignia(r.id,'insignia sm')}<span class="patente-name" style="font-size:15px">${r.name}</span></div>

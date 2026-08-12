@@ -7,7 +7,7 @@ import { enviarPush } from '../lib/push.js';
 export const dmRouter = Router();
 dmRouter.use(exigirAuth);
 
-const pub = { id: true, username: true, nomeGuerra: true, fotoUrl: true };
+const pub = { id: true, username: true, nomeGuerra: true, fotoUrl: true, genero: true };
 
 async function bloqueioEntre(a, b) {
   const n = await prisma.block.count({ where: { OR: [

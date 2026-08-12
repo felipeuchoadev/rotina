@@ -38,7 +38,7 @@ async function contextoSocial(userId) {
 batalhaRouter.get('/ranking', async (req, res) => {
   const { bloqueados } = await contextoSocial(req.userId);
   const usuarios = await prisma.usuario.findMany({
-    select: { id: true, username: true, nomeGuerra: true, fotoUrl: true, xp: true },
+    select: { id: true, username: true, nomeGuerra: true, fotoUrl: true, genero: true, xp: true },
     orderBy: { xp: 'desc' }, take: 100,
   });
   res.json(usuarios.filter(u => !bloqueados.has(u.id)).map(u => ({ ...u, patente: rankOf(u.xp).id, patenteNome: rankOf(u.xp).name })));
@@ -212,7 +212,7 @@ batalhaRouter.get('/perfil/:username', async (req, res) => {
     include: { usuario: { select: pubSel }, likes: { select: { usuarioId: true } }, _count: { select: { comentarios: true } } },
   }) : [];
   res.json({
-    usuario: { id: u.id, username: u.username, nomeGuerra: u.nomeGuerra, fotoUrl: u.fotoUrl, privado: u.privado, idade: u.idade, pesoKg: u.pesoKg, alturaCm: u.alturaCm, xp: u.xp, patente: rankOf(u.xp).id, patenteNome: rankOf(u.xp).name, recordes: null },
+    usuario: { id: u.id, username: u.username, nomeGuerra: u.nomeGuerra, fotoUrl: u.fotoUrl, genero: u.genero, privado: u.privado, idade: u.idade, pesoKg: u.pesoKg, alturaCm: u.alturaCm, xp: u.xp, patente: rankOf(u.xp).id, patenteNome: rankOf(u.xp).name, recordes: null },
     seguidores, seguindo, isEu, isSeguindo: !!sigoEu, euBloqueei: !!blkEu, meBloqueou, podeVer: podeVer && !meBloqueou, posts,
   });
 });
