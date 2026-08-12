@@ -10,7 +10,7 @@ export const perfilRouter = Router();
 perfilRouter.use(exigirAuth);
 
 const editSchema = z.object({
-  nomeGuerra: z.string().min(1).max(40).optional(),
+  nomeGuerra: z.string().trim().min(1).max(40).optional(),
   username: z.string().regex(/^[a-z0-9_]{3,20}$/).optional(),
   idade: z.number().int().min(5).max(100).optional(),
   dataNasc: z.string().nullable().optional(),
@@ -28,7 +28,9 @@ const editSchema = z.object({
 perfilRouter.patch('/', async (req, res) => {
   const parsed = editSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ erro: 'Dados inválidos.', detalhes: parsed.error.flatten() });
-  const d = parsed.data;
+  const d = { ...parsed.data };
+  if (d.username) d.username = d.username.toLowerCase();
+  if (d.nomeGuerra) d.nomeGuerra = d.nomeGuerra.trim();
 
   const atual = await prisma.usuario.findUnique({ where: { id: req.userId } });
   const mudouIdentidade = (d.username && d.username !== atual.username) || (d.nomeGuerra && d.nomeGuerra.trim().toLowerCase() !== atual.nomeGuerra.trim().toLowerCase());
@@ -48,7 +50,16 @@ perfilRouter.patch('/', async (req, res) => {
   if (d.dataNasc !== undefined) data.dataNasc = d.dataNasc ? new Date(d.dataNasc) : null;
   if (d.pesoKg != null) data.metaAgua = Math.round(d.pesoKg * 35);
 
-  const usuario = await prisma.usuario.update({ where: { id: req.userId }, data });
+  let usuario;
+  try { usuario = await prisma.usuario.update({ where: { id: req.userId }, data }); }
+  catch (e) {
+    if (e?.code === 'P2002') {
+      const alvo = Array.isArray(e.meta?.target) ? e.meta.target.join(' ') : String(e.meta?.target || '');
+      if (alvo.includes('nomeGuerra') || alvo.includes('nome_guerra')) return res.status(409).json({ campo:'nomeGuerra', erro:'Esse nome de guerra já pertence a outro recruta. Escolha uma identidade exclusiva.' });
+      if (alvo.includes('username')) return res.status(409).json({ campo:'username', erro:'Esse username já está em uso. Tente outra identificação, recruta.' });
+    }
+    throw e;
+  }
   // sync ao vivo do perfil (nome/foto/tema/etc.) nos outros aparelhos do usuário
   emitToUser(req.userId, 'profile:changed', { usuario: publico(usuario), src: req.body?.clientId || null });
   res.json({ usuario: publico(usuario) });

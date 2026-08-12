@@ -14,7 +14,7 @@ const cadastroSchema = z.object({
   email: z.string().email().transform((s) => s.toLowerCase().trim()),
   senha: z.string().min(6),
   username: z.string().regex(/^[a-z0-9_]{3,20}$/),
-  nomeGuerra: z.string().min(1).max(40),
+  nomeGuerra: z.string().trim().min(1).max(40),
   idade: z.number().int().min(5).max(100).optional(),
   dataNasc: z.string().optional().nullable(),
   genero: z.enum(['m', 'f']).optional(),
@@ -31,7 +31,7 @@ const normResp = (s) => String(s || '').trim();
 authRouter.post('/cadastro', async (req, res) => {
   const parsed = cadastroSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ erro: 'Dados inválidos.', detalhes: parsed.error.flatten() });
-  const d = parsed.data;
+  const d = { ...parsed.data, username: parsed.data.username.toLowerCase(), nomeGuerra: parsed.data.nomeGuerra.trim() };
 
   const [emailExiste, userExiste, nomeExiste] = await Promise.all([
     prisma.usuario.findUnique({ where: { email: d.email } }),
@@ -43,14 +43,23 @@ authRouter.post('/cadastro', async (req, res) => {
   if (nomeExiste) return res.status(409).json({ erro: 'Esse nome de guerra já está em missão por aqui. Escolha outro que seja só seu.' });
 
   const senhaHash = await hashSenha(d.senha);
-  const usuario = await prisma.usuario.create({
+  let usuario;
+  try { usuario = await prisma.usuario.create({
     data: {
       email: d.email, senhaHash, username: d.username, nomeGuerra: d.nomeGuerra,
       idade: d.idade, dataNasc: d.dataNasc ? new Date(d.dataNasc) : null, genero: d.genero || null,
       secPergunta: d.secPergunta || null, secRespHash: d.secResposta ? await hashSenha(normResp(d.secResposta)) : null,
       pesoKg: d.pesoKg, alturaCm: d.alturaCm, metaAgua: Math.round(d.pesoKg * 35),
     },
-  });
+  }); } catch (e) {
+    if (e?.code === 'P2002') {
+      const alvo = Array.isArray(e.meta?.target) ? e.meta.target.join(' ') : String(e.meta?.target || '');
+      if (alvo.includes('nomeGuerra') || alvo.includes('nome_guerra')) return res.status(409).json({ campo:'nomeGuerra', erro:'Esse nome de guerra já está em missão por aqui. Escolha outro que seja só seu.' });
+      if (alvo.includes('username')) return res.status(409).json({ campo:'username', erro:'Esse username já existe. Escolha outro.' });
+      if (alvo.includes('email')) return res.status(409).json({ campo:'email', erro:'E-mail já cadastrado.' });
+    }
+    throw e;
+  }
   const token = assinarToken(usuario);
   res.status(201).json({ token, usuario: publico(usuario) });
 });
