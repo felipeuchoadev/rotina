@@ -59,7 +59,7 @@ a{color:var(--accent2);}
 /* Topo neutro (todas as páginas menos Início) */
 .topbar{
   display:flex; align-items:center; justify-content:space-between;
-  padding:18px 4px 12px; position:sticky; top:0; z-index:20;
+  padding:18px 4px 12px; position:relative; z-index:20;
   /* Um único fundo contínuo em toda a viewport. Qualquer camada/blur só na largura
      central do app cria uma emenda vertical visível nos temas e telas largas. */
   background:transparent;
@@ -601,12 +601,12 @@ let _flushando=false;
 async function flushQueue(){
   if(_flushando || !authToken) return; _flushando=true;
   let q=offQueue(); const rest=[]; let ok=0;
-  for(const it of q){ try{ await api('/state/'+encodeURIComponent(it.chave),{method:'PUT',body:{valor:it.valor}}); ok++; }catch(e){ rest.push(it); } }
+  for(const it of q){ try{ await api('/state/'+encodeURIComponent(it.chave),{method:'PUT',body:{valor:it.valor,clientId:CLIENT_ID}}); ok++; }catch(e){ rest.push(it); } }
   setQueue(rest); _flushando=false;
-  if(ok>0 && rest.length===0) toast('✅ Progresso offline sincronizado.');
   return rest.length===0;
 }
 window.addEventListener('online', ()=>{ flushQueue(); });
+setInterval(()=>{ if(authToken&&offQueue().length&&navigator.onLine) flushQueue(); },5000);
 
 /* id único DESTE aparelho/aba — usado pra não ecoar de volta a própria escrita no sync ao vivo */
 const CLIENT_ID = (Math.random().toString(36).slice(2)+'-'+Date.now().toString(36));
@@ -627,7 +627,6 @@ const Store = {
     try{ const r=await api('/state/'+encodeURIComponent(key),{method:'PUT',body:{valor:val, clientId:CLIENT_ID}}); if(key==='rotina:dias'&&r?.valor){ S.rotinaDias=r.valor; try{ localStorage.setItem('disc:local:'+key,JSON.stringify(r.valor)); }catch{} } return true; }
     catch(e){
       const q=offQueue().filter(i=>i.chave!==key); q.push({chave:key, valor:val}); setQueue(q);  // enfileira (última escrita vence)
-      toast('📴 Offline — salvo no aparelho, sincroniza quando a internet voltar.');
       return true;
     }
   },
@@ -877,7 +876,7 @@ async function loadUserData(){
     try{ localStorage.setItem('disc:cache:me', JSON.stringify(me)); localStorage.setItem('disc:cache:st', JSON.stringify(st)); }catch{}
   }catch(e){
     const cme=localStorage.getItem('disc:cache:me'), cst=localStorage.getItem('disc:cache:st');
-    if(cme && cst){ me=JSON.parse(cme); st=JSON.parse(cst); setTimeout(()=>toast('📴 Modo offline — usando dados salvos no aparelho.'),400); }
+    if(cme && cst){ me=JSON.parse(cme); st=JSON.parse(cst); }
     else throw e;   // sem cache e sem internet: não dá pra entrar
   }
   // aplica escritas offline pendentes por cima do que veio do servidor
