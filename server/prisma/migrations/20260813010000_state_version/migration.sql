@@ -1,0 +1,1 @@
+ALTER TABLE "user_state" ADD COLUMN "versao" BIGINT NOT NULL DEFAULT 0;

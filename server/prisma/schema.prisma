@@ -133,6 +133,7 @@ model UserState {
   usuarioId String
   chave     String
   valor     Json
+  versao    BigInt  @default(0)
 
   @@id([usuarioId, chave])
   @@map("user_state")

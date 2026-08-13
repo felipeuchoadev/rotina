@@ -597,11 +597,13 @@ async function reportXP(){ if(_syncBusy()) return; const xp=computeXP(); if(xp==
 /* ---------- OFFLINE: fila de escrita + cache (não perder progresso sem internet) ---------- */
 function offQueue(){ try{ return JSON.parse(localStorage.getItem('disc:queue')||'[]'); }catch{ return []; } }
 function setQueue(q){ try{ localStorage.setItem('disc:queue', JSON.stringify(q)); }catch{} }
+const _stateVersoes={};
+function novaVersao(chave){ const v=Math.max(Date.now(),Number(_stateVersoes[chave]||0)+1); _stateVersoes[chave]=v; return v; }
 let _flushando=false;
 async function flushQueue(){
   if(_flushando || !authToken) return; _flushando=true;
   let q=offQueue(); const rest=[]; let ok=0;
-  for(const it of q){ try{ await api('/state/'+encodeURIComponent(it.chave),{method:'PUT',body:{valor:it.valor,clientId:CLIENT_ID}}); ok++; }catch(e){ rest.push(it); } }
+  for(const it of q){ try{ await api('/state/'+encodeURIComponent(it.chave),{method:'PUT',body:{valor:it.valor,versao:it.versao||novaVersao(it.chave),clientId:CLIENT_ID}}); ok++; }catch(e){ rest.push(it); } }
   setQueue(rest); _flushando=false;
   return rest.length===0;
 }
@@ -622,9 +624,10 @@ function _syncHold(){ _syncBusyUntil = Date.now() + 3000; }
 const Store = {
   async get(key){ try{ return await api('/state/'+encodeURIComponent(key)); }catch(e){ return null; } },
   async set(key,val){
+    const versao=novaVersao(key);
     try{ localStorage.setItem('disc:local:'+key, JSON.stringify(val)); }catch{}   // espelho local
     if(_syncBusy()) return true;   // veio do servidor agora → não reescreve (anti-loop)
-    try{ const r=await api('/state/'+encodeURIComponent(key),{method:'PUT',body:{valor:val, clientId:CLIENT_ID}}); if(key==='rotina:dias'&&r?.valor){ S.rotinaDias=r.valor; try{ localStorage.setItem('disc:local:'+key,JSON.stringify(r.valor)); }catch{} } return true; }
+    try{ const r=await api('/state/'+encodeURIComponent(key),{method:'PUT',body:{valor:val,versao,clientId:CLIENT_ID}}); if(r?.ignorada){ applyRemoteState(key,r.valor,r.versao); } else if(key==='rotina:dias'&&r?.valor){ S.rotinaDias=r.valor; try{ localStorage.setItem('disc:local:'+key,JSON.stringify(r.valor)); }catch{} } return true; }
     catch(e){
       const q=offQueue().filter(i=>i.chave!==key); q.push({chave:key, valor:val}); setQueue(q);  // enfileira (última escrita vence)
       return true;
@@ -633,8 +636,10 @@ const Store = {
   async del(key){ try{ await api('/state/'+encodeURIComponent(key)+'?src='+encodeURIComponent(CLIENT_ID),{method:'DELETE'}); }catch(e){} },
 };
 // aplica uma mudança de estado vinda de OUTRO aparelho do mesmo usuário (sync ao vivo)
-function applyRemoteState(chave, valor){
+function applyRemoteState(chave, valor, versao=0){
   if(!S) return; const prop=cameMap(chave); if(!prop) return;
+  if(versao&&Number(versao)<Number(_stateVersoes[chave]||0)) return;
+  if(versao) _stateVersoes[chave]=Number(versao);
   if(valor===null || valor===undefined) return;   // delete: ignora (raro; próximo load resolve)
   if(chave==='rotina:dias') valor=mergeRotinaDiasLocal(S.rotinaDias,valor);
   S[prop]=valor;
@@ -833,6 +838,9 @@ const LEMBRETES = {
 
 /* 20 TEMAS com gradiente de fundo completo */
 const THEMES = [
+  {id:'menininha',n:'ROSA CLARO', bg:'#fff4fa',bg2:'#f8e5f1',a:'#e86aa7',a2:'#a95fbc',light:true},
+  {id:'claro',  n:'MODO CLARO',   bg:'#f7f7f8',bg2:'#e9eaed',a:'#202124',a2:'#555b66',light:true},
+  {id:'escuro', n:'MODO ESCURO',  bg:'#000000',bg2:'#111111',a:'#f2f2f2',a2:'#b8b8b8'},
   {id:'red',    n:'RED',          bg:'#0e1013', bg2:'#0b0d0f', a:'#ff4b4b', a2:'var(--accent2)'},
   {id:'sangue', n:'SANGUE',       bg:'#0c0304', bg2:'#3d060a', a:'#b3121f', a2:'#ff3b47'},
   {id:'aco',    n:'AÇO',          bg:'#0a0d10', bg2:'#1b2733', a:'#4c6b86', a2:'#8fb3d6'},
@@ -859,6 +867,8 @@ function applyTheme(id){
   const r=document.documentElement.style;
   r.setProperty('--bg',t.bg); r.setProperty('--bg2',t.bg2);
   r.setProperty('--accent',t.a); r.setProperty('--accent2',t.a2);
+  if(t.light){ r.setProperty('--surface','#ffffff');r.setProperty('--surface2','#f0f1f4');r.setProperty('--text','#17181b');r.setProperty('--text-dim','#626875');r.setProperty('--line','rgba(0,0,0,.11)');r.setProperty('--ok','#168a4b'); }
+  else { r.setProperty('--surface','#171a20');r.setProperty('--surface2','#1d212a');r.setProperty('--text','#f3f5f8');r.setProperty('--text-dim','#98a1ae');r.setProperty('--line','rgba(255,255,255,.07)');r.setProperty('--ok','#37d67a'); }
   document.querySelector('meta[name=theme-color]').setAttribute('content',t.bg);
 }
 
@@ -947,7 +957,7 @@ function computeXP(){
   S.treinoLogs.forEach(l=> xp += Math.floor((l.ativoMs||0)/60000) );          // 1 xp / min treino
   S.estudoLogs.forEach(l=> xp += Math.floor((l.ativoMs||0)/60000)*2 );         // 2 xp / min estudo
   S.estudoLogs.forEach(l=> xp += (l.conteudos?.length||0)*40 );                // 40 xp / conteúdo concluído
-  Object.values(S.agua).forEach(v=>{ if(v>=(S.profile.metaAgua||2500)) xp+=15; });
+  Object.entries(S.agua||{}).forEach(([dia,v])=>{ if(/^\d{4}-\d{2}-\d{2}$/.test(dia)&&Number(v)>0&&Number(v)>=(S.profile.metaAgua||2500)) xp+=15; });
   (S.profile.xpBonus||0) && (xp += S.profile.xpBonus);
   return Math.max(0, xp);
 }
@@ -3636,7 +3646,7 @@ function connectSocket(){
     _socket.on('post:comentario',d=>{ if(!d||d.total==null)return; $$(`[data-post="${d.postId}"] [data-comment]`).forEach(el=>{ const n=$('b',el); if(n)n.textContent=d.total; }); });
     _socket.on('notif:nova',()=>{ const btn=$('#sinoBtn'); if(!btn)return; let b=$('.notif-badge',btn); if(!b){b=document.createElement('span');b.className='notif-badge';btn.appendChild(b);} const n=Math.min(99,(parseInt(b.textContent)||0)+1); b.textContent=n>9?'9+':n; });
     // SYNC AO VIVO ponta a ponta: mudou num aparelho → reflete nos outros na hora (sem F5)
-    _socket.on('state:changed', (d)=>{ if(!d || d.src===CLIENT_ID) return; applyRemoteState(d.chave, d.valor); });
+    _socket.on('state:changed', (d)=>{ if(!d || d.src===CLIENT_ID) return; applyRemoteState(d.chave, d.valor,d.versao); });
     _socket.on('profile:changed', (d)=>{ if(!d || d.src===CLIENT_ID) return; applyRemoteProfile(d.usuario); });
     // AUTOUPDATE ao vivo: desenvolvedor subiu versão nova → recarrega na hora (HTML é network-first, pega o novo)
     _socket.on('app:update', ()=>{ if(window.__appReloading) return; window.__appReloading=true; salvarPosicaoAtual(); try{ sessionStorage.setItem('rz:reloadAt', String(Date.now())); }catch(e){} try{ toast('🔄 Nova versão chegou — atualizando…'); }catch(e){} setTimeout(()=>{ try{ location.reload(); }catch(e){} }, 600); });

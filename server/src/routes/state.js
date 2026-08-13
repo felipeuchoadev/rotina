@@ -40,18 +40,20 @@ stateRouter.get('/:chave', async (req, res) => {
 // Grava (upsert) um blob
 stateRouter.put('/:chave', async (req, res) => {
   let valor = req.body?.valor;
+  const versaoRecebida = BigInt(Math.max(0, Number(req.body?.versao || Date.now())));
+  const atual = await prisma.userState.findUnique({ where: { usuarioId_chave: { usuarioId: req.userId, chave: req.params.chave } } });
+  if (atual && atual.versao > versaoRecebida) return res.json({ ok: true, valor: atual.valor, versao: Number(atual.versao), ignorada: true });
   if (req.params.chave === 'rotina:dias') {
-    const existente = await prisma.userState.findUnique({ where: { usuarioId_chave: { usuarioId: req.userId, chave: req.params.chave } } });
-    valor = mergeRotinaDias(existente?.valor, valor);
+    valor = mergeRotinaDias(atual?.valor, valor);
   }
   await prisma.userState.upsert({
     where: { usuarioId_chave: { usuarioId: req.userId, chave: req.params.chave } },
-    update: { valor },
-    create: { usuarioId: req.userId, chave: req.params.chave, valor },
+    update: { valor, versao: versaoRecebida },
+    create: { usuarioId: req.userId, chave: req.params.chave, valor, versao: versaoRecebida },
   });
   // sync ao vivo: avisa os OUTROS aparelhos do mesmo usuário (src = quem escreveu, pra não ecoar nele)
-  emitToUser(req.userId, 'state:changed', { chave: req.params.chave, valor, src: req.body?.clientId || null });
-  res.json({ ok: true, valor });
+  emitToUser(req.userId, 'state:changed', { chave: req.params.chave, valor, versao:Number(versaoRecebida), src: req.body?.clientId || null });
+  res.json({ ok: true, valor, versao:Number(versaoRecebida) });
 });
 
 stateRouter.delete('/:chave', async (req, res) => {
