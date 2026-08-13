@@ -19,7 +19,7 @@
   --line:rgba(255,255,255,.07); --ok:#37d67a; --warn:#ffb300; --danger:#ff5a5a;
 }
 *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
-html,body{margin:0; padding:0;}
+html,body{margin:0; padding:0; overflow-x:clip;}
 /* html pega a cor do tema pra NUNCA aparecer branco por trás (overscroll/teclado no celular) */
 html{background:var(--bg2);}
 body{
@@ -62,10 +62,11 @@ a{color:var(--accent2);}
   padding:18px 4px 12px; position:sticky; top:0; z-index:20;
   /* Um único fundo contínuo em toda a viewport. Qualquer camada/blur só na largura
      central do app cria uma emenda vertical visível nos temas e telas largas. */
-  background:var(--bg);
+  background:transparent; isolation:isolate;
   backdrop-filter:none; -webkit-backdrop-filter:none;
   box-shadow:0 1px 0 var(--line);
 }
+.topbar::before{content:'';position:absolute;z-index:-1;inset:0 auto 0 50%;width:100vw;transform:translateX(-50%);background:var(--bg);}
 .topbar>div{min-width:0}.topbar>div:first-child{flex:1}.topbar .brand{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.topbar .homeclock{flex:0 0 auto;min-width:0}
 .brand{font-weight:800; font-size:20px; letter-spacing:-.01em;}
 .brand .dot{color:var(--accent);}
@@ -147,7 +148,7 @@ a{color:var(--accent2);}
 
 /* Controle de água: o input pode encolher e os botões nunca escapam do card. */
 .agua-ajuste{display:grid; grid-template-columns:minmax(0,1fr) 54px 54px; gap:8px; align-items:stretch;}
-.agua-ajuste input{width:100%; min-width:0; background:#0c0d11; border:1.5px solid var(--line); border-radius:12px; padding:12px; color:var(--text);}
+.agua-ajuste input{width:100%; min-width:0; background:var(--surface2); border:1.5px solid var(--line); border-radius:12px; padding:12px; color:var(--text);}
 .agua-ajuste .btn{width:54px; min-width:54px; height:52px; padding:0; font-size:22px;}
 .agua-acoes{display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:8px; margin-top:8px;}
 .agua-acoes .btn{width:100%; min-width:0; padding-left:8px; padding-right:8px; white-space:nowrap;}
@@ -156,7 +157,7 @@ a{color:var(--accent2);}
 .field{margin:14px 0;}
 .field label{display:block; font-size:12.5px; color:var(--text-dim); margin-bottom:7px; font-weight:700;}
 .field input, .field textarea, .field select{
-  width:100%; background:#0c0d11; border:1.5px solid var(--line); border-radius:14px;
+  width:100%; background:var(--surface2); border:1.5px solid var(--line); border-radius:14px;
   padding:14px; color:var(--text); outline:none;}
 .field input:focus, .field textarea:focus{border-color:var(--accent);}
 textarea.auto{resize:none; overflow:hidden; min-height:48px;}
@@ -839,9 +840,19 @@ const LEMBRETES = {
 /* 20 TEMAS com gradiente de fundo completo */
 const THEMES = [
   {id:'menininha',n:'ROSA CLARO', bg:'#fff4fa',bg2:'#f8e5f1',a:'#e86aa7',a2:'#a95fbc',light:true},
+  {id:'sakura', n:'SAKURA',       bg:'#fff7f8',bg2:'#f5dce5',a:'#d95f85',a2:'#9467bd',light:true,surface:'#fffdfd',surface2:'#f9edf1'},
+  {id:'lavanda',n:'LAVANDA',      bg:'#faf6ff',bg2:'#e8ddf6',a:'#8e63c7',a2:'#d46da5',light:true,surface:'#ffffff',surface2:'#f2ebf9'},
+  {id:'pessego',n:'PÊSSEGO',      bg:'#fff8f1',bg2:'#f3dfd1',a:'#df7659',a2:'#bd6688',light:true,surface:'#fffdfb',surface2:'#f8ece3'},
+  {id:'menta',  n:'MENTA',        bg:'#f3fff9',bg2:'#d9f1e5',a:'#278c68',a2:'#5e87b8',light:true,surface:'#ffffff',surface2:'#e9f7f0'},
+  {id:'perola', n:'PÉROLA',       bg:'#fbfaf7',bg2:'#e8e4dc',a:'#826b55',a2:'#ad8068',light:true,surface:'#ffffff',surface2:'#f1eee8'},
   {id:'claro',  n:'MODO CLARO',   bg:'#f7f7f8',bg2:'#e9eaed',a:'#202124',a2:'#555b66',light:true},
   {id:'escuro', n:'MODO ESCURO',  bg:'#000000',bg2:'#111111',a:'#f2f2f2',a2:'#b8b8b8'},
-  {id:'red',    n:'RED',          bg:'#0e1013', bg2:'#0b0d0f', a:'#ff4b4b', a2:'var(--accent2)'},
+  {id:'red',    n:'RED',          bg:'#0e1013', bg2:'#0b0d0f', a:'#ff4b4b', a2:'#ff7a7a'},
+  {id:'marinho',n:'MARINHO',      bg:'#030812',bg2:'#0a1d38',a:'#347fd6',a2:'#70b7ff'},
+  {id:'carbono',n:'CARBONO',      bg:'#050505',bg2:'#18191c',a:'#747983',a2:'#d0d3d8'},
+  {id:'tatico', n:'TÁTICO',       bg:'#060904',bg2:'#1a2413',a:'#687f42',a2:'#adc975'},
+  {id:'cobalto',n:'COBALTO',      bg:'#040714',bg2:'#101d50',a:'#315ce8',a2:'#73a3ff'},
+  {id:'oceano', n:'OCEANO',       bg:'#021014',bg2:'#073743',a:'#138ca3',a2:'#67d9d2'},
   {id:'sangue', n:'SANGUE',       bg:'#0c0304', bg2:'#3d060a', a:'#b3121f', a2:'#ff3b47'},
   {id:'aco',    n:'AÇO',          bg:'#0a0d10', bg2:'#1b2733', a:'#4c6b86', a2:'#8fb3d6'},
   {id:'selva',  n:'SELVA',        bg:'#070b06', bg2:'#12240f', a:'#3f7a34', a2:'#7ec15a'},
@@ -867,8 +878,8 @@ function applyTheme(id){
   const r=document.documentElement.style;
   r.setProperty('--bg',t.bg); r.setProperty('--bg2',t.bg2);
   r.setProperty('--accent',t.a); r.setProperty('--accent2',t.a2);
-  if(t.light){ r.setProperty('--surface','#ffffff');r.setProperty('--surface2','#f0f1f4');r.setProperty('--text','#17181b');r.setProperty('--text-dim','#626875');r.setProperty('--line','rgba(0,0,0,.11)');r.setProperty('--ok','#168a4b'); }
-  else { r.setProperty('--surface','#171a20');r.setProperty('--surface2','#1d212a');r.setProperty('--text','#f3f5f8');r.setProperty('--text-dim','#98a1ae');r.setProperty('--line','rgba(255,255,255,.07)');r.setProperty('--ok','#37d67a'); }
+  if(t.light){ r.setProperty('--surface',t.surface||'#ffffff');r.setProperty('--surface2',t.surface2||'#f0f1f4');r.setProperty('--text',t.text||'#17181b');r.setProperty('--text-dim',t.textDim||'#626875');r.setProperty('--line',t.line||'rgba(0,0,0,.11)');r.setProperty('--ok',t.ok||'#168a4b'); }
+  else { r.setProperty('--surface',t.surface||'#171a20');r.setProperty('--surface2',t.surface2||'#1d212a');r.setProperty('--text',t.text||'#f3f5f8');r.setProperty('--text-dim',t.textDim||'#98a1ae');r.setProperty('--line',t.line||'rgba(255,255,255,.07)');r.setProperty('--ok',t.ok||'#37d67a'); }
   document.querySelector('meta[name=theme-color]').setAttribute('content',t.bg);
 }
 
@@ -2659,6 +2670,12 @@ function diaRotinaSheet(iso){
     sheet+=`<div class="section-title" style="margin-top:12px">Adicionar atividade</div>
       <div class="field" style="margin:6px 0"><input id="actNome" placeholder="Ex: Corrida 5km, estudar Português..."></div>
       <div class="field" style="margin:6px 0"><label>Horário (opcional · HH:MM)</label>${campoHorario('actHora')}</div>
+      <div class="field" style="margin:6px 0"><label>Repetir</label><select id="actRep">
+        <option value="dia">Somente neste dia</option><option value="semana">Em toda esta semana</option>
+        <option value="mes">Em todo este mês</option><option value="ano">Em todo este ano</option>
+        <option value="x">Nos próximos X dias</option>
+      </select></div>
+      <div class="field" id="actRepXWrap" style="display:none;margin:6px 0"><label>Quantidade de dias</label><input id="actRepX" type="number" min="1" max="366" value="7" inputmode="numeric"></div>
       <button class="btn" id="actAdd">＋ Adicionar</button>
       ${acts.length?`<div class="section-title" style="margin-top:14px">Repetir essas atividades em</div>
       <div style="display:flex;gap:8px;flex-wrap:wrap">
@@ -2674,10 +2691,25 @@ function diaRotinaSheet(iso){
   ativarCampoHorario('actHora');
   $$('#sheet [data-actchk]').forEach(b=>b.onclick=async()=>{ if(!podeMarcar) return; const a=(S.rotinaDias[iso]||[]).find(x=>x.id===b.dataset.actchk); if(a){ a.done=!a.done; a.updatedAt=Date.now(); await save('rotina:dias'); if(iso===hoje){ atualizaRotinaHist(); renderRotinaList(); manageSiren(); } diaRotinaSheet(iso); renderCalendarioRotina(); } });
   if(editable){
-    $('#actAdd').onclick=()=>{ const nome=$('#actNome').value.trim(); if(!nome) return toast('Qual a atividade?'); const hora=normalizarHorario($('#actHora').value); if(hora===null) return toast('Horário inválido. Use HH:MM, por exemplo 08:00.'); if(!S.rotinaDias[iso]) S.rotinaDias[iso]=[]; S.rotinaDias[iso].push({id:uid(),nome,hora,done:false,updatedAt:Date.now()}); save('rotina:dias'); if(iso===hoje){ atualizaRotinaHist(); renderRotinaList(); } diaRotinaSheet(iso); renderCalendarioRotina(); };
+    $('#actRep').onchange=()=>$('#actRepXWrap').style.display=$('#actRep').value==='x'?'block':'none';
+    $('#actAdd').onclick=async()=>{ const nome=$('#actNome').value.trim(); if(!nome) return toast('Qual a atividade?'); const hora=normalizarHorario($('#actHora').value); if(hora===null) return toast('Horário inválido. Use HH:MM, por exemplo 08:00.'); const tipo=$('#actRep').value, n=tipo==='x'?Math.min(366,Math.max(0,parseInt($('#actRepX').value||'0',10))):0; if(tipo==='x'&&!n) return toast('Informe de 1 a 366 dias.'); const count=adicionarAtividadeRepetida(iso,{nome,hora},tipo,n); await save('rotina:dias'); if(iso===hoje){ atualizaRotinaHist(); renderRotinaList(); } toast(count>1?`Atividade aplicada a ${count} dias.`:'Atividade adicionada.'); diaRotinaSheet(iso); renderCalendarioRotina(); };
     $$('#sheet [data-actdel]').forEach(b=>b.onclick=()=>{ S.rotinaDias[iso]=(S.rotinaDias[iso]||[]).filter(x=>x.id!==b.dataset.actdel); if(!S.rotinaDias[iso].length) delete S.rotinaDias[iso]; save('rotina:dias'); if(iso===hoje){ atualizaRotinaHist(); renderRotinaList(); } diaRotinaSheet(iso); renderCalendarioRotina(); });
     $$('#sheet [data-fill]').forEach(b=>b.onclick=()=>aplicarRotinaDias(iso, b.dataset.fill));
   }
+}
+function diasDaRepeticao(iso,tipo,n=0){
+  const d0=new Date(iso+'T00:00:00'), dias=[];
+  if(tipo==='dia') dias.push(d0);
+  else if(tipo==='semana'){ const off=(d0.getDay()+6)%7, mon=new Date(d0); mon.setDate(d0.getDate()-off); for(let i=0;i<7;i++){ const x=new Date(mon); x.setDate(mon.getDate()+i); dias.push(x); } }
+  else if(tipo==='mes'){ const y=d0.getFullYear(),m=d0.getMonth(),dim=new Date(y,m+1,0).getDate(); for(let dd=1;dd<=dim;dd++) dias.push(new Date(y,m,dd)); }
+  else if(tipo==='ano'){ const y=d0.getFullYear(); for(let m=0;m<12;m++){ const dim=new Date(y,m+1,0).getDate(); for(let dd=1;dd<=dim;dd++) dias.push(new Date(y,m,dd)); } }
+  else if(tipo==='x') for(let i=0;i<=n;i++){ const x=new Date(d0); x.setDate(d0.getDate()+i); dias.push(x); }
+  return dias;
+}
+function adicionarAtividadeRepetida(iso,atividade,tipo,n=0){
+  const hoje=todayISO(); let count=0;
+  diasDaRepeticao(iso,tipo,n).forEach(data=>{ const k=isoDeData(data); if(k<hoje&&k!==iso) return; const lista=S.rotinaDias[k]||(S.rotinaDias[k]=[]); const duplicada=lista.some(a=>String(a.nome||'').trim().toLocaleLowerCase('pt-BR')===atividade.nome.trim().toLocaleLowerCase('pt-BR')&&(a.hora||'')===(atividade.hora||'')); if(duplicada) return; lista.push({id:uid(),nome:atividade.nome,hora:atividade.hora,done:false,updatedAt:Date.now()}); count++; });
+  return count;
 }
 function aplicarRotinaDias(iso, tipo){
   const base=(S.rotinaDias[iso]||[]).map(a=>({nome:a.nome,hora:a.hora}));
@@ -2688,7 +2720,7 @@ function aplicarRotinaDias(iso, tipo){
   else if(tipo==='ano'){ const y=d0.getFullYear(); for(let m=0;m<12;m++){ const dim=new Date(y,m+1,0).getDate(); for(let dd=1;dd<=dim;dd++) dias.push(new Date(y,m,dd)); } }
   else if(tipo==='x'){ const n=parseInt(prompt('Aplicar aos próximos quantos dias?','7')||'0',10); if(!(n>0)) return; for(let i=1;i<=n;i++){ const x=new Date(d0); x.setDate(d0.getDate()+i); dias.push(x); } }
   const hoje=todayISO(); let count=0;
-  dias.forEach(x=>{ const k=isoDeData(x); if(k<hoje) return; S.rotinaDias[k]=base.map(b=>({id:uid(),nome:b.nome,hora:b.hora,done:false,updatedAt:Date.now()})); count++; });
+  dias.forEach(x=>{ const k=isoDeData(x); if(k<hoje) return; const lista=S.rotinaDias[k]||(S.rotinaDias[k]=[]); let mudou=false; base.forEach(b=>{ const duplicada=lista.some(a=>String(a.nome||'').trim().toLocaleLowerCase('pt-BR')===String(b.nome||'').trim().toLocaleLowerCase('pt-BR')&&(a.hora||'')===(b.hora||'')); if(!duplicada){ lista.push({id:uid(),nome:b.nome,hora:b.hora,done:false,updatedAt:Date.now()}); mudou=true; } }); if(mudou) count++; });
   save('rotina:dias'); closeSheet(); toast(`Rotina aplicada a ${count} dia(s).`); renderRotinaList(); renderCalendarioRotina();
 }
 function renderRotinaList(){

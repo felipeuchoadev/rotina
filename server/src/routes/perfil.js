@@ -47,6 +47,7 @@ perfilRouter.patch('/', async (req, res) => {
   }
   const data = { ...d };
   delete data.senhaConfirmacao;
+  delete data.xp; // XP é calculado pelo servidor a partir de registros reais.
   if (d.dataNasc !== undefined) data.dataNasc = d.dataNasc ? new Date(d.dataNasc) : null;
   if (d.pesoKg != null) data.metaAgua = Math.round(d.pesoKg * 35);
 

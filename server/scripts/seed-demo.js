@@ -68,7 +68,7 @@ const states={
 };
 
 await prisma.usuario.deleteMany();
-const usuario=await prisma.usuario.create({data:{email,senhaHash:await hashSenha(senha),username:'felipeuchoa',nomeGuerra:'UCHOA',idade:18,dataNasc:new Date('2007-08-22T12:00:00Z'),genero:'m',secPergunta:'Qual é o seu time de coração?',secRespHash:await hashSenha('Flamengo'),pesoKg:81.02,alturaCm:176,metaAgua:2836,tema:'red',xp:11291}});
+const usuario=await prisma.usuario.create({data:{email,senhaHash:await hashSenha(senha),username:'felipeuchoa',nomeGuerra:'UCHOA',idade:18,dataNasc:new Date('2007-08-22T12:00:00Z'),genero:'m',secPergunta:'Qual é o seu time de coração?',secRespHash:await hashSenha('Flamengo'),pesoKg:81.02,alturaCm:176,metaAgua:2836,tema:'red',xp:152081}});
 await prisma.userState.createMany({data:Object.entries(states).map(([chave,valor])=>({usuarioId:usuario.id,chave,valor}))});
 const posts=[
   {texto:'Treino de peito concluído. Técnica primeiro, carga depois. 💪',midiaUrl:vids[0],midiaTipo:'video',tipo:'treino',criadoEm:new Date(Date.now()-20*60000)},

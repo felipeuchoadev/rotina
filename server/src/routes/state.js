@@ -21,6 +21,39 @@ function mergeRotinaDias(atual, recebido) {
   return out;
 }
 
+async function recalcularXp(usuarioId) {
+  const rows = await prisma.userState.findMany({
+    where: { usuarioId, chave: { in: ['treino:logs', 'estudo:logs', 'alim:agua', 'xp:bonus'] } },
+  });
+  const s = Object.fromEntries(rows.map(r => [r.chave, r.valor]));
+  const hoje = new Date().toISOString().slice(0, 10);
+  const dataLegitima = value => /^\d{4}-\d{2}-\d{2}$/.test(String(value || '')) && value <= hoje;
+  const minutosLegitimos = value => {
+    const ms = Number(value);
+    return Number.isFinite(ms) && ms >= 60_000 && ms <= 86_400_000 ? Math.floor(ms / 60_000) : 0;
+  };
+  let xp = 0;
+  for (const log of Array.isArray(s['treino:logs']) ? s['treino:logs'] : []) {
+    if (dataLegitima(log?.dateISO)) xp += minutosLegitimos(log?.ativoMs);
+  }
+  for (const log of Array.isArray(s['estudo:logs']) ? s['estudo:logs'] : []) {
+    const minutos = dataLegitima(log?.dateISO) ? minutosLegitimos(log?.ativoMs) : 0;
+    if (!minutos) continue;
+    xp += minutos * 2;
+    xp += new Set((Array.isArray(log.conteudos) ? log.conteudos : []).filter(Boolean)).size * 40;
+  }
+  const usuario = await prisma.usuario.findUnique({ where: { id: usuarioId }, select: { metaAgua: true } });
+  const metaAgua = Math.max(250, Number(usuario?.metaAgua || 2500));
+  const agua = s['alim:agua'] && typeof s['alim:agua'] === 'object' && !Array.isArray(s['alim:agua']) ? s['alim:agua'] : {};
+  for (const [dia, valor] of Object.entries(agua)) {
+    const ml = Number(valor);
+    if (dataLegitima(dia) && Number.isFinite(ml) && ml >= metaAgua && ml <= 20_000) xp += 15;
+  }
+  const bonus = Number(s['xp:bonus']);
+  if (Number.isFinite(bonus) && bonus > 0) xp += Math.floor(bonus);
+  await prisma.usuario.update({ where: { id: usuarioId }, data: { xp: Math.max(0, Math.floor(xp)) } });
+}
+
 // Todos os blobs do usuário de uma vez → { chave: valor, ... }
 stateRouter.get('/', async (req, res) => {
   const rows = await prisma.userState.findMany({ where: { usuarioId: req.userId } });
@@ -39,6 +72,7 @@ stateRouter.get('/:chave', async (req, res) => {
 
 // Grava (upsert) um blob
 stateRouter.put('/:chave', async (req, res) => {
+  if(req.params.chave==='xp:bonus') return res.status(403).json({erro:'Ajuste de XP é reservado ao sistema.'});
   let valor = req.body?.valor;
   const versaoRecebida = BigInt(Math.max(0, Number(req.body?.versao || Date.now())));
   const atual = await prisma.userState.findUnique({ where: { usuarioId_chave: { usuarioId: req.userId, chave: req.params.chave } } });
@@ -51,13 +85,16 @@ stateRouter.put('/:chave', async (req, res) => {
     update: { valor, versao: versaoRecebida },
     create: { usuarioId: req.userId, chave: req.params.chave, valor, versao: versaoRecebida },
   });
+  if(['treino:logs','estudo:logs','alim:agua'].includes(req.params.chave)) await recalcularXp(req.userId);
   // sync ao vivo: avisa os OUTROS aparelhos do mesmo usuário (src = quem escreveu, pra não ecoar nele)
   emitToUser(req.userId, 'state:changed', { chave: req.params.chave, valor, versao:Number(versaoRecebida), src: req.body?.clientId || null });
   res.json({ ok: true, valor, versao:Number(versaoRecebida) });
 });
 
 stateRouter.delete('/:chave', async (req, res) => {
+  if (req.params.chave === 'xp:bonus') return res.status(403).json({ erro: 'Ajuste de XP é reservado ao sistema.' });
   await prisma.userState.deleteMany({ where: { usuarioId: req.userId, chave: req.params.chave } });
+  if (['treino:logs', 'estudo:logs', 'alim:agua'].includes(req.params.chave)) await recalcularXp(req.userId);
   emitToUser(req.userId, 'state:changed', { chave: req.params.chave, valor: null, src: req.query.src || null });
   res.status(204).end();
 });
