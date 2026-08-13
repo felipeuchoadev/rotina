@@ -47,14 +47,16 @@ batalhaRouter.get('/ranking', async (req, res) => {
 // ---- Feed (respeita bloqueio e privacidade) ----
 batalhaRouter.get('/feed', async (req, res) => {
   const { bloqueados, sigoSet } = await contextoSocial(req.userId);
+  const limite = Math.min(30, Math.max(1, Number(req.query.limite) || 15));
+  const offset = Math.max(0, Number(req.query.offset) || 0);
   const posts = await prisma.feedPost.findMany({
-    orderBy: { criadoEm: 'desc' }, take: 120,
+    orderBy: { criadoEm: 'desc' }, take: Math.min(150, offset + limite + 60),
     include: { usuario: { select: pubSel }, likes: { select: { usuarioId: true } }, _count: { select: { comentarios: true } } },
   });
   const visiveis = posts.filter(p =>
     !bloqueados.has(p.usuarioId) &&
     (p.usuarioId === req.userId || (!p.privado && (!p.usuario.privado || sigoSet.has(p.usuarioId))))
-  ).slice(0, 50);
+  ).slice(offset, offset + limite);
   res.json(visiveis);
 });
 

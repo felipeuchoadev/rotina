@@ -279,6 +279,9 @@ textarea.auto{resize:none; overflow:hidden; min-height:48px;}
 .chat-messages{flex:1;min-height:0;overflow-y:auto;padding:12px 2px}
 .chat-compose{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;gap:7px;align-items:end;padding-top:8px;border-top:1px solid var(--line)}
 .chat-compose input{min-width:0;width:100%;background:var(--surface2);border:1.5px solid var(--line);border-radius:18px;padding:12px;color:var(--text)}
+.emoji-panel{display:none;grid-template-columns:repeat(8,minmax(32px,1fr));gap:5px;background:var(--surface2);border:1px solid var(--line);border-radius:18px;padding:10px;margin:4px 0 8px;max-height:210px;overflow-y:auto;box-shadow:0 14px 34px rgba(0,0,0,.28)}
+.emoji-panel.open{display:grid}.emoji-panel button{border:0;background:transparent;border-radius:10px;font-size:23px;line-height:1;padding:8px 4px;cursor:pointer}.emoji-panel button:hover,.emoji-panel button:active{background:color-mix(in srgb,var(--accent) 15%,var(--surface))}
+@media(max-width:380px){.emoji-panel{grid-template-columns:repeat(7,minmax(30px,1fr));padding:8px}.emoji-panel button{font-size:21px}}
 .chat-media{display:block;max-width:min(280px,70vw);max-height:300px;border-radius:10px;margin-bottom:5px}
 .chat-line{display:flex;width:100%;margin:3px 0}.chat-line.mine{justify-content:flex-end}.chat-line.theirs{justify-content:flex-start}
 .chat-bubble{display:inline-block;min-width:42px;max-width:min(78%,520px);padding:8px 11px;border-radius:15px;line-height:1.35;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;hyphens:auto;font-size:14.5px}
@@ -677,6 +680,12 @@ if(window.visualViewport){ visualViewport.addEventListener('resize',ajustarViewp
 window.addEventListener('resize',ajustarViewportTeclado); setTimeout(ajustarViewportTeclado,0);
 document.addEventListener('focusin',e=>{ if($('#overlay')?.classList.contains('show')&&/^(INPUT|TEXTAREA)$/.test(e.target?.tagName||'')){ $('#sheet')?.classList.add('keyboard-fit'); setTimeout(()=>e.target.scrollIntoView({block:'nearest',behavior:'smooth'}),180); } });
 document.addEventListener('focusout',()=>setTimeout(()=>{ if(!$('#sheet')?.contains(document.activeElement)) $('#sheet')?.classList.remove('keyboard-fit'); },120));
+document.addEventListener('click',e=>{
+  if(e.target.closest('#chatEmoji')){ e.preventDefault(); $('#emojiPanel')?.classList.toggle('open'); return; }
+  const b=e.target.closest('[data-emoji]'); if(!b||!$('#emojiPanel')?.contains(b)) return;
+  const i=$('#chatTxt'); if(!i)return; const ini=i.selectionStart??i.value.length, fim=i.selectionEnd??ini, emoji=b.dataset.emoji;
+  i.value=i.value.slice(0,ini)+emoji+i.value.slice(fim); i.focus(); i.setSelectionRange(ini+emoji.length,ini+emoji.length); i.dispatchEvent(new Event('input'));
+});
 function toast(m,ms=3000){ const t=$('#toast'); t.textContent=m; t.classList.add('show'); clearTimeout(window._tt); window._tt=setTimeout(()=>t.classList.remove('show'),ms); }
 function uid(){ return Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-4); }
 function esc(s){ const d=document.createElement('div'); d.textContent=s==null?'':String(s); return d.innerHTML; }
@@ -2883,7 +2892,7 @@ async function pullRefreshFeed(){
   const antes = $('#feed') ? $('#feed').getAttribute('data-top') : '0';
   toast('Atualizando…', 1000);
   try{
-    const feed=await api('/batalha/feed');
+    const feed=await api('/batalha/feed?limite='+feedLote());
     const topId=String(feed[0]?.id||0);
     if(topId===String(antes)){ toast('Nada novo por aqui, recruta.'); }
     else { await renderBatalha(); toast('Feed atualizado.'); }
@@ -2897,7 +2906,7 @@ window.addEventListener('touchend', ()=>{ if(_ptPull){ _ptPull=false; _ptStartY=
 async function renderBatalha(){
   reportXP();
   let board=[], feed=[], notif={naoLidas:0}, dmN={naoLidas:0};
-  const respostas=await Promise.allSettled([api('/batalha/ranking'),api('/batalha/feed'),api('/batalha/notificacoes'),api('/dm/naolidas')]);
+  const respostas=await Promise.allSettled([api('/batalha/ranking'),api('/batalha/feed?limite='+feedLote()),api('/batalha/notificacoes'),api('/dm/naolidas')]);
   if(respostas[0].status==='fulfilled') board=respostas[0].value;
   if(respostas[1].status==='fulfilled') feed=respostas[1].value;
   if(respostas[2].status==='fulfilled') notif=respostas[2].value;
@@ -2925,7 +2934,8 @@ async function renderBatalha(){
         <div class="xp">${(e.xp||0).toLocaleString('pt-BR')}</div></div>`;
     }).join(''):'<p class="muted small">Sem soldados no ranking ainda.</p>'}</div>
     <div class="section-title" style="display:flex;align-items:center;justify-content:space-between">Feed <button class="btn sm ghost" id="refreshFeed" style="padding:6px 12px">↻ Atualizar</button></div>
-    <div id="feed" data-top="${feed[0]?.id||0}">${feed.length?feed.map(feedPostHTML).join(''):'<p class="muted small">Sem publicações. Seja o primeiro a mostrar serviço.</p>'}</div>
+    <div id="feed" data-top="${feed[0]?.id||0}" data-count="${feed.length}">${feed.length?feed.map(feedPostHTML).join(''):'<p class="muted small">Sem publicações. Seja o primeiro a mostrar serviço.</p>'}</div>
+    ${feed.length>=feedLote()?'<button class="btn ghost" id="maisFeed">Carregar mais publicações</button>':''}
   `;
   $('#novoPost').onclick=()=>composePost();
   $('#genPost').onclick=gerarPublicacaoDoDia;
@@ -2933,8 +2943,16 @@ async function renderBatalha(){
   $('#sinoBtn').onclick=abrirNotificacoes;
   $('#dmBtn').onclick=abrirDMs;
   $('#abrirBusca').onclick=buscarPessoasSheet;
+  if($('#maisFeed')) $('#maisFeed').onclick=carregarMaisFeed;
   bindStories();
   bindFeedActions();
+}
+function conexaoEconomica(){ const c=navigator.connection||navigator.mozConnection||navigator.webkitConnection; return !!(c&&(c.saveData||/^(slow-2g|2g|3g)$/.test(c.effectiveType||''))); }
+function feedLote(){ return conexaoEconomica()?6:15; }
+async function carregarMaisFeed(){
+  const box=$('#feed'), btn=$('#maisFeed'); if(!box||!btn)return; const offset=+(box.dataset.count||0); btn.disabled=true; btn.textContent='Carregando…';
+  try{ const novos=await api(`/batalha/feed?limite=${feedLote()}&offset=${offset}`); if(novos.length){ box.insertAdjacentHTML('beforeend',novos.map(feedPostHTML).join('')); box.dataset.count=offset+novos.length; bindFeedActions(); bindFeedVideos(); } if(novos.length<feedLote()) btn.remove(); else {btn.disabled=false;btn.textContent='Carregar mais publicações';} }
+  catch{ btn.disabled=false;btn.textContent='Tentar carregar novamente'; toast('Não foi possível carregar mais.'); }
 }
 async function abrirDMs(){
   openSheet('<button class="sheet-close" onclick="closeSheet()">×</button><p class="muted" style="padding:20px 0">Carregando…</p>');
@@ -2953,7 +2971,7 @@ async function atualizarBadgeDM(){
 }
 let _chatUser=null, _chatPeerId=null, _typingTimer=null;
 function bolhaChat(m){
-  const media=m.midiaUrl?(m.midiaTipo==='video'?`<video class="chat-media" src="${esc(m.midiaUrl)}" controls playsinline></video>`:`<img class="chat-media" src="${esc(m.midiaUrl)}" alt="Mídia da conversa">`):'';
+  const media=m.midiaUrl?(m.midiaTipo==='video'?`<video class="chat-media" src="${esc(m.midiaUrl)}" controls playsinline preload="none"></video>`:`<img class="chat-media" src="${esc(m.midiaUrl)}" loading="lazy" decoding="async" alt="Mídia da conversa">`):'';
   const ticks=m.meu?`<span data-dm-tick="${m.id}" style="color:${m.lida?'#7dd3fc':'inherit'}">${m.lida?'✓✓':'✓'}</span>`:'';
   return `<div class="chat-line ${m.meu?'mine':'theirs'}"><div class="chat-bubble">${media}${m.texto?esc(m.texto):''}<div class="chat-meta">${timeago(m.criadoEm)} ${ticks}</div></div></div>`;
 }
@@ -2966,19 +2984,21 @@ async function abrirChat(username){
   await atualizarBadgeDM();
   openSheet(`<div class="chat-head">${avatarHTML({nome:d.usuario.nomeGuerra,foto:d.usuario.fotoUrl,genero:d.usuario.genero},'avatar sm')}<div class="txt"><div class="t">${esc(d.usuario.nomeGuerra)}</div><div class="s" id="chatPresence">verificando presença…</div></div></div>
     <div id="chatMsgs" class="chat-messages">${d.mensagens.length?d.mensagens.map(bolhaChat).join(''):'<p class="muted small" style="text-align:center">Diga oi 👋</p>'}</div><div id="chatTyping" class="small muted" style="height:18px"></div>
-    <div class="chat-compose"><button class="icobtn" id="chatEmoji" aria-label="Emojis">😊</button><button class="icobtn" id="chatMedia" aria-label="Enviar foto ou vídeo">📎</button><input id="chatTxt" placeholder="Mensagem..." autocomplete="off"><button class="btn sm" id="chatSend">Enviar</button></div><input id="chatFile" type="file" accept="image/*,video/*" hidden>`);
+    <div id="emojiPanel" class="emoji-panel" aria-label="Seletor de emojis"></div><div class="chat-compose"><button class="icobtn" id="chatEmoji" aria-label="Emojis">😊</button><button class="icobtn" id="chatMedia" aria-label="Enviar foto ou vídeo">📎</button><input id="chatTxt" placeholder="Mensagem..." autocomplete="off"><button class="btn sm" id="chatSend">Enviar</button></div><input id="chatFile" type="file" accept="image/*,video/*" hidden>`);
   const box=$('#chatMsgs'); box.scrollTop=box.scrollHeight;
   if(_socket&&_chatPeerId) _socket.emit('presence:check',_chatPeerId,p=>{ const el=$('#chatPresence'); if(el) el.textContent=p.online?'online':(p.lastSeen?'visto por último '+timeago(p.lastSeen):'offline'); });
   const enviar=async(midia=null)=>{ const t=$('#chatTxt').value.trim(); if(!t&&!midia) return; $('#chatTxt').value=''; try{ const m=await api('/dm/'+encodeURIComponent(username),{method:'POST',body:{texto:t,midiaUrl:midia?.url||null,midiaTipo:midia?.tipo||null}}); box.querySelector('.muted')?.remove(); box.insertAdjacentHTML('beforeend',bolhaChat(m)); box.scrollTop=box.scrollHeight; }catch(e){ toast('Falha ao enviar.'); } };
   $('#chatSend').onclick=enviar;
   $('#chatTxt').onkeydown=e=>{ if(e.key==='Enter') enviar(); };
   $('#chatTxt').oninput=()=>{ if(_socket&&_chatPeerId){ _socket.emit('dm:typing',{paraId:_chatPeerId,digitando:true}); clearTimeout(_typingTimer); _typingTimer=setTimeout(()=>_socket.emit('dm:typing',{paraId:_chatPeerId,digitando:false}),1200); } };
-  $('#chatEmoji').onclick=()=>{ const escolhido=prompt('Escolha ou cole emojis:','😀 😂 😍 🥰 😎 🔥 💪 👏 ❤️ ✅ 🏃 📚 💧'); if(escolhido){ $('#chatTxt').value+=escolhido; $('#chatTxt').focus(); } };
+  const emojis=['😀','😃','😄','😁','😂','🤣','😊','😍','🥰','😘','😎','🤩','🥳','😢','😭','😡','🤔','🫡','😴','🙈','🙌','👏','🤝','👍','👎','🙏','💪','🔥','❤️','💜','💙','💚','✨','✅','🎉','🏆','⚔️','🏋️','🏃','⚽','📚','🎯','⏰','💧','🍎','☕','🌙','☀️'];
+  const ep=$('#emojiPanel'); ep.innerHTML=emojis.map(e=>`<button type="button" data-emoji="${e}" aria-label="${e}">${e}</button>`).join('');
   $('#chatMedia').onclick=()=>$('#chatFile').click();
   $('#chatFile').onchange=async e=>{ const f=e.target.files[0]; if(!f)return; toast('Enviando mídia…'); try{ const up=await uploadMedia(f); await enviar({url:up.url,tipo:up.tipo||(f.type.startsWith('video')?'video':'image')}); }catch(x){ toast('Falha ao enviar mídia.'); } };
 }
 function feedPostHTML(post){
-  const media = post.midiaTipo==='video'? `<video class="post-media" data-feed-video src="${post.midiaUrl}" loop controls playsinline preload="metadata"></video>` : (post.midiaUrl?`<img class="post-media" src="${post.midiaUrl}" loading="lazy">`:'');
+  const eco=conexaoEconomica();
+  const media = post.midiaTipo==='video'? `<video class="post-media" data-feed-video ${eco?`data-src="${post.midiaUrl}"`:`src="${post.midiaUrl}"`} loop controls playsinline preload="${eco?'none':'metadata'}"></video>` : (post.midiaUrl?`<img class="post-media" src="${post.midiaUrl}" loading="lazy" decoding="async">`:'');
   const meuId=S.profile?.id;
   const meu = (post.usuarioId===meuId) || (post.usuario?.id===meuId);
   const liked = (post.likes||[]).some(l=>l.usuarioId===meuId);
@@ -3018,6 +3038,8 @@ function bindFeedActions(){
   $$('#feed [data-menu]').forEach(el=>el.onclick=()=>postMenu(el.dataset.menu, el.dataset.off==='1', el.dataset.priv==='1'));
   bindFeedVideos();
   $$('#feed [data-double-like]').forEach(zona=>{
+    if(zona.dataset.gestoBound==='1') return;
+    zona.dataset.gestoBound='1';
     const curtir=async()=>{ const id=zona.dataset.doubleLike, heart=$('.double-heart',zona); if(heart){ heart.classList.remove('on'); void heart.offsetWidth; heart.classList.add('on'); } if(zona.dataset.liked==='1'||_likesBusy.has(String(id))) return; _likesBusy.add(String(id)); zona.dataset.liked='1'; const botao=$(`[data-like="${id}"]`,zona.closest('.post')), numero=botao?$('b',botao):null, anterior=+(numero?.textContent||0); aplicarCurtidaPostDOM(id,true,anterior+1); try{ const r=await api('/batalha/feed/'+id+'/like',{method:'POST',body:{curtir:true}}); aplicarCurtidaPostDOM(id,r.curtido,r.total); }catch(e){ aplicarCurtidaPostDOM(id,false,anterior); toast('Falha ao curtir.'); }finally{ _likesBusy.delete(String(id)); } };
     zona.addEventListener('dblclick',e=>{ if(e.target.closest('video,button,.post-actions'))return; e.preventDefault(); curtir(); });
     let ultimoToque=0; zona.addEventListener('touchend',e=>{ if(e.target.closest('video,button,.post-actions')){ultimoToque=0;return;} const agora=Date.now(); if(agora-ultimoToque<330){ ultimoToque=0; curtir(); } else ultimoToque=agora; },{passive:true});
@@ -3042,7 +3064,7 @@ function pausarVideosFeed(){ $$('[data-feed-video]').forEach(pausaAutomaticaVide
 function pausaAutomaticaVideo(v){ try{ v._rzAutoPause=true; v.pause(); setTimeout(()=>{v._rzAutoPause=false;},0); }catch(e){} }
 function bindFeedVideos(){
   if(_feedVideoObserver) _feedVideoObserver.disconnect();
-  _feedVideoObserver=new IntersectionObserver(entries=>entries.forEach(e=>{ const v=e.target, emSheet=$('#sheet')?.contains(v); if(e.isIntersecting&&e.intersectionRatio>=.65&&activeTab==='batalha'&&(!$('#overlay').classList.contains('show')||emSheet)){ $$('[data-feed-video]').forEach(o=>{if(o!==v)pausaAutomaticaVideo(o);}); if(v.dataset.userPaused!=='1') v.play().catch(()=>{}); } else pausaAutomaticaVideo(v); }),{threshold:[0,.65,1]});
+  _feedVideoObserver=new IntersectionObserver(entries=>entries.forEach(e=>{ const v=e.target, emSheet=$('#sheet')?.contains(v); if(e.isIntersecting&&e.intersectionRatio>=.65&&activeTab==='batalha'&&(!$('#overlay').classList.contains('show')||emSheet)){ if(v.dataset.src&&!v.src){v.src=v.dataset.src;v.load();} $$('[data-feed-video]').forEach(o=>{if(o!==v)pausaAutomaticaVideo(o);}); if(!conexaoEconomica()&&v.dataset.userPaused!=='1') v.play().catch(()=>{}); } else pausaAutomaticaVideo(v); }),{threshold:[0,.65,1]});
   $$('[data-feed-video]').forEach(v=>{ v.defaultMuted=false; v.muted=false; v.volume=1; v.addEventListener('pause',()=>{ if(!v._rzAutoPause) v.dataset.userPaused='1'; }); v.addEventListener('play',()=>{ v.dataset.userPaused='0'; }); _feedVideoObserver.observe(v); });
 }
 document.addEventListener('visibilitychange',()=>{ if(document.hidden) pausarVideosFeed(); });
@@ -3088,7 +3110,7 @@ async function abrirPerfil(username){
   const grade = !d.podeVer
     ? '<div class="card" style="text-align:center"><div style="font-size:30px">🔒</div><p class="muted small">Perfil privado. Siga pra ver as publicações.</p></div>'
     : (d.posts.length ? `<div class="pgrid">${d.posts.map(p=>{
-        const m = p.midiaUrl ? (p.midiaTipo==='video'?`<video src="${p.midiaUrl}"></video>`:`<img src="${p.midiaUrl}">`) : `<div class="pnomedia">${esc((p.texto||'').slice(0,50))}</div>`;
+        const m = p.midiaUrl ? (p.midiaTipo==='video'?`<video src="${p.midiaUrl}" preload="none"></video>`:`<img src="${p.midiaUrl}" loading="lazy" decoding="async">`) : `<div class="pnomedia">${esc((p.texto||'').slice(0,50))}</div>`;
         return `<div class="pcell" data-openpost="${p.id}">${m}</div>`; }).join('')}</div>`
        : '<p class="muted small">Sem publicações ainda.</p>');
   openSheet(`<h3>@${esc(u.username)}</h3>
@@ -3766,7 +3788,8 @@ async function subscribePush(){
       _reloaded=true; location.reload();
     });
     // checa por atualização periodicamente (app aberto por muito tempo)
-    setInterval(()=>{ navigator.serviceWorker.getRegistration().then(r=>r&&r.update()).catch(()=>{}); }, 5000);
+    // O socket entrega deploy em tempo real; esta checagem é só contingência e não deve gastar dados a cada 5s.
+    setInterval(()=>{ if(document.visibilityState==='visible') navigator.serviceWorker.getRegistration().then(r=>r&&r.update()).catch(()=>{}); }, 300000);
   }
 })();
 </script>
