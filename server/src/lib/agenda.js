@@ -1,8 +1,7 @@
-// DISCIPLINA — agenda de avisos programados.
-// Uma vez por dia (a partir das 9h de Brasília) varre as datas importantes de
-// cada usuário (UserState chave='datas') e dispara Web Push nos marcos:
-// 1 mês / 1 semana / 1 dia antes e no dia do aniversário/evento.
-// Dedupe pelo Kv 'agenda:lastRun' (roda no máximo 1x por dia, mesmo com restart).
+// Agenda de aniversários e datas importantes.
+// Reavalia a cada 30 minutos, a partir das 9h de Brasília. Cada aviso é
+// deduplicado por usuário + item + data + marco, portanto datas cadastradas
+// durante o dia ainda podem ser avisadas sem gerar notificações repetidas.
 import { prisma } from './db.js';
 import { enviarPush } from './push.js';
 
@@ -12,68 +11,103 @@ function brasiliaAgora() {
 function isoDe(d) {
   return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
 }
+function dataValida(y, m, d) {
+  const x = new Date(y, m - 1, d); x.setHours(0, 0, 0, 0);
+  return x.getFullYear() === y && x.getMonth() === m - 1 && x.getDate() === d ? x : null;
+}
+function somarDias(d, n) { const x = new Date(d); x.setDate(x.getDate() + n); return x; }
+function menosUmMes(d) {
+  const ultimo = new Date(d.getFullYear(), d.getMonth(), 0).getDate();
+  return new Date(d.getFullYear(), d.getMonth() - 1, Math.min(d.getDate(), ultimo));
+}
+function repeticao(item) {
+  if (['nao', 'dia', 'semana', 'mes', 'ano'].includes(item?.repete)) return item.repete;
+  return item?.recorrente === false ? 'nao' : 'ano';
+}
 
-const MARCOS = [
-  { dias: 30, chave: 'm',   txt: (n) => `Falta 1 mês pro aniversário de ${n}. Já vai pensando no presente.` },
-  { dias: 7,  chave: 's',   txt: (n) => `Falta 1 semana pro aniversário de ${n}. Se prepara.` },
-  { dias: 1,  chave: 'd',   txt: (n) => `Amanhã é aniversário de ${n}. Não esquece.` },
-  { dias: 0,  chave: 'dia', txt: (n) => `Hoje é aniversário de ${n}! Manda o parabéns.` },
-];
-
-// dias até a próxima ocorrência da data (recorrente = mesmo dia/mês todo ano)
-function diasAte(item, hoje) {
-  const [Y, M, D] = String(item.data || '').split('-').map(Number);
-  if (!M || !D) return null;
-  if (item.recorrente === false) {
-    const o = new Date(Y, M - 1, D); o.setHours(0, 0, 0, 0);
-    return Math.round((o - hoje) / 86400000);
+// Próxima ocorrência incluindo hoje. Exportada para testes do calendário.
+export function proximaOcorrenciaAgenda(item, hoje) {
+  const [y, m, d] = String(item?.data || '').split('-').map(Number);
+  if (!dataValida(y, m, d)) return null;
+  const rep = repeticao(item);
+  if (rep === 'nao') { const x = dataValida(y, m, d); return x >= hoje ? x : null; }
+  if (rep === 'dia') return new Date(hoje);
+  if (rep === 'semana') {
+    const alvo = dataValida(y, m, d).getDay(), x = new Date(hoje);
+    x.setDate(x.getDate() + ((alvo - x.getDay() + 7) % 7)); return x;
   }
-  let o = new Date(hoje.getFullYear(), M - 1, D); o.setHours(0, 0, 0, 0);
-  if (o < hoje) o = new Date(hoje.getFullYear() + 1, M - 1, D);
-  return Math.round((o - hoje) / 86400000);
+  if (rep === 'mes') {
+    for (let i = 0; i < 24; i++) {
+      const base = new Date(hoje.getFullYear(), hoje.getMonth() + i, 1);
+      const x = dataValida(base.getFullYear(), base.getMonth() + 1, d);
+      if (x && x >= hoje) return x;
+    }
+    return null;
+  }
+  for (let ano = hoje.getFullYear(); ano <= hoje.getFullYear() + 8; ano++) {
+    const x = dataValida(ano, m, d); if (x && x >= hoje) return x;
+  }
+  return null;
 }
 
-async function jaRodou(iso) {
-  try { const kv = await prisma.kv.findUnique({ where: { chave: 'agenda:lastRun' } }); return kv && kv.valor === iso; }
-  catch { return false; }
-}
-async function marcarRodou(iso) {
-  try { await prisma.kv.upsert({ where: { chave: 'agenda:lastRun' }, update: { valor: iso }, create: { chave: 'agenda:lastRun', valor: iso } }); }
-  catch {}
+export function marcoAgenda(item, hoje) {
+  const ocorrencia = proximaOcorrenciaAgenda(item, hoje);
+  if (!ocorrencia) return null;
+  const atual = isoDe(hoje);
+  const candidatos = [
+    ['dia', ocorrencia],
+    ['d', somarDias(ocorrencia, -1)],
+    ['s', somarDias(ocorrencia, -7)],
+    ['m', menosUmMes(ocorrencia)],
+  ];
+  const achado = candidatos.find(([, data]) => isoDe(data) === atual);
+  if (!achado || item?.avisos?.[achado[0]] === false) return null;
+  return { chave: achado[0], ocorrencia };
 }
 
-async function rodarAgenda() {
+function textoAviso(item, chave) {
+  const nome = item.nome || (item.tipo === 'evento' ? 'Data importante' : 'Aniversário');
+  const evento = item.tipo === 'evento';
+  if (evento) return chave === 'dia' ? `Hoje: ${nome}.` : chave === 'd' ? `Amanhã: ${nome}.` : chave === 's' ? `Falta 1 semana: ${nome}.` : `Falta 1 mês: ${nome}.`;
+  return chave === 'dia' ? `Hoje é aniversário de ${nome}! Manda os parabéns.` : chave === 'd' ? `Amanhã é aniversário de ${nome}. Não esquece.` : chave === 's' ? `Falta 1 semana pro aniversário de ${nome}.` : `Falta 1 mês pro aniversário de ${nome}.`;
+}
+
+async function jaEnviado(chave) {
+  return !!(await prisma.kv.findUnique({ where: { chave } }).catch(() => null));
+}
+async function marcarEnviado(chave) {
+  await prisma.kv.upsert({ where: { chave }, update: { valor: true }, create: { chave, valor: true } });
+}
+
+export async function rodarAgenda() {
   const agora = brasiliaAgora();
-  if (agora.getHours() < 9) return;               // avisa a partir das 9h
+  if (agora.getHours() < 9) return { enviados: 0 };
   const hoje = new Date(agora); hoje.setHours(0, 0, 0, 0);
-  const iso = isoDe(hoje);
-  if (await jaRodou(iso)) return;
-
-  let rows;
-  try { rows = await prisma.userState.findMany({ where: { chave: 'datas' } }); }
-  catch { return; }
-
-  for (const row of rows) {
-    const datas = Array.isArray(row.valor) ? row.valor : [];
+  const estados = await prisma.userState.findMany({ where: { chave: { in: ['datas', 'config'] } } }).catch(() => []);
+  const porUsuario = new Map();
+  for (const row of estados) {
+    const atual = porUsuario.get(row.usuarioId) || {};
+    atual[row.chave] = row.valor; porUsuario.set(row.usuarioId, atual);
+  }
+  let enviados = 0;
+  for (const [usuarioId, estado] of porUsuario) {
+    if (estado.config?.notif !== true) continue;
+    const datas = Array.isArray(estado.datas) ? estado.datas : [];
     for (const item of datas) {
-      if (!item || !item.data) continue;
-      const dd = diasAte(item, hoje);
-      const marco = MARCOS.find((m) => m.dias === dd);
-      if (!marco) continue;
-      const av = item.avisos || {};
-      if (av[marco.chave] === false) continue;     // desligado pra essa data
-      const nome = item.nome || 'alguém';
-      const evento = item.tipo === 'evento';
-      const body = evento
-        ? (dd === 0 ? `Hoje: ${nome}.` : dd === 1 ? `Amanhã: ${nome}.` : dd === 7 ? `Falta 1 semana: ${nome}.` : `Falta 1 mês: ${nome}.`)
-        : marco.txt(nome);
-      await enviarPush(row.usuarioId, { title: 'DISCIPLINA', body, tag: 'agenda-' + (item.id || dd), url: '/rotina/#tab=inicio' });
+      const marco = marcoAgenda(item, hoje); if (!marco) continue;
+      const id = String(item.id || `${item.data}-${item.nome || 'data'}`).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 60);
+      const dedupe = `agenda:${isoDe(hoje)}:${usuarioId}:${id}:${marco.chave}`;
+      if (await jaEnviado(dedupe)) continue;
+      const body = textoAviso(item, marco.chave);
+      await prisma.notificacao.create({ data: { usuarioId, tipo: 'aviso', texto: body } }).catch(() => null);
+      await enviarPush(usuarioId, { title: 'REDZONE', body, tag: dedupe, url: '/rotina/#tab=inicio' });
+      await marcarEnviado(dedupe); enviados++;
     }
   }
-  await marcarRodou(iso);
+  return { enviados };
 }
 
 export function iniciarAgenda() {
-  rodarAgenda().catch(() => {});
-  setInterval(() => { rodarAgenda().catch(() => {}); }, 30 * 60 * 1000); // reavalia a cada 30 min
+  rodarAgenda().catch((e) => console.error('agenda:', e));
+  setInterval(() => { rodarAgenda().catch((e) => console.error('agenda:', e)); }, 30 * 60 * 1000);
 }

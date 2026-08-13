@@ -1409,19 +1409,19 @@ const MESES_NOME=['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho',
 // tipo de repetição da data: nao | dia | semana | mes | ano
 function repeteDe(item){ if(item.repete) return item.repete; return item.recorrente===false?'nao':'ano'; }
 const REPETE_LBL={nao:'data única', dia:'todo dia', semana:'toda semana', mes:'todo mês', ano:'todo ano'};
+function dataAgendaValida(y,m,d){ const x=new Date(y,m-1,d); x.setHours(0,0,0,0); return x.getFullYear()===y&&x.getMonth()===m-1&&x.getDate()===d?x:null; }
 // próxima ocorrência (Date à meia-noite Brasília) conforme a repetição
 function proximaOcorrencia(item){
   const [Y,M,D]=String(item.data).split('-').map(Number);
-  if(!M||!D) return null;
+  if(!dataAgendaValida(Y,M,D)) return null;
   const h=brasiliaNow(); h.setHours(0,0,0,0);
   const rep=repeteDe(item);
-  if(rep==='nao'){ const o=new Date(Y,M-1,D); o.setHours(0,0,0,0); return o; }
+  if(rep==='nao'){ const o=dataAgendaValida(Y,M,D); return o>=h?o:null; }
   if(rep==='dia'){ return h; }
-  if(rep==='semana'){ const dow=new Date(Y,M-1,D).getDay(); const o=new Date(h); o.setDate(h.getDate()+((dow-h.getDay()+7)%7)); return o; }
-  if(rep==='mes'){ let o=new Date(h.getFullYear(),h.getMonth(),D); o.setHours(0,0,0,0); if(o<h) o=new Date(h.getFullYear(),h.getMonth()+1,D); return o; }
-  let o=new Date(h.getFullYear(),M-1,D); o.setHours(0,0,0,0);   // ano
-  if(o<h) o=new Date(h.getFullYear()+1,M-1,D);
-  return o;
+  if(rep==='semana'){ const dow=dataAgendaValida(Y,M,D).getDay(); const o=new Date(h); o.setDate(h.getDate()+((dow-h.getDay()+7)%7)); return o; }
+  if(rep==='mes'){ for(let i=0;i<24;i++){ const base=new Date(h.getFullYear(),h.getMonth()+i,1), o=dataAgendaValida(base.getFullYear(),base.getMonth()+1,D); if(o&&o>=h) return o; } return null; }
+  for(let y=h.getFullYear();y<=h.getFullYear()+8;y++){ const o=dataAgendaValida(y,M,D); if(o&&o>=h) return o; }
+  return null;
 }
 function diasAte(date){ const h=brasiliaNow(); h.setHours(0,0,0,0); return Math.round((date-h)/86400000); }
 function contagemTxt(n){ return n===0?'HOJE 🎉' : n===1?'amanhã' : `em ${n} dias`; }
