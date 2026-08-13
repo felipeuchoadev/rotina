@@ -902,7 +902,7 @@ async function loadUserData(){
     try{ localStorage.setItem(userStorageKey('cache:me'), JSON.stringify(me)); localStorage.setItem(userStorageKey('cache:st'), JSON.stringify(st)); }catch{}
   }catch(e){
     // Token expirado/conta removida não é modo offline: nunca abra dados antigos de outra sessão.
-    if(e?.status===401||e?.status===403){ setToken(null); throw e; }
+    if(e?.status===401||e?.status===403||e?.status===404){ setToken(null); throw e; }
     const cme=localStorage.getItem(userStorageKey('cache:me')), cst=localStorage.getItem(userStorageKey('cache:st'));
     if(cme && cst){ me=JSON.parse(cme); st=JSON.parse(cst); }
     else throw e;   // sem cache e sem internet: não dá pra entrar
