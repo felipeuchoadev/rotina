@@ -3101,8 +3101,8 @@ async function abrirPerfil(username){
     </div>
     <div style="display:flex;gap:20px;margin:12px 2px">
       <div><b style="font-weight:800;font-size:17px">${d.posts.length}</b> <span class="muted small">posts</span></div>
-      <div><b style="font-weight:800;font-size:17px">${d.seguidores}</b> <span class="muted small">seguidores</span></div>
-      <div><b style="font-weight:800;font-size:17px">${d.seguindo}</b> <span class="muted small">seguindo</span></div>
+      <button class="social-count" data-social-list="seguidores" style="border:0;background:none;color:var(--text);padding:0;cursor:pointer"><b style="font-weight:800;font-size:17px">${d.seguidores}</b> <span class="muted small">seguidores</span></button>
+      <button class="social-count" data-social-list="seguindo" style="border:0;background:none;color:var(--text);padding:0;cursor:pointer"><b style="font-weight:800;font-size:17px">${d.seguindo}</b> <span class="muted small">seguindo</span></button>
     </div>
     ${acoes}
     <div class="section-title" style="margin-top:6px">Publicações</div>
@@ -3112,7 +3112,23 @@ async function abrirPerfil(username){
     $('#pfBloquear').onclick=async()=>{ try{ const x=await api('/batalha/bloquear/'+u.username,{method:'POST'}); toast(x.bloqueado?'Usuário bloqueado.':'Desbloqueado.'); closeSheet(); renderBatalha(); }catch(e){ toast('Falha.'); } };
     $('#pfMsg').onclick=()=>abrirChat(u.username);
   }
-  $$('#sheet [data-openpost]').forEach(el=>el.onclick=()=>openComentarios(el.dataset.openpost));
+  $$('#sheet [data-openpost]').forEach(el=>el.onclick=()=>abrirPost(el.dataset.openpost));
+  $$('#sheet [data-social-list]').forEach(el=>el.onclick=()=>abrirListaSocial(u.username,el.dataset.socialList));
+}
+async function abrirListaSocial(username,tipo){
+  const titulo=tipo==='seguidores'?'Seguidores':'Seguindo';
+  openSheet(`<button class="sheet-close" onclick="abrirPerfil('${esc(username)}')">‹</button><h3>${titulo}</h3><p class="muted small" style="padding:16px 0">Carregando…</p>`);
+  let lista; try{ lista=await api('/batalha/perfil/'+encodeURIComponent(username)+'/'+tipo); }
+  catch(e){ $('#sheet').innerHTML=`<button class="sheet-close" onclick="abrirPerfil('${esc(username)}')">‹</button><h3>${titulo}</h3><p class="muted small" style="padding:16px 0">${e.status===403?'Esta lista é privada.':'Não foi possível carregar.'}</p>`; return; }
+  const linhas=lista.length?lista.map(u=>`<div class="rowitem" data-social-user="${esc(u.username)}" style="cursor:pointer">
+    ${avatarHTML({nome:u.nomeGuerra,foto:u.fotoUrl,genero:u.genero},'avatar sm')}
+    <div class="txt"><div class="t">${esc(u.nomeGuerra)}</div><div class="s">@${esc(u.username)}</div></div>
+    ${u.isEu?'':`<button class="btn sm ${u.isSeguindo?'ghost':''}" data-social-follow="${esc(u.username)}" style="width:auto;min-width:94px">${u.isSeguindo?'Seguindo ✓':'＋ Seguir'}</button>`}
+  </div>`).join(''):`<p class="muted small" style="padding:16px 0">${tipo==='seguidores'?'Ainda não há seguidores.':'Ainda não segue ninguém.'}</p>`;
+  openSheet(`<button class="sheet-close" id="socialBack">‹</button><h3>${titulo}</h3><div id="socialLista">${linhas}</div>`);
+  $('#socialBack').onclick=()=>abrirPerfil(username);
+  $$('#socialLista [data-social-user]').forEach(el=>el.onclick=e=>{ if(e.target.closest('[data-social-follow]')) return; abrirPerfil(el.dataset.socialUser); });
+  $$('#socialLista [data-social-follow]').forEach(btn=>btn.onclick=async e=>{ e.stopPropagation(); btn.disabled=true; try{ const r=await api('/batalha/seguir/'+encodeURIComponent(btn.dataset.socialFollow),{method:'POST'}); btn.textContent=r.seguindo?'Seguindo ✓':'＋ Seguir'; btn.classList.toggle('ghost',r.seguindo); }catch{ toast('Não foi possível atualizar.'); }finally{ btn.disabled=false; } });
 }
 async function abrirNotificacoes(){
   openSheet('<button class="sheet-close" onclick="closeSheet()">×</button><p class="muted" style="padding:20px 0">Carregando…</p>');

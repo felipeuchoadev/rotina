@@ -217,6 +217,30 @@ batalhaRouter.get('/perfil/:username', async (req, res) => {
   });
 });
 
+// ---- Listas sociais do perfil (seguidores / seguindo) ----
+batalhaRouter.get('/perfil/:username/:lista(seguidores|seguindo)', async (req, res) => {
+  const alvo = await prisma.usuario.findUnique({ where: { username: String(req.params.username).toLowerCase() } });
+  if (!alvo) return res.status(404).json({ erro: 'Usuário não encontrado.' });
+  const isEu = alvo.id === req.userId;
+  const [sigoAlvo, bloqueioEu, bloqueioAlvo] = await Promise.all([
+    prisma.follow.findUnique({ where: { seguidorId_seguidoId: { seguidorId: req.userId, seguidoId: alvo.id } } }),
+    prisma.block.findUnique({ where: { usuarioId_bloqueadoId: { usuarioId: req.userId, bloqueadoId: alvo.id } } }),
+    prisma.block.findUnique({ where: { usuarioId_bloqueadoId: { usuarioId: alvo.id, bloqueadoId: req.userId } } }),
+  ]);
+  if (bloqueioEu || bloqueioAlvo || (alvo.privado && !isEu && !sigoAlvo)) return res.status(403).json({ erro: 'Lista privada.' });
+  const follows = req.params.lista === 'seguidores'
+    ? await prisma.follow.findMany({ where: { seguidoId: alvo.id }, orderBy: { criadoEm: 'desc' }, select: { seguidorId: true } })
+    : await prisma.follow.findMany({ where: { seguidorId: alvo.id }, orderBy: { criadoEm: 'desc' }, select: { seguidoId: true } });
+  const ids = follows.map(f => req.params.lista === 'seguidores' ? f.seguidorId : f.seguidoId);
+  const usuarios = await prisma.usuario.findMany({ where: { id: { in: ids } }, select: pubSel });
+  const porId = new Map(usuarios.map(u => [u.id, u]));
+  const meusFollows = new Set((await prisma.follow.findMany({ where: { seguidorId: req.userId, seguidoId: { in: ids } }, select: { seguidoId: true } })).map(f => f.seguidoId));
+  const bloqueados = await contextoSocial(req.userId);
+  res.json(ids.map(id => porId.get(id)).filter(u => u && !bloqueados.bloqueados.has(u.id)).map(u => ({
+    ...u, patente: rankOf(u.xp).id, isEu: u.id === req.userId, isSeguindo: meusFollows.has(u.id),
+  })));
+});
+
 // ---- Seguir / deixar de seguir ----
 batalhaRouter.post('/seguir/:username', async (req, res) => {
   const alvo = await prisma.usuario.findUnique({ where: { username: String(req.params.username).toLowerCase() } });
