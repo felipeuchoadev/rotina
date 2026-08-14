@@ -11,7 +11,7 @@
 > ainda é `app/disciplina-v3.html`; logo `redzone-logo.png`. Conta de teste:
 > `felipeestudos220807@gmail.com` / `felipe220807@` (pergunta de segurança: time = Flamengo).
 
-> 🟢 **VERSÃO ATUAL: SW `redzone-v22`.** App/back TODOS no ar e testados. Sync ao vivo ponta a ponta
+> 🟢 **VERSÃO ATUAL: SW `redzone-v55`.** App/back TODOS no ar e testados. Sync ao vivo ponta a ponta
 > (mudou num aparelho → aparece nos outros em ms) + autoupdate ao vivo (deploy → conectados recarregam em ms)
 > JÁ FUNCIONAM. Deploy = `scp app/* server/src/**` pra VM (chave `Chaves/oracle_vm`, user `ubuntu`,
 > `redsystems.ddns.net:/opt/disciplina/`) + `systemctl restart disciplina` se mexeu no `server/` + **bump do SW**.

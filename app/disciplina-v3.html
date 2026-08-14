@@ -271,17 +271,22 @@ textarea.auto{resize:none; overflow:hidden; min-height:48px;}
 .overlay{position:fixed; inset:0; z-index:60; background:rgba(0,0,0,.62); display:none; align-items:flex-end;}
 .overlay.show{display:flex;}
 .sheet{background:var(--surface); width:100%; max-width:520px; margin:0 auto; border-radius:26px 26px 0 0; padding:20px 16px calc(24px + env(safe-area-inset-bottom)); max-height:min(90vh,var(--app-vvh,90vh)); overflow-y:auto; overscroll-behavior:contain; box-shadow:0 -24px 54px rgba(0,0,0,.5);}
-.overlay.chat-full{align-items:stretch;background:var(--bg)}
+.overlay.chat-full{align-items:stretch;background:var(--bg);left:0!important;right:auto!important;width:100vw!important;max-width:none!important;transform:none!important}
 .overlay.chat-full .sheet{max-width:none;height:100%;max-height:none;border-radius:0;padding:calc(14px + env(safe-area-inset-top)) 14px calc(10px + env(safe-area-inset-bottom));display:flex;flex-direction:column;overflow:hidden}
 .sheet.keyboard-fit{max-height:100%;border-radius:18px 18px 0 0}
 .sheet .keyboard-actions{position:sticky;bottom:calc(-24px - env(safe-area-inset-bottom));z-index:3;background:var(--surface);padding:10px 0 calc(14px + env(safe-area-inset-bottom))}
-.chat-head{display:flex;align-items:center;gap:10px;padding:2px 44px 10px 0;border-bottom:1px solid var(--line)}
+.chat-head{display:flex;align-items:center;gap:10px;padding:2px 48px 10px 0;border-bottom:1px solid var(--line);flex:0 0 auto;min-width:0}.chat-head .txt{min-width:0}.chat-head .t{font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.chat-head .s{font-size:12px;color:var(--text-dim)}.chat-head .s.live{color:var(--ok)}
 .chat-messages{flex:1;min-height:0;overflow-y:auto;padding:12px 2px}
-.chat-compose{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;gap:7px;align-items:end;padding-top:8px;border-top:1px solid var(--line)}
+.chat-compose{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;gap:7px;align-items:center;padding-top:8px;border-top:1px solid var(--line);flex:0 0 auto}
 .chat-compose input{min-width:0;width:100%;background:var(--surface2);border:1.5px solid var(--line);border-radius:18px;padding:12px;color:var(--text)}
+.chat-compose .icobtn{flex:0 0 auto}.chat-send{min-width:48px}.chat-typing{height:20px;flex:0 0 20px;color:var(--ok);font-size:12px;padding:2px 8px}
+.chat-attach-panel{display:none;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;background:var(--surface2);border:1px solid var(--line);border-radius:18px;padding:10px;margin:4px 0 8px}.chat-attach-panel.open{display:grid}.chat-attach-panel button{border:0;background:var(--surface);color:var(--text);border-radius:14px;padding:12px 6px;font-weight:700;font-size:12px}.chat-attach-panel button span{display:block;font-size:23px;margin-bottom:4px}
+.chat-recording{display:none;align-items:center;gap:10px;background:color-mix(in srgb,var(--accent) 13%,var(--surface2));border:1px solid color-mix(in srgb,var(--accent) 35%,var(--line));border-radius:16px;padding:9px 12px;margin-top:7px}.chat-recording.show{display:flex}.chat-recording .pulse{width:10px;height:10px;border-radius:50%;background:var(--accent);animation:recPulse 1s infinite}.chat-recording .time{font-variant-numeric:tabular-nums;flex:1}@keyframes recPulse{50%{opacity:.3}}
+.chat-audio{display:block;width:min(300px,65vw);height:38px}
 .emoji-panel{display:none;grid-template-columns:repeat(8,minmax(32px,1fr));gap:5px;background:var(--surface2);border:1px solid var(--line);border-radius:18px;padding:10px;margin:4px 0 8px;max-height:210px;overflow-y:auto;box-shadow:0 14px 34px rgba(0,0,0,.28)}
 .emoji-panel.open{display:grid}.emoji-panel button{border:0;background:transparent;border-radius:10px;font-size:23px;line-height:1;padding:8px 4px;cursor:pointer}.emoji-panel button:hover,.emoji-panel button:active{background:color-mix(in srgb,var(--accent) 15%,var(--surface))}
 @media(max-width:380px){.emoji-panel{grid-template-columns:repeat(7,minmax(30px,1fr));padding:8px}.emoji-panel button{font-size:21px}}
+@media(max-width:520px){.overlay.chat-full .sheet{padding-left:10px;padding-right:10px}.chat-compose{gap:5px}.chat-compose .icobtn{width:40px;height:40px}.chat-send{padding:10px 12px}.chat-bubble{max-width:86%}}
 .chat-media{display:block;max-width:min(280px,70vw);max-height:300px;border-radius:10px;margin-bottom:5px}
 .chat-line{display:flex;width:100%;margin:3px 0}.chat-line.mine{justify-content:flex-end}.chat-line.theirs{justify-content:flex-start}
 .chat-bubble{display:inline-block;min-width:42px;max-width:min(78%,520px);padding:8px 11px;border-radius:15px;line-height:1.35;white-space:pre-wrap;overflow-wrap:anywhere;word-break:break-word;hyphens:auto;font-size:14.5px}
@@ -2959,19 +2964,20 @@ async function abrirDMs(){
   let convs=[]; try{ convs=await api('/dm/conversas'); }catch(e){}
   openSheet(`<h3>Mensagens</h3>
     ${convs.length? convs.map(c=>`
-      <div class="rowitem" data-chat="${esc(c.usuario.username)}" style="cursor:pointer">
+      <div class="rowitem" data-chat="${esc(c.usuario.username)}" data-chat-id="${esc(c.usuario.id)}" style="cursor:pointer">
         ${avatarHTML({nome:c.usuario.nomeGuerra,foto:c.usuario.fotoUrl,genero:c.usuario.genero},'avatar sm')}
         <div class="txt"><div class="t">${esc(c.usuario.nomeGuerra)} ${c.naoLidas?`<span class="notif-badge" style="position:static;display:inline-flex">${c.naoLidas}</span>`:''}</div>
-          <div class="s">${c.ultimo.meu?'Você: ':''}${esc(c.ultimo.texto.slice(0,40))}</div></div>
+          <div class="s" data-chat-preview="${esc(c.usuario.id)}">${c.ultimo.meu?'Você: ':''}${esc((c.ultimo.texto||(c.ultimo.midiaTipo==='audio'?'🎤 Áudio':'📎 Mídia')).slice(0,40))}</div></div>
       </div>`).join('') : '<p class="muted small">Nenhuma conversa ainda. Abra o perfil de alguém e toque em Mensagem.</p>'}`);
   $$('#sheet [data-chat]').forEach(el=>el.onclick=()=>abrirChat(el.dataset.chat));
+  if(_socket) $$('#sheet [data-chat-id]').forEach(el=>_socket.emit('presence:check',el.dataset.chatId,p=>{ if(!p.online)return; const s=el.querySelector('[data-chat-preview]'); if(s){s.textContent='online';s.style.color='var(--ok)';} }));
 }
 async function atualizarBadgeDM(){
   try{ const x=await api('/dm/naolidas'), btn=$('#dmBtn'); if(!btn)return x.naoLidas; let b=$('.notif-badge',btn); if(!x.naoLidas){ b?.remove(); } else { if(!b){ b=document.createElement('span'); b.className='notif-badge'; btn.appendChild(b); } b.textContent=x.naoLidas>9?'9+':x.naoLidas; } return x.naoLidas; }catch(e){ return null; }
 }
-let _chatUser=null, _chatPeerId=null, _typingTimer=null;
+let _chatUser=null, _chatPeerId=null, _typingTimer=null, _chatStopRecording=null;
 function bolhaChat(m){
-  const media=m.midiaUrl?(m.midiaTipo==='video'?`<video class="chat-media" src="${esc(m.midiaUrl)}" controls playsinline preload="none"></video>`:`<img class="chat-media" src="${esc(m.midiaUrl)}" loading="lazy" decoding="async" alt="Mídia da conversa">`):'';
+  const media=m.midiaUrl?(m.midiaTipo==='video'?`<video class="chat-media" src="${esc(m.midiaUrl)}" controls playsinline preload="none"></video>`:m.midiaTipo==='audio'?`<audio class="chat-audio" src="${esc(m.midiaUrl)}" controls preload="metadata"></audio>`:`<img class="chat-media" src="${esc(m.midiaUrl)}" loading="lazy" decoding="async" alt="Mídia da conversa">`):'';
   const ticks=m.meu?`<span data-dm-tick="${m.id}" style="color:${m.lida?'#7dd3fc':'inherit'}">${m.lida?'✓✓':'✓'}</span>`:'';
   return `<div class="chat-line ${m.meu?'mine':'theirs'}"><div class="chat-bubble">${media}${m.texto?esc(m.texto):''}<div class="chat-meta">${timeago(m.criadoEm)} ${ticks}</div></div></div>`;
 }
@@ -2983,18 +2989,37 @@ async function abrirChat(username){
   _chatPeerId=d.usuario.id; limparNotifDM(username); $('#overlay').classList.add('chat-full');
   await atualizarBadgeDM();
   openSheet(`<div class="chat-head">${avatarHTML({nome:d.usuario.nomeGuerra,foto:d.usuario.fotoUrl,genero:d.usuario.genero},'avatar sm')}<div class="txt"><div class="t">${esc(d.usuario.nomeGuerra)}</div><div class="s" id="chatPresence">verificando presença…</div></div></div>
-    <div id="chatMsgs" class="chat-messages">${d.mensagens.length?d.mensagens.map(bolhaChat).join(''):'<p class="muted small" style="text-align:center">Diga oi 👋</p>'}</div><div id="chatTyping" class="small muted" style="height:18px"></div>
-    <div id="emojiPanel" class="emoji-panel" aria-label="Seletor de emojis"></div><div class="chat-compose"><button class="icobtn" id="chatEmoji" aria-label="Emojis">😊</button><button class="icobtn" id="chatMedia" aria-label="Enviar foto ou vídeo">📎</button><input id="chatTxt" placeholder="Mensagem..." autocomplete="off"><button class="btn sm" id="chatSend">Enviar</button></div><input id="chatFile" type="file" accept="image/*,video/*" hidden>`);
+    <div id="chatMsgs" class="chat-messages">${d.mensagens.length?d.mensagens.map(bolhaChat).join(''):'<p class="muted small" style="text-align:center">Diga oi 👋</p>'}</div><div id="chatTyping" class="chat-typing"></div>
+    <div id="emojiPanel" class="emoji-panel" aria-label="Seletor de emojis"></div>
+    <div id="chatAttachPanel" class="chat-attach-panel"><button id="chatGallery"><span>🖼️</span>Fotos e vídeos</button><button id="chatCamera"><span>📷</span>Câmera</button><button id="chatAudioFile"><span>🎵</span>Áudio</button></div>
+    <div id="chatRecording" class="chat-recording"><i class="pulse"></i><span class="time" id="chatRecTime">0:00</span><button class="btn sm ghost" id="chatRecCancel">Cancelar</button><button class="btn sm" id="chatRecSend">Enviar</button></div>
+    <div class="chat-compose"><button class="icobtn" id="chatAttach" aria-label="Anexar">＋</button><button class="icobtn" id="chatEmoji" aria-label="Emojis">😊</button><input id="chatTxt" placeholder="Mensagem..." autocomplete="off"><button class="btn sm chat-send" id="chatSend">Enviar</button><button class="icobtn hidden" id="chatMic" aria-label="Gravar áudio">🎤</button></div>
+    <input id="chatGalleryFile" type="file" accept="image/*,video/*" multiple hidden><input id="chatCameraFile" type="file" accept="image/*,video/*" capture="environment" hidden><input id="chatAudioFileInput" type="file" accept="audio/*" hidden>`);
   const box=$('#chatMsgs'); box.scrollTop=box.scrollHeight;
-  if(_socket&&_chatPeerId) _socket.emit('presence:check',_chatPeerId,p=>{ const el=$('#chatPresence'); if(el) el.textContent=p.online?'online':(p.lastSeen?'visto por último '+timeago(p.lastSeen):'offline'); });
-  const enviar=async(midia=null)=>{ const t=$('#chatTxt').value.trim(); if(!t&&!midia) return; $('#chatTxt').value=''; try{ const m=await api('/dm/'+encodeURIComponent(username),{method:'POST',body:{texto:t,midiaUrl:midia?.url||null,midiaTipo:midia?.tipo||null}}); box.querySelector('.muted')?.remove(); box.insertAdjacentHTML('beforeend',bolhaChat(m)); box.scrollTop=box.scrollHeight; }catch(e){ toast('Falha ao enviar.'); } };
+  const mostrarPresenca=p=>{ const el=$('#chatPresence'); if(!el)return; el.classList.toggle('live',!!p.online); el.textContent=p.online?'online':(p.lastSeen?'visto por último '+formatarVisto(p.lastSeen):'offline'); };
+  if(_socket&&_chatPeerId) _socket.emit('presence:check',_chatPeerId,mostrarPresenca);
+  const enviar=async(midia=null)=>{ const t=$('#chatTxt').value.trim(); if(!t&&!midia) return; $('#chatTxt').value=''; $('#chatSend')?.classList.add('hidden'); $('#chatMic')?.classList.remove('hidden'); try{ const m=await api('/dm/'+encodeURIComponent(username),{method:'POST',body:{texto:t,midiaUrl:midia?.url||null,midiaTipo:midia?.tipo||null}}); box.querySelector('.muted')?.remove(); box.insertAdjacentHTML('beforeend',bolhaChat(m)); box.scrollTop=box.scrollHeight; }catch(e){ toast('Falha ao enviar.'); } };
   $('#chatSend').onclick=enviar;
+  const ajustarAcao=()=>{ const tem=$('#chatTxt').value.trim().length>0; $('#chatSend').classList.toggle('hidden',!tem); $('#chatMic').classList.toggle('hidden',tem); };
+  ajustarAcao();
   $('#chatTxt').onkeydown=e=>{ if(e.key==='Enter') enviar(); };
-  $('#chatTxt').oninput=()=>{ if(_socket&&_chatPeerId){ _socket.emit('dm:typing',{paraId:_chatPeerId,digitando:true}); clearTimeout(_typingTimer); _typingTimer=setTimeout(()=>_socket.emit('dm:typing',{paraId:_chatPeerId,digitando:false}),1200); } };
+  $('#chatTxt').oninput=()=>{ ajustarAcao(); if(_socket&&_chatPeerId){ _socket.emit('dm:typing',{paraId:_chatPeerId,digitando:true}); clearTimeout(_typingTimer); _typingTimer=setTimeout(()=>_socket.emit('dm:typing',{paraId:_chatPeerId,digitando:false}),1200); } };
   const emojis=['😀','😃','😄','😁','😂','🤣','😊','😍','🥰','😘','😎','🤩','🥳','😢','😭','😡','🤔','🫡','😴','🙈','🙌','👏','🤝','👍','👎','🙏','💪','🔥','❤️','💜','💙','💚','✨','✅','🎉','🏆','⚔️','🏋️','🏃','⚽','📚','🎯','⏰','💧','🍎','☕','🌙','☀️'];
   const ep=$('#emojiPanel'); ep.innerHTML=emojis.map(e=>`<button type="button" data-emoji="${e}" aria-label="${e}">${e}</button>`).join('');
-  $('#chatMedia').onclick=()=>$('#chatFile').click();
-  $('#chatFile').onchange=async e=>{ const f=e.target.files[0]; if(!f)return; toast('Enviando mídia…'); try{ const up=await uploadMedia(f); await enviar({url:up.url,tipo:up.tipo||(f.type.startsWith('video')?'video':'image')}); }catch(x){ toast('Falha ao enviar mídia.'); } };
+  $('#chatAttach').onclick=()=>{ $('#emojiPanel').classList.remove('open'); $('#chatAttachPanel').classList.toggle('open'); };
+  $('#chatGallery').onclick=()=>$('#chatGalleryFile').click(); $('#chatCamera').onclick=()=>$('#chatCameraFile').click(); $('#chatAudioFile').onclick=()=>$('#chatAudioFileInput').click();
+  const enviarArquivos=async files=>{ $('#chatAttachPanel').classList.remove('open'); for(const f of [...files]){ toast('Enviando mídia…'); try{ const up=await uploadMedia(f); await enviar({url:up.url,tipo:up.tipo||(f.type.startsWith('video')?'video':f.type.startsWith('audio')?'audio':'foto')}); }catch(x){ toast('Falha ao enviar mídia.'); break; } } };
+  $('#chatGalleryFile').onchange=e=>enviarArquivos(e.target.files); $('#chatCameraFile').onchange=e=>enviarArquivos(e.target.files); $('#chatAudioFileInput').onchange=e=>enviarArquivos(e.target.files);
+  prepararGravacaoChat(enviar);
+}
+function formatarVisto(data){ const d=new Date(data), h=d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}), hoje=new Date(), ontem=new Date(); ontem.setDate(hoje.getDate()-1); const iso=x=>x.toLocaleDateString('en-CA'); return iso(d)===iso(hoje)?`hoje às ${h}`:iso(d)===iso(ontem)?`ontem às ${h}`:`${d.toLocaleDateString('pt-BR')} às ${h}`; }
+function prepararGravacaoChat(enviar){
+  let rec=null, partes=[], timer=null, inicio=0, blob=null;
+  const parar=()=>{ if(rec&&rec.state!=='inactive')rec.stop(); clearInterval(timer); };
+  _chatStopRecording=()=>{ parar(); blob=null; $('#chatRecording')?.classList.remove('show'); };
+  $('#chatMic').onclick=async()=>{ try{ const stream=await navigator.mediaDevices.getUserMedia({audio:true}); partes=[]; blob=null; rec=new MediaRecorder(stream); rec.ondataavailable=e=>{if(e.data.size)partes.push(e.data)}; rec.onstop=()=>{blob=new Blob(partes,{type:rec.mimeType||'audio/webm'});stream.getTracks().forEach(t=>t.stop())}; rec.start(); inicio=Date.now(); $('#chatRecording').classList.add('show'); timer=setInterval(()=>{const s=Math.floor((Date.now()-inicio)/1000);$('#chatRecTime').textContent=Math.floor(s/60)+':'+String(s%60).padStart(2,'0')},250); }catch(e){ toast('Autorize o microfone para gravar áudio.'); } };
+  $('#chatRecCancel').onclick=()=>{ parar(); blob=null; $('#chatRecording').classList.remove('show'); };
+  $('#chatRecSend').onclick=()=>{ if(!rec)return; rec.addEventListener('stop',async()=>{ $('#chatRecording').classList.remove('show'); if(!blob)return; try{toast('Enviando áudio…');const f=new File([blob],'audio-'+Date.now()+'.webm',{type:blob.type});const up=await uploadMedia(f);await enviar({url:up.url,tipo:'audio'});}catch(e){toast('Falha ao enviar áudio.');} },{once:true}); parar(); };
 }
 function feedPostHTML(post){
   const eco=conexaoEconomica();
@@ -3691,7 +3716,7 @@ function bindPasswordEyes(root){
   });
 }
 function openSheet(html){ pausarVideosFeed(); const estava=$('#overlay').classList.contains('show'); $('#sheet').classList.remove('keyboard-fit'); $('#sheet').innerHTML=`<button class="sheet-close" onclick="closeSheet()">×</button>`+html; $('#overlay').classList.add('show'); ajustarViewportTeclado(); if(!estava){ try{ history.pushState({rzSheet:true,rzTab:activeTab},'',location.href); }catch(e){} } bindPasswordEyes($('#sheet')); }
-function closeSheet(fromPop=false){ $$('#sheet video').forEach(v=>{try{v.pause();}catch(e){}}); const aberto=$('#overlay').classList.contains('show'); $('#overlay').classList.remove('show','chat-full'); _chatUser=null; _chatPeerId=null; if(aberto&&!fromPop&&history.state?.rzSheet){ try{ history.back(); }catch(e){} } }
+function closeSheet(fromPop=false){ $$('#sheet video').forEach(v=>{try{v.pause();}catch(e){}}); try{_chatStopRecording?.();}catch(e){} _chatStopRecording=null; const aberto=$('#overlay').classList.contains('show'); $('#overlay').classList.remove('show','chat-full'); _chatUser=null; _chatPeerId=null; if(aberto&&!fromPop&&history.state?.rzSheet){ try{ history.back(); }catch(e){} } }
 $('#overlay').addEventListener('click',e=>{ if(e.target.id==='overlay') closeSheet(); });
 window.closeSheet=closeSheet;
 /* ENTER global: confirma/envia. Em <input> dentro de um sheet, dispara o botão principal.
@@ -3741,8 +3766,8 @@ function connectSocket(){
       }
     });
     _socket.on('dm:lida',()=>{ if(_chatUser) $$('[data-dm-tick]').forEach(x=>{ x.textContent='✓✓'; x.style.color='#7dd3fc'; }); });
-    _socket.on('dm:typing',d=>{ if(_chatPeerId&&d.deId===_chatPeerId&&$('#chatTyping')) $('#chatTyping').textContent=d.digitando?'digitando…':''; });
-    _socket.on('presence:update',d=>{ if(_chatPeerId&&d.userId===_chatPeerId&&$('#chatPresence')) $('#chatPresence').textContent=d.online?'online':(d.lastSeen?'visto por último '+timeago(d.lastSeen):'offline'); });
+    _socket.on('dm:typing',d=>{ const preview=$(`[data-chat-preview="${d.deId}"]`); if(preview){ if(d.digitando){preview.dataset.anterior=preview.textContent;preview.textContent='digitando…';preview.style.color='var(--ok)';}else if(preview.dataset.anterior){preview.textContent=preview.dataset.anterior;preview.style.color='';delete preview.dataset.anterior;} } if(_chatPeerId&&d.deId===_chatPeerId&&$('#chatTyping')){ $('#chatTyping').textContent=d.digitando?'digitando…':''; const p=$('#chatPresence'); if(p&&d.digitando){p.textContent='digitando…';p.classList.add('live');}else if(p&&_socket)_socket.emit('presence:check',_chatPeerId,x=>{p.classList.toggle('live',!!x.online);p.textContent=x.online?'online':(x.lastSeen?'visto por último '+formatarVisto(x.lastSeen):'offline')}); } });
+    _socket.on('presence:update',d=>{ const preview=$(`[data-chat-preview="${d.userId}"]`); if(preview&&d.online&&!preview.dataset.anterior){preview.textContent='online';preview.style.color='var(--ok)';} if(_chatPeerId&&d.userId===_chatPeerId&&$('#chatPresence')){ const p=$('#chatPresence');p.classList.toggle('live',!!d.online);p.textContent=d.online?'online':(d.lastSeen?'visto por último '+formatarVisto(d.lastSeen):'offline'); } });
   }catch(e){} };
   if(window.io){ boot(); return; }
   const s=document.createElement('script'); s.src=src; s.onload=boot; s.onerror=()=>{}; document.head.appendChild(s);

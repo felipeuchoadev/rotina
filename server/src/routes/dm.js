@@ -71,7 +71,8 @@ dmRouter.post('/:username', async (req, res) => {
   const m = await prisma.mensagem.create({ data: { deId: req.userId, paraId: outro.id, texto, midiaUrl, midiaTipo } });
   const payload = { id: m.id, texto: m.texto, midiaUrl: m.midiaUrl, midiaTipo: m.midiaTipo, lida:false, criadoEm: m.criadoEm, de: me };
   emitToUser(outro.id, 'dm:nova', payload);
-  enviarPush(outro.id, { title: 'Mensagem de ' + me.nomeGuerra, body: texto || (midiaTipo==='video'?'Enviou um vídeo':'Enviou uma foto'), tag: 'dm-'+me.username, url: '/rotina/#dm=' + encodeURIComponent(me.username) });
+  const descricaoMidia = midiaTipo==='video'?'Enviou um vídeo':midiaTipo==='audio'?'Enviou um áudio':'Enviou uma foto';
+  enviarPush(outro.id, { title: 'Mensagem de ' + me.nomeGuerra, body: texto || descricaoMidia, tag: 'dm-'+me.username, url: '/rotina/#dm=' + encodeURIComponent(me.username) });
   res.status(201).json({ id: m.id, texto: m.texto, midiaUrl:m.midiaUrl, midiaTipo:m.midiaTipo, lida:false, criadoEm: m.criadoEm, meu: true });
 });
 
