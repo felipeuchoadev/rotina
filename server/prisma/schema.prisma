@@ -147,6 +147,18 @@ model UserState {
   @@map("user_state")
 }
 
+model StateHistory {
+  id        BigInt   @id @default(autoincrement())
+  usuarioId String
+  chave     String
+  valor     Json
+  criadoEm  DateTime @default(now())
+
+  @@index([usuarioId, criadoEm])
+  @@index([usuarioId, chave, criadoEm])
+  @@map("state_history")
+}
+
 model FeedPost {
   id          Int           @id @default(autoincrement())
   usuario     Usuario       @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
@@ -155,6 +167,7 @@ model FeedPost {
   texto       String?
   midiaUrl    String?
   midiaTipo   String?
+  midias      Json?
   comentariosOff Boolean    @default(false)
   privado     Boolean       @default(false)
   criadoEm    DateTime      @default(now())
@@ -163,6 +176,17 @@ model FeedPost {
 
   @@index([criadoEm])
   @@map("feed_posts")
+}
+
+model StoryView {
+  ownerId  String
+  recordId String
+  viewerId String
+  vistoEm  DateTime @default(now())
+
+  @@id([ownerId, recordId, viewerId])
+  @@index([ownerId, recordId, vistoEm])
+  @@map("story_views")
 }
 
 model FeedLike {

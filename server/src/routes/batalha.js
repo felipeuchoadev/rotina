@@ -63,8 +63,36 @@ batalhaRouter.get('/feed', async (req, res) => {
 // URLs já publicadas pelo próprio usuário; permite ao Story mostrar "Publicar no feed"
 // somente quando aquela mídia realmente ainda não foi postada, mesmo fora da primeira página.
 batalhaRouter.get('/feed/meus-urls', async (req, res) => {
-  const posts = await prisma.feedPost.findMany({ where: { usuarioId: req.userId, midiaUrl: { not: null } }, select: { midiaUrl: true }, orderBy: { criadoEm: 'desc' }, take: 500 });
-  res.json(posts.map(p => p.midiaUrl).filter(Boolean));
+  const posts = await prisma.feedPost.findMany({ where: { usuarioId: req.userId }, select: { midiaUrl: true, midias:true }, orderBy: { criadoEm: 'desc' }, take: 500 });
+  res.json(posts.flatMap(p => [p.midiaUrl, ...(Array.isArray(p.midias)?p.midias.map(m=>m?.url):[])]).filter(Boolean));
+});
+
+// Stories reais das últimas 24h: próprios + pessoas seguidas, respeitando privacidade.
+batalhaRouter.get('/stories', async (req, res) => {
+  const follows=await prisma.follow.findMany({where:{seguidorId:req.userId},select:{seguidoId:true}});
+  const ids=[req.userId,...follows.map(f=>f.seguidoId)];
+  const [usuarios,states]=await Promise.all([
+    prisma.usuario.findMany({where:{id:{in:ids}},select:pubSel}),
+    prisma.userState.findMany({where:{usuarioId:{in:ids},chave:'recordacoes'},select:{usuarioId:true,valor:true}}),
+  ]);
+  const limite=Date.now()-86400000,porId=new Map(usuarios.map(u=>[u.id,u]));
+  const grupos=[];
+  for(const s of states){const u=porId.get(s.usuarioId);if(!u||(u.privado&&u.id!==req.userId&&!follows.some(f=>f.seguidoId===u.id)))continue;const items=(Array.isArray(s.valor)?s.valor:[]).filter(r=>{const t=new Date(r?.at).getTime();return r?.id&&r?.url&&Number.isFinite(t)&&t>=limite;}).sort((a,b)=>String(a.at).localeCompare(String(b.at)));if(items.length)grupos.push({usuario:u,items});}
+  grupos.sort((a,b)=>a.usuario.id===req.userId?-1:b.usuario.id===req.userId?1:String(b.items.at(-1)?.at).localeCompare(String(a.items.at(-1)?.at)));
+  res.json(grupos);
+});
+
+batalhaRouter.post('/stories/:ownerId/:recordId/view', async (req,res)=>{
+  const {ownerId,recordId}=req.params;if(ownerId===req.userId)return res.json({ok:true});
+  const state=await prisma.userState.findUnique({where:{usuarioId_chave:{usuarioId:ownerId,chave:'recordacoes'}}});
+  if(!Array.isArray(state?.valor)||!state.valor.some(r=>String(r?.id)===recordId))return res.status(404).json({erro:'Story não encontrado.'});
+  await prisma.storyView.upsert({where:{ownerId_recordId_viewerId:{ownerId,recordId,viewerId:req.userId}},update:{vistoEm:new Date()},create:{ownerId,recordId,viewerId:req.userId}});res.json({ok:true});
+});
+
+batalhaRouter.get('/stories/:recordId/viewers',async(req,res)=>{
+  const rows=await prisma.storyView.findMany({where:{ownerId:req.userId,recordId:req.params.recordId},orderBy:{vistoEm:'desc'},take:500});
+  const usuarios=await prisma.usuario.findMany({where:{id:{in:rows.map(r=>r.viewerId)}},select:pubSel});const map=new Map(usuarios.map(u=>[u.id,u]));
+  res.json(rows.map(r=>({usuario:map.get(r.viewerId),vistoEm:r.vistoEm})).filter(r=>r.usuario));
 });
 
 // ---- Post único (deep-link #post=<id>) ----
@@ -86,6 +114,7 @@ const postSchema = z.object({
   texto: z.string().max(1000).optional().nullable(),
   midiaUrl: z.string().optional().nullable(),
   midiaTipo: z.enum(['foto', 'video']).optional().nullable(),
+  midias: z.array(z.object({ url:z.string().min(1), tipo:z.enum(['foto','video']) })).max(10).optional().nullable(),
   tipo: z.enum(['treino', 'estudo', 'simulado', 'manual']).default('manual'),
   privado: z.boolean().optional(),
 });

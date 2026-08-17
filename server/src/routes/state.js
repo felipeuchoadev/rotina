@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { prisma } from '../lib/db.js';
 import { exigirAuth } from '../lib/auth.js';
 import { emitToUser } from '../realtime.js';
+import { rodarAgenda } from '../lib/agenda.js';
 
 // Armazenamento chave-valor por usuário (dados pessoais do app).
 export const stateRouter = Router();
@@ -62,6 +63,12 @@ stateRouter.get('/', async (req, res) => {
   res.json(out);
 });
 
+stateRouter.get('/historico/lista', async (req,res)=>{
+  const chaves=String(req.query.chaves||'').split(',').map(x=>x.trim()).filter(Boolean);
+  const rows=await prisma.stateHistory.findMany({where:{usuarioId:req.userId,...(chaves.length?{chave:{in:chaves}}:{})},orderBy:{criadoEm:'desc'},take:200});
+  res.json(rows.map(r=>({id:String(r.id),chave:r.chave,valor:r.valor,criadoEm:r.criadoEm})));
+});
+
 // Um blob específico
 stateRouter.get('/:chave', async (req, res) => {
   const r = await prisma.userState.findUnique({
@@ -85,7 +92,13 @@ stateRouter.put('/:chave', async (req, res) => {
     update: { valor, versao: versaoRecebida },
     create: { usuarioId: req.userId, chave: req.params.chave, valor, versao: versaoRecebida },
   });
+  if(!atual||JSON.stringify(atual.valor)!==JSON.stringify(valor)){
+    await prisma.stateHistory.create({data:{usuarioId:req.userId,chave:req.params.chave,valor}}).catch(()=>{});
+    const excesso=await prisma.stateHistory.findMany({where:{usuarioId:req.userId},orderBy:{criadoEm:'desc'},skip:2000,select:{id:true}}).catch(()=>[]);
+    if(excesso.length)prisma.stateHistory.deleteMany({where:{id:{in:excesso.map(x=>x.id)}}}).catch(()=>{});
+  }
   if(['treino:logs','estudo:logs','alim:agua'].includes(req.params.chave)) await recalcularXp(req.userId);
+  if(['datas','config'].includes(req.params.chave)) rodarAgenda().catch(()=>{});
   // sync ao vivo: avisa os OUTROS aparelhos do mesmo usuário (src = quem escreveu, pra não ecoar nele)
   emitToUser(req.userId, 'state:changed', { chave: req.params.chave, valor, versao:Number(versaoRecebida), src: req.body?.clientId || null });
   res.json({ ok: true, valor, versao:Number(versaoRecebida) });

@@ -61,13 +61,18 @@ export function marcoAgenda(item, hoje) {
     ['m', menosUmMes(ocorrencia)],
   ];
   const achado = candidatos.find(([, data]) => isoDe(data) === atual);
-  if (!achado || item?.avisos?.[achado[0]] === false) return null;
-  return { chave: achado[0], ocorrencia };
+  if (achado && item?.avisos?.[achado[0]] !== false) return { chave: achado[0], ocorrencia };
+  // Dentro das duas últimas semanas, mantém um lembrete diário curto quando o aviso
+  // semanal está habilitado. Assim uma data adicionada depois do marco de 7 dias não fica muda.
+  const faltam = Math.round((ocorrencia - hoje) / 86400000);
+  if (faltam >= 2 && faltam <= 14 && item?.avisos?.s !== false) return { chave: `proxima-${faltam}`, ocorrencia, faltam };
+  return null;
 }
 
-function textoAviso(item, chave) {
+function textoAviso(item, chave, faltam) {
   const nome = item.nome || (item.tipo === 'evento' ? 'Data importante' : 'Aniversário');
   const evento = item.tipo === 'evento';
+  if (chave.startsWith('proxima-')) return `Faltam ${faltam} dias para ${nome}.`;
   if (evento) return chave === 'dia' ? `Hoje: ${nome}.` : chave === 'd' ? `Amanhã: ${nome}.` : chave === 's' ? `Falta 1 semana: ${nome}.` : `Falta 1 mês: ${nome}.`;
   return chave === 'dia' ? `Hoje é aniversário de ${nome}! Manda os parabéns.` : chave === 'd' ? `Amanhã é aniversário de ${nome}. Não esquece.` : chave === 's' ? `Falta 1 semana pro aniversário de ${nome}.` : `Falta 1 mês pro aniversário de ${nome}.`;
 }
@@ -98,7 +103,7 @@ export async function rodarAgenda() {
       const id = String(item.id || `${item.data}-${item.nome || 'data'}`).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 60);
       const dedupe = `agenda:${isoDe(hoje)}:${usuarioId}:${id}:${marco.chave}`;
       if (await jaEnviado(dedupe)) continue;
-      const body = textoAviso(item, marco.chave);
+      const body = textoAviso(item, marco.chave, marco.faltam);
       await prisma.notificacao.create({ data: { usuarioId, tipo: 'aviso', texto: body } }).catch(() => null);
       await enviarPush(usuarioId, { title: 'REDZONE', body, tag: dedupe, url: '/rotina/#tab=inicio' });
       await marcarEnviado(dedupe); enviados++;
