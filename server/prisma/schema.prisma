@@ -74,6 +74,7 @@ model Mensagem {
   texto    String
   midiaUrl String?
   midiaTipo String?
+  entregue Boolean  @default(false)
   lida     Boolean  @default(false)
   criadoEm DateTime @default(now())
 

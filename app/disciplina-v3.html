@@ -2978,7 +2978,7 @@ async function atualizarBadgeDM(){
 let _chatUser=null, _chatPeerId=null, _typingTimer=null, _chatStopRecording=null;
 function bolhaChat(m){
   const media=m.midiaUrl?(m.midiaTipo==='video'?`<video class="chat-media" src="${esc(m.midiaUrl)}" controls playsinline preload="none"></video>`:m.midiaTipo==='audio'?`<audio class="chat-audio" src="${esc(m.midiaUrl)}" controls preload="metadata"></audio>`:`<img class="chat-media" src="${esc(m.midiaUrl)}" loading="lazy" decoding="async" alt="Mídia da conversa">`):'';
-  const ticks=m.meu?`<span data-dm-tick="${m.id}" style="color:${m.lida?'#7dd3fc':'inherit'}">${m.lida?'✓✓':'✓'}</span>`:'';
+  const ticks=m.meu?`<span data-dm-tick="${m.id}" data-status="${m.lida?'lida':m.entregue?'entregue':'enviada'}" style="color:${m.lida?'#53bdeb':'inherit'}">${m.lida||m.entregue?'✓✓':'✓'}</span>`:'';
   return `<div class="chat-line ${m.meu?'mine':'theirs'}"><div class="chat-bubble">${media}${m.texto?esc(m.texto):''}<div class="chat-meta">${timeago(m.criadoEm)} ${ticks}</div></div></div>`;
 }
 function limparNotifDM(username){ try{ navigator.serviceWorker?.controller?.postMessage({type:'CLEAR_NOTIFICATION',tag:'dm-'+username}); }catch(e){} }
@@ -2987,6 +2987,7 @@ async function abrirChat(username){
   openSheet('<button class="sheet-close" onclick="closeSheet()">×</button><p class="muted" style="padding:20px 0">Carregando…</p>');
   let d; try{ d=await api('/dm/'+encodeURIComponent(username)); }catch(e){ $('#sheet').innerHTML='<button class="sheet-close" onclick="closeSheet()">×</button><p class="err">Conversa indisponível.</p>'; return; }
   _chatPeerId=d.usuario.id; limparNotifDM(username); $('#overlay').classList.add('chat-full');
+  if(_socket) _socket.emit('dm:viewing',{peerId:_chatPeerId});
   await atualizarBadgeDM();
   openSheet(`<div class="chat-head">${avatarHTML({nome:d.usuario.nomeGuerra,foto:d.usuario.fotoUrl,genero:d.usuario.genero},'avatar sm')}<div class="txt"><div class="t">${esc(d.usuario.nomeGuerra)}</div><div class="s" id="chatPresence">verificando presença…</div></div></div>
     <div id="chatMsgs" class="chat-messages">${d.mensagens.length?d.mensagens.map(bolhaChat).join(''):'<p class="muted small" style="text-align:center">Diga oi 👋</p>'}</div><div id="chatTyping" class="chat-typing"></div>
@@ -3717,7 +3718,7 @@ function bindPasswordEyes(root){
   });
 }
 function openSheet(html){ pausarVideosFeed(); const estava=$('#overlay').classList.contains('show'); $('#sheet').classList.remove('keyboard-fit'); $('#sheet').innerHTML=`<button class="sheet-close" onclick="closeSheet()">×</button>`+html; $('#overlay').classList.add('show'); ajustarViewportTeclado(); if(!estava){ try{ history.pushState({rzSheet:true,rzTab:activeTab},'',location.href); }catch(e){} } bindPasswordEyes($('#sheet')); }
-function closeSheet(fromPop=false){ $$('#sheet video').forEach(v=>{try{v.pause();}catch(e){}}); try{_chatStopRecording?.();}catch(e){} _chatStopRecording=null; const aberto=$('#overlay').classList.contains('show'); $('#overlay').classList.remove('show','chat-full'); _chatUser=null; _chatPeerId=null; if(aberto&&!fromPop&&history.state?.rzSheet){ try{ history.back(); }catch(e){} } }
+function closeSheet(fromPop=false){ $$('#sheet video').forEach(v=>{try{v.pause();}catch(e){}}); try{_chatStopRecording?.();}catch(e){} _chatStopRecording=null; if(_socket&&_chatPeerId)_socket.emit('dm:viewing',{peerId:null}); const aberto=$('#overlay').classList.contains('show'); $('#overlay').classList.remove('show','chat-full'); _chatUser=null; _chatPeerId=null; if(aberto&&!fromPop&&history.state?.rzSheet){ try{ history.back(); }catch(e){} } }
 $('#overlay').addEventListener('click',e=>{ if(e.target.id==='overlay') closeSheet(); });
 window.closeSheet=closeSheet;
 /* ENTER global: confirma/envia. Em <input> dentro de um sheet, dispara o botão principal.
@@ -3725,13 +3726,19 @@ window.closeSheet=closeSheet;
 document.addEventListener('keydown', (e)=>{
   if(e.key!=='Enter' || e.isComposing) return;
   const t=e.target; if(!t) return;
+  if(typeof t.onkeydown==='function') return; // tela já possui uma ação Enter específica
   const inSheet = $('#overlay').classList.contains('show') && $('#sheet') && $('#sheet').contains(t);
-  const primary = ()=> $('#sheet') && ($('#sheet').querySelector('.btn:not(.ghost)') || $('#sheet').querySelector('.btn'));
+  const primary = root=> root && (root.querySelector('[data-enter-primary]') || root.querySelector('.btn:not(.ghost):not([disabled])') || root.querySelector('.btn:not([disabled])'));
   if(t.tagName==='TEXTAREA'){
-    if((e.ctrlKey||e.metaKey) && inSheet){ const b=primary(); if(b){ e.preventDefault(); b.click(); } }
+    if((e.ctrlKey||e.metaKey) && inSheet){ const b=primary($('#sheet')); if(b){ e.preventDefault(); b.click(); } }
     return; // Enter normal = quebra de linha
   }
-  if(t.tagName==='INPUT' && inSheet && !e.shiftKey){ const b=primary(); if(b){ e.preventDefault(); b.click(); } }
+  if(t.tagName==='INPUT' && !e.shiftKey){
+    if(t.id==='chatTxt') return;
+    const form=t.closest('form'); if(form){ e.preventDefault(); form.requestSubmit(); return; }
+    const root=inSheet?$('#sheet'):(!$('#auth')?.classList.contains('hidden')?$('#authInner'):null);
+    const b=primary(root); if(b){ e.preventDefault(); b.click(); }
+  }
 });
 
 /* =========================================================================
@@ -3755,6 +3762,7 @@ function connectSocket(){
     // AUTOUPDATE ao vivo: desenvolvedor subiu versão nova → recarrega na hora (HTML é network-first, pega o novo)
     _socket.on('app:update', ()=>{ if(window.__appReloading) return; window.__appReloading=true; salvarPosicaoAtual(); try{ sessionStorage.setItem('rz:reloadAt', String(Date.now())); }catch(e){} try{ toast('🔄 Nova versão chegou — atualizando…'); }catch(e){} setTimeout(()=>{ try{ location.reload(); }catch(e){} }, 600); });
     _socket.on('dm:nova', (m)=>{
+      _socket.emit('dm:delivered',{id:m.id});
       const nome=m.de?.nomeGuerra||'Alguém';
       if(_chatUser && m.de && m.de.username===_chatUser && $('#chatMsgs')){
         $('#chatMsgs').querySelector('.muted')?.remove();
@@ -3766,7 +3774,8 @@ function connectSocket(){
         atualizarBadgeDM();
       }
     });
-    _socket.on('dm:lida',()=>{ if(_chatUser) $$('[data-dm-tick]').forEach(x=>{ x.textContent='✓✓'; x.style.color='#7dd3fc'; }); });
+    _socket.on('dm:entregue',d=>{ const x=$(`[data-dm-tick="${d.id}"]`); if(x&&x.dataset.status!=='lida'){x.textContent='✓✓';x.dataset.status='entregue';x.style.color='inherit';} });
+    _socket.on('dm:lida',()=>{ if(_chatUser) $$('[data-dm-tick]').forEach(x=>{ x.textContent='✓✓'; x.dataset.status='lida'; x.style.color='#53bdeb'; }); });
     _socket.on('dm:typing',d=>{ const preview=$(`[data-chat-preview="${d.deId}"]`); if(preview){ if(d.digitando){preview.dataset.anterior=preview.textContent;preview.textContent='digitando…';preview.style.color='var(--ok)';}else if(preview.dataset.anterior){preview.textContent=preview.dataset.anterior;preview.style.color='';delete preview.dataset.anterior;} } if(_chatPeerId&&d.deId===_chatPeerId&&$('#chatTyping')){ $('#chatTyping').textContent=d.digitando?'digitando…':''; const p=$('#chatPresence'); if(p&&d.digitando){p.textContent='digitando…';p.classList.add('live');}else if(p&&_socket)_socket.emit('presence:check',_chatPeerId,x=>{p.classList.toggle('live',!!x.online);p.textContent=x.online?'online':(x.lastSeen?'visto por último '+formatarVisto(x.lastSeen):'offline')}); } });
     _socket.on('presence:update',d=>{ const preview=$(`[data-chat-preview="${d.userId}"]`); if(preview&&d.online&&!preview.dataset.anterior){preview.textContent='online';preview.style.color='var(--ok)';} if(_chatPeerId&&d.userId===_chatPeerId&&$('#chatPresence')){ const p=$('#chatPresence');p.classList.toggle('live',!!d.online);p.textContent=d.online?'online':(d.lastSeen?'visto por último '+formatarVisto(d.lastSeen):'offline'); } });
   }catch(e){} };

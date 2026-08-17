@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { prisma } from '../lib/db.js';
 import { exigirAuth } from '../lib/auth.js';
-import { emitToUser } from '../realtime.js';
+import { emitToUser, isUserOnline, isViewingChat } from '../realtime.js';
 import { enviarPush } from '../lib/push.js';
 
 export const dmRouter = Router();
@@ -52,9 +52,9 @@ dmRouter.get('/:username', async (req, res) => {
     ] },
     orderBy: { criadoEm: 'asc' }, take: 200,
   });
-  const marcadas = await prisma.mensagem.updateMany({ where: { deId: outro.id, paraId: req.userId, lida: false }, data: { lida: true } });
+  const marcadas = await prisma.mensagem.updateMany({ where: { deId: outro.id, paraId: req.userId, lida: false }, data: { entregue: true, lida: true } });
   if (marcadas.count) emitToUser(outro.id, 'dm:lida', { por: req.userId });
-  res.json({ usuario: outro, mensagens: msgs.map(m => ({ id: m.id, texto: m.texto, midiaUrl: m.midiaUrl, midiaTipo: m.midiaTipo, lida: m.deId===req.userId ? m.lida : true, criadoEm: m.criadoEm, meu: m.deId === req.userId })) });
+  res.json({ usuario: outro, mensagens: msgs.map(m => ({ id: m.id, texto: m.texto, midiaUrl: m.midiaUrl, midiaTipo: m.midiaTipo, entregue: m.deId===req.userId ? m.entregue : true, lida: m.deId===req.userId ? m.lida : true, criadoEm: m.criadoEm, meu: m.deId === req.userId })) });
 });
 
 // Enviar mensagem
@@ -68,12 +68,13 @@ dmRouter.post('/:username', async (req, res) => {
   if (outro.id === req.userId) return res.status(400).json({ erro: 'Não dá pra conversar com você mesmo.' });
   if (await bloqueioEntre(req.userId, outro.id)) return res.status(403).json({ erro: 'Conversa indisponível.' });
   const me = await prisma.usuario.findUnique({ where: { id: req.userId }, select: pub });
-  const m = await prisma.mensagem.create({ data: { deId: req.userId, paraId: outro.id, texto, midiaUrl, midiaTipo } });
-  const payload = { id: m.id, texto: m.texto, midiaUrl: m.midiaUrl, midiaTipo: m.midiaTipo, lida:false, criadoEm: m.criadoEm, de: me };
+  const entregue = isUserOnline(outro.id);
+  const m = await prisma.mensagem.create({ data: { deId: req.userId, paraId: outro.id, texto, midiaUrl, midiaTipo, entregue } });
+  const payload = { id: m.id, texto: m.texto, midiaUrl: m.midiaUrl, midiaTipo: m.midiaTipo, entregue, lida:false, criadoEm: m.criadoEm, de: me };
   emitToUser(outro.id, 'dm:nova', payload);
   const descricaoMidia = midiaTipo==='video'?'Enviou um vídeo':midiaTipo==='audio'?'Enviou um áudio':'Enviou uma foto';
-  enviarPush(outro.id, { title: 'Mensagem de ' + me.nomeGuerra, body: texto || descricaoMidia, tag: 'dm-'+me.username, url: '/rotina/#dm=' + encodeURIComponent(me.username) });
-  res.status(201).json({ id: m.id, texto: m.texto, midiaUrl:m.midiaUrl, midiaTipo:m.midiaTipo, lida:false, criadoEm: m.criadoEm, meu: true });
+  if (!isViewingChat(outro.id, req.userId)) enviarPush(outro.id, { title: 'Mensagem de ' + me.nomeGuerra, body: texto || descricaoMidia, tag: 'dm-'+me.username, url: '/rotina/#dm=' + encodeURIComponent(me.username) });
+  res.status(201).json({ id: m.id, texto: m.texto, midiaUrl:m.midiaUrl, midiaTipo:m.midiaTipo, entregue, lida:false, criadoEm: m.criadoEm, meu: true });
 });
 
 export default dmRouter;
