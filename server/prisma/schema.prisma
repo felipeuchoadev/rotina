@@ -79,6 +79,10 @@ model Mensagem {
   apagadaDe Boolean @default(false)
   apagadaPara Boolean @default(false)
   apagadaTodos Boolean @default(false)
+  respostaAId Int?
+  respostaTexto String?
+  respostaTipo String?
+  respostaMeu Boolean?
   criadoEm DateTime @default(now())
 
   @@index([deId, paraId])

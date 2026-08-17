@@ -68,7 +68,7 @@ dmRouter.get('/:username', async (req, res) => {
   });
   const marcadas = await prisma.mensagem.updateMany({ where: { deId: outro.id, paraId: req.userId, lida: false }, data: { entregue: true, lida: true } });
   if (marcadas.count) emitToUser(outro.id, 'dm:lida', { por: req.userId });
-  res.json({ usuario: outro, mensagens: msgs.map(m => ({ id: m.id, texto: m.texto, midiaUrl: m.midiaUrl, midiaTipo: m.midiaTipo, apagadaTodos:m.apagadaTodos, entregue: m.deId===req.userId ? m.entregue : true, lida: m.deId===req.userId ? m.lida : true, criadoEm: m.criadoEm, meu: m.deId === req.userId })) });
+  res.json({ usuario: outro, mensagens: msgs.map(m => ({ id: m.id, texto: m.texto, midiaUrl: m.midiaUrl, midiaTipo: m.midiaTipo, apagadaTodos:m.apagadaTodos, respostaAId:m.respostaAId, respostaTexto:m.respostaTexto, respostaTipo:m.respostaTipo, respostaMeu:m.respostaMeu == null ? null : (m.deId===req.userId ? m.respostaMeu : !m.respostaMeu), entregue: m.deId===req.userId ? m.entregue : true, lida: m.deId===req.userId ? m.lida : true, criadoEm: m.criadoEm, meu: m.deId === req.userId })) });
 });
 
 // Enviar mensagem
@@ -76,19 +76,26 @@ dmRouter.post('/:username', async (req, res) => {
   const texto = String(req.body.texto || '').trim();
   const midiaUrl = req.body.midiaUrl ? String(req.body.midiaUrl) : null;
   const midiaTipo = req.body.midiaTipo ? String(req.body.midiaTipo) : null;
+  const respostaAId = Number(req.body.respostaAId) || null;
   if (!texto && !midiaUrl) return res.status(400).json({ erro: 'Mensagem vazia.' });
   const outro = await prisma.usuario.findUnique({ where: { username: String(req.params.username).toLowerCase() } });
   if (!outro) return res.status(404).json({ erro: 'Usuário não encontrado.' });
   if (outro.id === req.userId) return res.status(400).json({ erro: 'Não dá pra conversar com você mesmo.' });
   if (await bloqueioEntre(req.userId, outro.id)) return res.status(403).json({ erro: 'Conversa indisponível.' });
   const me = await prisma.usuario.findUnique({ where: { id: req.userId }, select: pub });
+  let resposta = null;
+  if (respostaAId) resposta = await prisma.mensagem.findFirst({ where: { id: respostaAId, OR: [
+    { deId:req.userId, paraId:outro.id }, { deId:outro.id, paraId:req.userId },
+  ] } });
   const entregue = isUserOnline(outro.id);
-  const m = await prisma.mensagem.create({ data: { deId: req.userId, paraId: outro.id, texto, midiaUrl, midiaTipo, entregue } });
-  const payload = { id: m.id, texto: m.texto, midiaUrl: m.midiaUrl, midiaTipo: m.midiaTipo, entregue, lida:false, criadoEm: m.criadoEm, de: me };
+  const respostaTexto = resposta ? (resposta.apagadaTodos ? 'Mensagem apagada' : resposta.texto || (resposta.midiaTipo==='audio'?'Áudio':resposta.midiaTipo==='video'?'Vídeo':'Foto')) : null;
+  const m = await prisma.mensagem.create({ data: { deId: req.userId, paraId: outro.id, texto, midiaUrl, midiaTipo, entregue, respostaAId:resposta?.id||null, respostaTexto, respostaTipo:resposta?.midiaTipo||null, respostaMeu:resposta ? resposta.deId===req.userId : null } });
+  const respostaPayload={ respostaAId:m.respostaAId, respostaTexto:m.respostaTexto, respostaTipo:m.respostaTipo, respostaMeu:m.respostaMeu };
+  const payload = { id: m.id, texto: m.texto, midiaUrl: m.midiaUrl, midiaTipo: m.midiaTipo, ...respostaPayload, respostaMeu:m.respostaMeu == null ? null : !m.respostaMeu, entregue, lida:false, criadoEm: m.criadoEm, de: me };
   emitToUser(outro.id, 'dm:nova', payload);
   const descricaoMidia = midiaTipo==='video'?'Enviou um vídeo':midiaTipo==='audio'?'Enviou um áudio':'Enviou uma foto';
   if (!isViewingChat(outro.id, req.userId)) enviarPush(outro.id, { title: 'Mensagem de ' + me.nomeGuerra, body: texto || descricaoMidia, tag: 'dm-'+me.username, url: '/rotina/#dm=' + encodeURIComponent(me.username) });
-  res.status(201).json({ id: m.id, texto: m.texto, midiaUrl:m.midiaUrl, midiaTipo:m.midiaTipo, entregue, lida:false, criadoEm: m.criadoEm, meu: true });
+  res.status(201).json({ id: m.id, texto: m.texto, midiaUrl:m.midiaUrl, midiaTipo:m.midiaTipo, ...respostaPayload, entregue, lida:false, criadoEm: m.criadoEm, meu: true });
 });
 
 // Apaga somente da própria visualização ou, para o remetente, de todos os aparelhos.
