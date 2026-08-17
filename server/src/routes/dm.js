@@ -3,11 +3,25 @@ import { prisma } from '../lib/db.js';
 import { exigirAuth } from '../lib/auth.js';
 import { emitToUser, isUserOnline, isViewingChat } from '../realtime.js';
 import { enviarPush } from '../lib/push.js';
+import { unlink } from 'node:fs/promises';
+import path from 'node:path';
 
 export const dmRouter = Router();
 dmRouter.use(exigirAuth);
 
 const pub = { id: true, username: true, nomeGuerra: true, fotoUrl: true, genero: true };
+const UPLOAD_DIR = process.env.UPLOAD_DIR || './uploads';
+
+async function apagarMidiaLocal(url) {
+  if (!url) return;
+  try {
+    const pathname = new URL(String(url), 'https://redzone.local').pathname;
+    if (!pathname.startsWith('/uploads/')) return;
+    const nome = path.basename(pathname);
+    if (!nome || nome === '.' || nome === '..') return;
+    await unlink(path.resolve(UPLOAD_DIR, nome));
+  } catch (e) { if (e?.code !== 'ENOENT') console.warn('Falha ao apagar mídia de DM:', e.message); }
+}
 
 async function bloqueioEntre(a, b) {
   const n = await prisma.block.count({ where: { OR: [
@@ -20,7 +34,7 @@ async function bloqueioEntre(a, b) {
 dmRouter.get('/conversas', async (req, res) => {
   const me = req.userId;
   const msgs = await prisma.mensagem.findMany({
-    where: { OR: [{ deId: me }, { paraId: me }] },
+    where: { OR: [{ deId: me, apagadaDe: false }, { paraId: me, apagadaPara: false }] },
     orderBy: { criadoEm: 'desc' }, take: 500,
     include: { de: { select: pub }, para: { select: pub } },
   });
@@ -47,8 +61,8 @@ dmRouter.get('/:username', async (req, res) => {
   if (await bloqueioEntre(req.userId, outro.id)) return res.status(403).json({ erro: 'Conversa indisponível.' });
   const msgs = await prisma.mensagem.findMany({
     where: { OR: [
-      { deId: req.userId, paraId: outro.id },
-      { deId: outro.id, paraId: req.userId },
+      { deId: req.userId, paraId: outro.id, apagadaDe: false },
+      { deId: outro.id, paraId: req.userId, apagadaPara: false },
     ] },
     orderBy: { criadoEm: 'asc' }, take: 200,
   });
@@ -75,6 +89,27 @@ dmRouter.post('/:username', async (req, res) => {
   const descricaoMidia = midiaTipo==='video'?'Enviou um vídeo':midiaTipo==='audio'?'Enviou um áudio':'Enviou uma foto';
   if (!isViewingChat(outro.id, req.userId)) enviarPush(outro.id, { title: 'Mensagem de ' + me.nomeGuerra, body: texto || descricaoMidia, tag: 'dm-'+me.username, url: '/rotina/#dm=' + encodeURIComponent(me.username) });
   res.status(201).json({ id: m.id, texto: m.texto, midiaUrl:m.midiaUrl, midiaTipo:m.midiaTipo, entregue, lida:false, criadoEm: m.criadoEm, meu: true });
+});
+
+// Apaga somente da própria visualização ou, para o remetente, de todos os aparelhos.
+dmRouter.delete('/mensagem/:id', async (req, res) => {
+  const id = Number(req.params.id), modo = req.query.modo === 'todos' ? 'todos' : 'mim';
+  if (!Number.isInteger(id)) return res.status(400).json({ erro: 'Mensagem inválida.' });
+  const m = await prisma.mensagem.findUnique({ where: { id }, include: { de: { select: pub }, para: { select: pub } } });
+  if (!m || (m.deId !== req.userId && m.paraId !== req.userId)) return res.status(404).json({ erro: 'Mensagem não encontrada.' });
+  if (modo === 'todos') {
+    if (m.deId !== req.userId) return res.status(403).json({ erro: 'Só quem enviou pode apagar para todos.' });
+    await prisma.mensagem.delete({ where: { id } });
+    await apagarMidiaLocal(m.midiaUrl);
+    const payload = { id, modo: 'todos', tag: 'dm-' + m.de.username };
+    emitToUser(m.deId, 'dm:apagada', payload); emitToUser(m.paraId, 'dm:apagada', payload);
+    return res.json({ ok: true, modo: 'todos' });
+  }
+  const data = m.deId === req.userId ? { apagadaDe: true } : { apagadaPara: true };
+  const atualizada = await prisma.mensagem.update({ where: { id }, data });
+  if (atualizada.apagadaDe && atualizada.apagadaPara) { await prisma.mensagem.delete({ where: { id } }); await apagarMidiaLocal(m.midiaUrl); }
+  emitToUser(req.userId, 'dm:apagada', { id, modo: 'mim' });
+  res.json({ ok: true, modo: 'mim' });
 });
 
 export default dmRouter;

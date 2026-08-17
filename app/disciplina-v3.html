@@ -293,6 +293,8 @@ textarea.auto{resize:none; overflow:hidden; min-height:48px;}
 .chat-line.mine .chat-bubble{border-bottom-right-radius:4px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff}
 .chat-line.theirs .chat-bubble{border-bottom-left-radius:4px;background:var(--surface2);color:var(--text)}
 .chat-meta{font-size:10px;opacity:.76;margin:3px 0 -2px 8px;text-align:right;white-space:nowrap}
+.chat-msg-menu{border:0;background:transparent;color:inherit;padding:0 2px;margin-left:6px;font-size:16px;line-height:1;vertical-align:middle;opacity:.75}.chat-msg-menu:hover{opacity:1}
+.dm-delete-overlay{position:fixed;inset:0;z-index:130;background:rgba(0,0,0,.48);display:flex;align-items:flex-end;justify-content:center;padding:16px}.dm-delete-box{width:min(430px,100%);background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:12px;box-shadow:0 24px 70px rgba(0,0,0,.55)}.dm-delete-box h3{font-size:17px;margin:4px 6px 10px}.dm-delete-box button{display:block;width:100%;border:0;border-radius:13px;background:transparent;color:var(--text);padding:13px;text-align:left;font-size:15px}.dm-delete-box button:hover{background:var(--surface2)}.dm-delete-box .danger{color:var(--danger);font-weight:800}.dm-delete-box .cancel{text-align:center;color:var(--text-dim);border-top:1px solid var(--line);margin-top:4px}
 .comment-item{display:flex;gap:9px;padding:10px 4px;border-bottom:1px solid var(--line)}
 .comment-item.reply{margin-left:34px;border-left:2px solid var(--line);padding-left:10px}
 .comment-body{min-width:0;flex:1}.comment-text{overflow-wrap:anywhere;line-height:1.45}
@@ -2979,7 +2981,14 @@ let _chatUser=null, _chatPeerId=null, _typingTimer=null, _chatStopRecording=null
 function bolhaChat(m){
   const media=m.midiaUrl?(m.midiaTipo==='video'?`<video class="chat-media" src="${esc(m.midiaUrl)}" controls playsinline preload="none"></video>`:m.midiaTipo==='audio'?`<audio class="chat-audio" src="${esc(m.midiaUrl)}" controls preload="metadata"></audio>`:`<img class="chat-media" src="${esc(m.midiaUrl)}" loading="lazy" decoding="async" alt="Mídia da conversa">`):'';
   const ticks=m.meu?`<span data-dm-tick="${m.id}" data-status="${m.lida?'lida':m.entregue?'entregue':'enviada'}" style="color:${m.lida?'#53bdeb':'inherit'}">${m.lida||m.entregue?'✓✓':'✓'}</span>`:'';
-  return `<div class="chat-line ${m.meu?'mine':'theirs'}"><div class="chat-bubble">${media}${m.texto?esc(m.texto):''}<div class="chat-meta">${timeago(m.criadoEm)} ${ticks}</div></div></div>`;
+  return `<div class="chat-line ${m.meu?'mine':'theirs'}" data-dm-msg="${m.id}"><div class="chat-bubble">${media}${m.texto?esc(m.texto):''}<div class="chat-meta">${timeago(m.criadoEm)} ${ticks}<button class="chat-msg-menu" type="button" data-dm-menu="${m.id}" data-meu="${m.meu?1:0}" aria-label="Opções da mensagem">⋮</button></div></div></div>`;
+}
+function fecharMenuMensagem(){ $('#dmDeleteOverlay')?.remove(); }
+function abrirMenuMensagem(id,meu){
+  fecharMenuMensagem(); const o=document.createElement('div'); o.id='dmDeleteOverlay'; o.className='dm-delete-overlay';
+  o.innerHTML=`<div class="dm-delete-box"><h3>Apagar mensagem?</h3><button class="danger" data-dm-delete="mim">🗑️ Apagar para mim</button>${meu?'<button class="danger" data-dm-delete="todos">🗑️ Apagar para todos</button>':''}<button class="cancel" data-dm-cancel>Cancelar</button></div>`;
+  o.onclick=async e=>{ if(e.target===o||e.target.closest('[data-dm-cancel]'))return fecharMenuMensagem(); const b=e.target.closest('[data-dm-delete]'); if(!b)return; b.disabled=true; try{await api(`/dm/mensagem/${id}?modo=${b.dataset.dmDelete}`,{method:'DELETE'}); $(`[data-dm-msg="${id}"]`)?.remove(); fecharMenuMensagem(); toast(b.dataset.dmDelete==='todos'?'Mensagem apagada para todos.':'Mensagem apagada para você.');}catch(x){b.disabled=false;toast(x.message||'Não foi possível apagar.');} };
+  document.body.appendChild(o);
 }
 function limparNotifDM(username){ try{ navigator.serviceWorker?.controller?.postMessage({type:'CLEAR_NOTIFICATION',tag:'dm-'+username}); }catch(e){} }
 async function abrirChat(username){
@@ -3013,6 +3022,7 @@ async function abrirChat(username){
   $('#chatGalleryFile').onchange=e=>enviarArquivos(e.target.files); $('#chatCameraFile').onchange=e=>enviarArquivos(e.target.files); $('#chatAudioFileInput').onchange=e=>enviarArquivos(e.target.files);
   $('#chatTxt').addEventListener('paste',e=>{ const imagens=[...(e.clipboardData?.items||[])].filter(i=>i.kind==='file'&&i.type.startsWith('image/')).map(i=>i.getAsFile()).filter(Boolean); if(!imagens.length)return; e.preventDefault(); const arquivos=imagens.map((f,i)=>new File([f],`print-${Date.now()}-${i+1}.${f.type.includes('png')?'png':'jpg'}`,{type:f.type||'image/png'})); toast('Print colado — enviando…'); enviarArquivos(arquivos); });
   prepararGravacaoChat(enviar);
+  box.addEventListener('click',e=>{ const b=e.target.closest('[data-dm-menu]'); if(b)abrirMenuMensagem(Number(b.dataset.dmMenu),b.dataset.meu==='1'); });
 }
 function formatarVisto(data){ const d=new Date(data), h=d.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'}), hoje=new Date(), ontem=new Date(); ontem.setDate(hoje.getDate()-1); const iso=x=>x.toLocaleDateString('en-CA'); return iso(d)===iso(hoje)?`hoje às ${h}`:iso(d)===iso(ontem)?`ontem às ${h}`:`${d.toLocaleDateString('pt-BR')} às ${h}`; }
 function prepararGravacaoChat(enviar){
@@ -3776,6 +3786,7 @@ function connectSocket(){
     });
     _socket.on('dm:entregue',d=>{ const x=$(`[data-dm-tick="${d.id}"]`); if(x&&x.dataset.status!=='lida'){x.textContent='✓✓';x.dataset.status='entregue';x.style.color='inherit';} });
     _socket.on('dm:lida',()=>{ if(_chatUser) $$('[data-dm-tick]').forEach(x=>{ x.textContent='✓✓'; x.dataset.status='lida'; x.style.color='#53bdeb'; }); });
+    _socket.on('dm:apagada',d=>{ if(!d)return; $(`[data-dm-msg="${d.id}"]`)?.remove(); if(d.tag)try{navigator.serviceWorker?.controller?.postMessage({type:'CLEAR_NOTIFICATION',tag:d.tag});}catch(e){} });
     _socket.on('dm:typing',d=>{ const preview=$(`[data-chat-preview="${d.deId}"]`); if(preview){ if(d.digitando){preview.dataset.anterior=preview.textContent;preview.textContent='digitando…';preview.style.color='var(--ok)';}else if(preview.dataset.anterior){preview.textContent=preview.dataset.anterior;preview.style.color='';delete preview.dataset.anterior;} } if(_chatPeerId&&d.deId===_chatPeerId&&$('#chatTyping')){ $('#chatTyping').textContent=d.digitando?'digitando…':''; const p=$('#chatPresence'); if(p&&d.digitando){p.textContent='digitando…';p.classList.add('live');}else if(p&&_socket)_socket.emit('presence:check',_chatPeerId,x=>{p.classList.toggle('live',!!x.online);p.textContent=x.online?'online':(x.lastSeen?'visto por último '+formatarVisto(x.lastSeen):'offline')}); } });
     _socket.on('presence:update',d=>{ const preview=$(`[data-chat-preview="${d.userId}"]`); if(preview&&d.online&&!preview.dataset.anterior){preview.textContent='online';preview.style.color='var(--ok)';} if(_chatPeerId&&d.userId===_chatPeerId&&$('#chatPresence')){ const p=$('#chatPresence');p.classList.toggle('live',!!d.online);p.textContent=d.online?'online':(d.lastSeen?'visto por último '+formatarVisto(d.lastSeen):'offline'); } });
   }catch(e){} };

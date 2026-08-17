@@ -76,6 +76,8 @@ model Mensagem {
   midiaTipo String?
   entregue Boolean  @default(false)
   lida     Boolean  @default(false)
+  apagadaDe Boolean @default(false)
+  apagadaPara Boolean @default(false)
   criadoEm DateTime @default(now())
 
   @@index([deId, paraId])

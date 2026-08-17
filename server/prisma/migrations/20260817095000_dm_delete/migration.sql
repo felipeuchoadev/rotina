@@ -1,0 +1,2 @@
+ALTER TABLE "mensagens" ADD COLUMN "apagadaDe" BOOLEAN NOT NULL DEFAULT false;
+ALTER TABLE "mensagens" ADD COLUMN "apagadaPara" BOOLEAN NOT NULL DEFAULT false;
