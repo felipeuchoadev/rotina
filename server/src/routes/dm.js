@@ -42,7 +42,7 @@ dmRouter.get('/conversas', async (req, res) => {
   for (const m of msgs) {
     const outro = m.deId === me ? m.para : m.de;
     if (!outro) continue;
-    if (!map.has(outro.id)) map.set(outro.id, { usuario: outro, ultimo: { texto: m.texto, midiaTipo: m.midiaTipo, criadoEm: m.criadoEm, meu: m.deId === me }, naoLidas: 0 });
+    if (!map.has(outro.id)) map.set(outro.id, { usuario: outro, ultimo: { texto: m.apagadaTodos ? 'Mensagem apagada' : m.texto, midiaTipo: m.apagadaTodos ? null : m.midiaTipo, criadoEm: m.criadoEm, meu: m.deId === me }, naoLidas: 0 });
     if (m.paraId === me && !m.lida) map.get(outro.id).naoLidas++;
   }
   res.json([...map.values()]);
@@ -68,7 +68,7 @@ dmRouter.get('/:username', async (req, res) => {
   });
   const marcadas = await prisma.mensagem.updateMany({ where: { deId: outro.id, paraId: req.userId, lida: false }, data: { entregue: true, lida: true } });
   if (marcadas.count) emitToUser(outro.id, 'dm:lida', { por: req.userId });
-  res.json({ usuario: outro, mensagens: msgs.map(m => ({ id: m.id, texto: m.texto, midiaUrl: m.midiaUrl, midiaTipo: m.midiaTipo, entregue: m.deId===req.userId ? m.entregue : true, lida: m.deId===req.userId ? m.lida : true, criadoEm: m.criadoEm, meu: m.deId === req.userId })) });
+  res.json({ usuario: outro, mensagens: msgs.map(m => ({ id: m.id, texto: m.texto, midiaUrl: m.midiaUrl, midiaTipo: m.midiaTipo, apagadaTodos:m.apagadaTodos, entregue: m.deId===req.userId ? m.entregue : true, lida: m.deId===req.userId ? m.lida : true, criadoEm: m.criadoEm, meu: m.deId === req.userId })) });
 });
 
 // Enviar mensagem
@@ -99,7 +99,7 @@ dmRouter.delete('/mensagem/:id', async (req, res) => {
   if (!m || (m.deId !== req.userId && m.paraId !== req.userId)) return res.status(404).json({ erro: 'Mensagem não encontrada.' });
   if (modo === 'todos') {
     if (m.deId !== req.userId) return res.status(403).json({ erro: 'Só quem enviou pode apagar para todos.' });
-    await prisma.mensagem.delete({ where: { id } });
+    await prisma.mensagem.update({ where: { id }, data: { texto: '', midiaUrl: null, midiaTipo: null, apagadaTodos: true, entregue: true, lida: true } });
     await apagarMidiaLocal(m.midiaUrl);
     const payload = { id, modo: 'todos', tag: 'dm-' + m.de.username };
     emitToUser(m.deId, 'dm:apagada', payload); emitToUser(m.paraId, 'dm:apagada', payload);

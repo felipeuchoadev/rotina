@@ -3,7 +3,7 @@
    Sempre que você subir código novo no host, muda a versão do CACHE abaixo
    (ou a lógica de fetch pega o novo do servidor). O app se atualiza sozinho
    na próxima abertura. */
-const CACHE = 'redzone-v58';
+const CACHE = 'redzone-v59';
 
 // ---- Web Push: recebe notificação mesmo com o app fechado ----
 self.addEventListener('push', (e) => {
@@ -23,14 +23,15 @@ self.addEventListener('push', (e) => {
 self.addEventListener('notificationclick', (e) => {
   e.notification.close();
   const url = (e.notification.data && e.notification.data.url) || '/rotina/';
+  const target = new URL(url, self.location.origin).href;
   e.waitUntil(clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
     for (const c of list) {
       if (c.url.includes('/rotina') && 'focus' in c) {
-        // app já aberto: foca e navega pro assunto (dispara o deep-link por hash)
-        return Promise.resolve(c.focus()).then(() => { if ('navigate' in c && url) return c.navigate(url).catch(() => {}); });
+        // No Android/PWA, focar nem sempre dispara navegação. Envia também uma ordem direta ao app.
+        return Promise.resolve(c.focus()).then(() => { c.postMessage({type:'OPEN_DEEP_LINK',url:target}); if ('navigate' in c) return c.navigate(target).catch(() => {}); });
       }
     }
-    if (clients.openWindow) return clients.openWindow(url);
+    if (clients.openWindow) return clients.openWindow(target);
   }));
 });
 self.addEventListener('message',(e)=>{

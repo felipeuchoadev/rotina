@@ -78,6 +78,7 @@ model Mensagem {
   lida     Boolean  @default(false)
   apagadaDe Boolean @default(false)
   apagadaPara Boolean @default(false)
+  apagadaTodos Boolean @default(false)
   criadoEm DateTime @default(now())
 
   @@index([deId, paraId])
