@@ -2,7 +2,7 @@
 <html lang="pt-BR">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no, interactive-widget=resizes-content">
 <meta name="theme-color" content="#0a0a0d">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" type="image/png" sizes="227x227" href="favicon-rz.png?v=50">
@@ -271,7 +271,7 @@ textarea.auto{resize:none; overflow:hidden; min-height:48px;}
 .overlay{position:fixed; inset:0; z-index:60; background:rgba(0,0,0,.62); display:none; align-items:flex-end;}
 .overlay.show{display:flex;}
 .sheet{background:var(--surface); width:100%; max-width:520px; margin:0 auto; border-radius:26px 26px 0 0; padding:20px 16px calc(24px + env(safe-area-inset-bottom)); max-height:min(90vh,var(--app-vvh,90vh)); overflow-y:auto; overscroll-behavior:contain; box-shadow:0 -24px 54px rgba(0,0,0,.5);}
-.overlay.chat-full{align-items:stretch;background:var(--bg);left:0!important;right:auto!important;width:100vw!important;max-width:none!important;transform:none!important;z-index:90}
+.overlay.chat-full{align-items:stretch;background:var(--bg);inset:0!important;width:100vw!important;height:100dvh!important;max-width:none!important;transform:none!important;z-index:90}
 .overlay.chat-full .sheet{max-width:none;height:100%;max-height:none;border-radius:0;padding:calc(14px + env(safe-area-inset-top)) 14px calc(10px + env(safe-area-inset-bottom));display:flex;flex-direction:column;overflow:hidden}
 .sheet.keyboard-fit{max-height:100%;border-radius:18px 18px 0 0}
 .sheet .keyboard-actions{position:sticky;bottom:calc(-24px - env(safe-area-inset-bottom));z-index:3;background:var(--surface);padding:10px 0 calc(14px + env(safe-area-inset-bottom))}
@@ -465,6 +465,8 @@ body.th-shake{animation:thshake .55s;}
 .storyview .navL{left:0;} .storyview .navR{right:0;}
 .storyview .closev{position:absolute; top:12px; right:14px; z-index:2; background:rgba(0,0,0,.4); border:none; color:#fff; width:36px; height:36px; border-radius:50%; font-size:20px;}
 .storyview .menuv{position:absolute;top:12px;right:58px;z-index:3;background:rgba(0,0,0,.45);border:0;color:#fff;width:36px;height:36px;border-radius:50%;font-size:22px}
+.storyview .storyhead{position:absolute;z-index:3;top:22px;left:14px;right:104px;display:flex;align-items:center;gap:9px;color:#fff;text-shadow:0 2px 7px #000}.storyview .storyhead img{width:36px;height:36px;border-radius:50%;object-fit:cover;border:1px solid rgba(255,255,255,.7)}.storyview .storyhead b,.storyview .storyhead small{display:block}.storyview .storyhead small{opacity:.8}.storyview .storyaction{position:absolute;z-index:5;left:50%;bottom:calc(20px + env(safe-area-inset-bottom));transform:translateX(-50%);border:1px solid rgba(255,255,255,.55);background:rgba(0,0,0,.58);backdrop-filter:blur(10px);color:#fff;border-radius:999px;padding:10px 17px;font-weight:800;white-space:nowrap}.storyview .storyaction[hidden]{display:none}.storyview.paused #storyBarActive{animation-play-state:paused!important}
+.storyview:has(.storyaction:not([hidden])) .cap{bottom:calc(76px + env(safe-area-inset-bottom))}
 
 /* ============================================================
    RESPONSIVO
@@ -569,10 +571,12 @@ body.th-shake{animation:thshake .55s;}
 <!-- Story viewer fullscreen (estilo Instagram) -->
 <div class="storyview" id="storyview">
   <div class="bars" id="storyBars"></div>
+  <div class="storyhead" id="storyHead"></div>
   <button class="closev" onclick="fecharStories()">×</button>
   <button class="menuv" id="storyMenu" hidden>⋯</button>
   <div class="media" id="storyMedia"></div>
   <div class="cap" id="storyCap"></div>
+  <button class="storyaction" id="storyFeed" hidden>＋ Publicar no feed</button>
   <div class="navzone navL" onclick="storyNav(-1)"></div>
   <div class="navzone navR" onclick="storyNav(1)"></div>
 </div>
@@ -685,9 +689,9 @@ function mergeRotinaDiasLocal(atual,remoto){
 const $ = (s,root=document)=>root.querySelector(s);
 const $$ = (s,root=document)=>[...root.querySelectorAll(s)];
 function ajustarViewportTeclado(){
-  const vv=window.visualViewport, h=vv?vv.height:window.innerHeight, top=vv?vv.offsetTop:0;
+  const vv=window.visualViewport, h=vv?vv.height:window.innerHeight;
   document.documentElement.style.setProperty('--app-vvh',`${Math.max(240,h)}px`);
-  const ov=$('#overlay'); if(ov){ ov.style.top=`${top}px`; ov.style.height=`${h}px`; ov.style.bottom='auto'; }
+  const ov=$('#overlay'); if(ov){ ov.style.removeProperty('top');ov.style.removeProperty('height');ov.style.removeProperty('bottom'); }
 }
 if(window.visualViewport){ visualViewport.addEventListener('resize',ajustarViewportTeclado); visualViewport.addEventListener('scroll',ajustarViewportTeclado); }
 window.addEventListener('resize',ajustarViewportTeclado); setTimeout(ajustarViewportTeclado,0);
@@ -2875,7 +2879,7 @@ function bindStories(){
   $$('#scr-batalha [data-storyadd]').forEach(el=>el.onclick=()=>adicionarMemoria('outro'));
   $$('#scr-batalha [data-storyall]').forEach(el=>el.onclick=()=>abrirStories(recordsStories(),0));
 }
-let _story={items:[], i:0, timer:null}; let _feedPostedUrls=new Set();
+let _story={items:[], i:0, timer:null,endsAt:0,remaining:0,paused:false}; let _feedPostedUrls=new Set();
 function abrirStories(items, startIdx=0){
   if(!items||!items.length) return;
   _story.items=items; _story.i=startIdx||0;
@@ -2889,15 +2893,21 @@ function storyShow(){
   const isVideo=r.midiaTipo==='video';
   $('#storyMedia').innerHTML = isVideo ? `<video src="${r.url}" autoplay playsinline id="storyVid"></video>` : `<img src="${r.url}">`;
   $('#storyCap').textContent = r.texto || (REC_TIPOS[r.tipo]||'');
-  const menu=$('#storyMenu'); menu.hidden=_feedPostedUrls.has(r.url); menu.onclick=()=>{ clearTimeout(_story.timer); fecharStories(); compartilharNoFeedSheet(r); };
+  $('#storyHead').innerHTML=`${avatarHTML(S.profile||{},'avatar xs')}<div><b>${esc(S.profile?.nome||'Meu dia')}</b><small>${timeago(r.at)}</small></div>`;
+  const publicado=_feedPostedUrls.has(r.url), publicar=()=>{ clearTimeout(_story.timer); fecharStories(); compartilharNoFeedSheet(r); };
+  const menu=$('#storyMenu'),feedBtn=$('#storyFeed');menu.hidden=publicado;feedBtn.hidden=publicado;menu.onclick=publicar;feedBtn.onclick=publicar;
   const dur = isVideo ? 15000 : 7000;
   const bar=$('#storyBarActive');
   if(bar){ bar.style.transition='none'; bar.style.width='0%'; requestAnimationFrame(()=>{ bar.style.transition=`width ${dur}ms linear`; bar.style.width='100%'; }); }
+  _story.paused=false;_story.remaining=dur;_story.endsAt=Date.now()+dur;$('#storyview').classList.remove('paused');
   _story.timer=setTimeout(()=>storyNav(1), dur);
 }
+function storyPause(){if(_story.paused||!$('#storyview').classList.contains('on'))return;_story.paused=true;_story.remaining=Math.max(100,_story.endsAt-Date.now());clearTimeout(_story.timer);$('#storyVid')?.pause();const b=$('#storyBarActive');if(b){const w=getComputedStyle(b).width;b.style.transition='none';b.style.width=w;}$('#storyview').classList.add('paused');}
+function storyResume(){if(!_story.paused)return;_story.paused=false;$('#storyVid')?.play().catch(()=>{});const b=$('#storyBarActive');if(b){requestAnimationFrame(()=>{b.style.transition=`width ${_story.remaining}ms linear`;b.style.width='100%';});}_story.endsAt=Date.now()+_story.remaining;_story.timer=setTimeout(()=>storyNav(1),_story.remaining);$('#storyview').classList.remove('paused');}
 function storyNav(dir){ _story.i+=dir; if(_story.i>=_story.items.length){ fecharStories(); return; } if(_story.i<0) _story.i=0; storyShow(); }
 function fecharStories(){ clearTimeout(_story.timer); const v=$('#storyVid'); if(v) v.pause(); $('#storyview').classList.remove('on'); $('#storyMedia').innerHTML=''; $('#scr-batalha [data-storyall]')?.classList.add('seen'); }
 document.addEventListener('keydown',(e)=>{ if(!$('#storyview').classList.contains('on')) return; if(e.key==='ArrowRight'||e.key===' ') storyNav(1); else if(e.key==='ArrowLeft') storyNav(-1); else if(e.key==='Escape') fecharStories(); });
+let _storyTouchY=null;$('#storyview').addEventListener('pointerdown',e=>{_storyTouchY=e.clientY;if(!e.target.closest('button'))storyPause()});$('#storyview').addEventListener('pointerup',e=>{if(_storyTouchY!=null&&e.clientY-_storyTouchY>85){_storyTouchY=null;fecharStories();return}_storyTouchY=null;storyResume()});$('#storyview').addEventListener('pointercancel',()=>{_storyTouchY=null;storyResume()});
 window.fecharStories=fecharStories; window.storyNav=storyNav;
 
 // Atualizar feed (botão ↻ e puxar-pra-baixo). Avisa se não há nada novo.
@@ -2919,12 +2929,12 @@ window.addEventListener('touchend', ()=>{ if(_ptPull){ _ptPull=false; _ptStartY=
 async function renderBatalha(){
   reportXP();
   let board=[], feed=[], notif={naoLidas:0}, dmN={naoLidas:0};
-  const respostas=await Promise.allSettled([api('/batalha/ranking'),api('/batalha/feed?limite='+feedLote()),api('/batalha/notificacoes'),api('/dm/naolidas')]);
+  const respostas=await Promise.allSettled([api('/batalha/ranking'),api('/batalha/feed?limite='+feedLote()),api('/batalha/notificacoes'),api('/dm/naolidas'),api('/batalha/feed/meus-urls')]);
   if(respostas[0].status==='fulfilled') board=respostas[0].value;
   if(respostas[1].status==='fulfilled') feed=respostas[1].value;
   if(respostas[2].status==='fulfilled') notif=respostas[2].value;
   if(respostas[3].status==='fulfilled') dmN=respostas[3].value;
-  _feedPostedUrls=new Set(feed.filter(p=>p.usuarioId===S.profile?.id||p.usuario?.id===S.profile?.id).map(p=>p.midiaUrl).filter(Boolean));
+  _feedPostedUrls=new Set(respostas[4].status==='fulfilled'?respostas[4].value:feed.filter(p=>p.usuarioId===S.profile?.id||p.usuario?.id===S.profile?.id).map(p=>p.midiaUrl).filter(Boolean));
   const badge = notif.naoLidas>0 ? `<span class="notif-badge">${notif.naoLidas>9?'9+':notif.naoLidas}</span>` : '';
   const dmBadge = dmN.naoLidas>0 ? `<span class="notif-badge">${dmN.naoLidas>9?'9+':dmN.naoLidas}</span>` : '';
   $('#scr-batalha').innerHTML=`
@@ -3025,6 +3035,7 @@ async function abrirChat(username){
     <div id="chatRecording" class="chat-recording"><i class="pulse"></i><span class="time" id="chatRecTime">0:00</span><button class="btn sm ghost" id="chatRecCancel">Cancelar</button><button class="btn sm" id="chatRecSend">Enviar</button></div>
     <div id="chatReplyBar" class="chat-reply-bar hidden"><div class="txt"><b>Resposta</b><span></span></div><button id="chatReplyCancel" aria-label="Cancelar resposta">×</button></div><div class="chat-compose"><button class="icobtn" id="chatAttach" aria-label="Anexar">＋</button><button class="icobtn" id="chatEmoji" aria-label="Emojis">😊</button><input id="chatTxt" placeholder="Mensagem..." autocomplete="off"><button class="btn sm chat-send" id="chatSend">Enviar</button><button class="icobtn hidden" id="chatMic" aria-label="Gravar áudio">🎤</button></div>
     <input id="chatGalleryFile" type="file" accept="image/*,video/*" multiple hidden><input id="chatCameraFile" type="file" accept="image/*,video/*" capture="environment" hidden><input id="chatAudioFileInput" type="file" accept="audio/*" hidden>`);
+  try{const draft=sessionStorage.getItem('rz:dm:draft:'+username);if(draft){$('#chatTxt').value=draft;sessionStorage.removeItem('rz:dm:draft:'+username);}}catch(e){}
   const box=$('#chatMsgs'); box.scrollTop=box.scrollHeight;
   const mostrarPresenca=p=>{ const el=$('#chatPresence'); if(!el)return; el.classList.toggle('live',!!p.online); el.textContent=p.online?'online':(p.lastSeen?'visto por último '+formatarVisto(p.lastSeen):'offline'); };
   if(_socket&&_chatPeerId) _socket.emit('presence:check',_chatPeerId,mostrarPresenca);
@@ -3795,7 +3806,7 @@ function connectSocket(){
     _socket.on('state:changed', (d)=>{ if(!d || d.src===CLIENT_ID) return; applyRemoteState(d.chave, d.valor,d.versao); });
     _socket.on('profile:changed', (d)=>{ if(!d || d.src===CLIENT_ID) return; applyRemoteProfile(d.usuario); });
     // AUTOUPDATE ao vivo: desenvolvedor subiu versão nova → recarrega na hora (HTML é network-first, pega o novo)
-    _socket.on('app:update', ()=>{ if(window.__appReloading) return; window.__appReloading=true; salvarPosicaoAtual(); try{ sessionStorage.setItem('rz:reloadAt', String(Date.now())); }catch(e){} try{ toast('🔄 Nova versão chegou — atualizando…'); }catch(e){} setTimeout(()=>{ try{ location.reload(); }catch(e){} }, 600); });
+    _socket.on('app:update', ()=>{ if(window.__appReloading) return; window.__appReloading=true; salvarPosicaoAtual(); try{ sessionStorage.setItem('rz:reloadAt', String(Date.now()));if(_chatUser){sessionStorage.setItem('rz:dm:draft:'+_chatUser,$('#chatTxt')?.value||'');location.hash='dm='+encodeURIComponent(_chatUser);}}catch(e){} try{ toast('🔄 Nova versão chegou — atualizando…'); }catch(e){} setTimeout(()=>{ try{ location.reload(); }catch(e){} }, 600); });
     _socket.on('dm:nova', (m)=>{
       _socket.emit('dm:delivered',{id:m.id});
       const nome=m.de?.nomeGuerra||'Alguém';
@@ -3849,7 +3860,7 @@ async function subscribePush(){
   try{ const h=location.hash||''; if(h.includes('reset=')){ const t=new URLSearchParams(h.slice(1)).get('reset'); if(t) resetarSenhaSheet(t); } }catch(e){}
   // registra service worker (só funciona em https/host real; ignora falha local)
   if('serviceWorker' in navigator){
-    navigator.serviceWorker.register('service-worker.js').catch(()=>{});
+    navigator.serviceWorker.register('service-worker.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
     navigator.serviceWorker.addEventListener('message',e=>{ if(e.data?.type!=='OPEN_DEEP_LINK'||!e.data.url)return; try{ const u=new URL(e.data.url,location.origin); if(u.origin===location.origin&&u.pathname===location.pathname){location.hash=u.hash;handleDeepLink();}else location.assign(u.href); }catch(_){} });
     // autoupdate: quando uma versão nova assume, recarrega sozinho (sem F5)
     let _reloaded=false;
@@ -3861,7 +3872,8 @@ async function subscribePush(){
     });
     // checa por atualização periodicamente (app aberto por muito tempo)
     // O socket entrega deploy em tempo real; esta checagem é só contingência e não deve gastar dados a cada 5s.
-    setInterval(()=>{ if(document.visibilityState==='visible') navigator.serviceWorker.getRegistration().then(r=>r&&r.update()).catch(()=>{}); }, 300000);
+    const checarVersao=()=>{if(document.visibilityState==='visible')navigator.serviceWorker.getRegistration().then(r=>r&&r.update()).catch(()=>{});};
+    setInterval(checarVersao,15000);document.addEventListener('visibilitychange',checarVersao);
   }
 })();
 </script>

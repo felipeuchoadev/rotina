@@ -60,6 +60,13 @@ batalhaRouter.get('/feed', async (req, res) => {
   res.json(visiveis);
 });
 
+// URLs já publicadas pelo próprio usuário; permite ao Story mostrar "Publicar no feed"
+// somente quando aquela mídia realmente ainda não foi postada, mesmo fora da primeira página.
+batalhaRouter.get('/feed/meus-urls', async (req, res) => {
+  const posts = await prisma.feedPost.findMany({ where: { usuarioId: req.userId, midiaUrl: { not: null } }, select: { midiaUrl: true }, orderBy: { criadoEm: 'desc' }, take: 500 });
+  res.json(posts.map(p => p.midiaUrl).filter(Boolean));
+});
+
 // ---- Post único (deep-link #post=<id>) ----
 batalhaRouter.get('/feed/:id(\\d+)', async (req, res) => {
   const id = Number(req.params.id);
