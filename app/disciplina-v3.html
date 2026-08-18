@@ -272,7 +272,8 @@ textarea.auto{resize:none; overflow:hidden; min-height:48px;}
 .overlay{position:fixed; inset:0; z-index:60; background:rgba(0,0,0,.62); display:none; align-items:flex-end;}
 .overlay.show{display:flex;}
 .sheet{background:var(--surface); width:100%; max-width:520px; margin:0 auto; border-radius:26px 26px 0 0; padding:20px 16px calc(24px + env(safe-area-inset-bottom)); max-height:min(90vh,var(--app-vvh,90vh)); overflow-y:auto; overscroll-behavior:contain; box-shadow:0 -24px 54px rgba(0,0,0,.5);}
-.overlay.chat-full{align-items:stretch;background:var(--bg);inset:0!important;width:100vw!important;height:100dvh!important;max-width:none!important;transform:none!important;z-index:90}
+html.chat-open,body.chat-open{overflow:hidden!important;overscroll-behavior:none}
+.overlay.chat-full{align-items:stretch;background:var(--bg);inset:0!important;width:100vw!important;height:100dvh!important;max-width:none!important;transform:none!important;z-index:90;overflow:hidden}
 .overlay.chat-full .sheet{max-width:none;height:100%;max-height:none;border-radius:0;padding:calc(14px + env(safe-area-inset-top)) 14px calc(10px + env(safe-area-inset-bottom));display:flex;flex-direction:column;overflow:hidden}
 .sheet.keyboard-fit{max-height:100%;border-radius:18px 18px 0 0}
 .sheet .keyboard-actions{position:sticky;bottom:calc(-24px - env(safe-area-inset-bottom));z-index:3;background:var(--surface);padding:10px 0 calc(14px + env(safe-area-inset-bottom))}
@@ -3037,6 +3038,7 @@ async function abrirChat(username){
   openSheet('<button class="sheet-close" onclick="closeSheet()">×</button><p class="muted" style="padding:20px 0">Carregando…</p>');
   let d; try{ d=await api('/dm/'+encodeURIComponent(username)); }catch(e){ $('#sheet').innerHTML='<button class="sheet-close" onclick="closeSheet()">×</button><p class="err">Conversa indisponível.</p>'; return; }
   _chatPeerId=d.usuario.id; limparNotifDM(username); $('#overlay').classList.add('chat-full');
+  document.documentElement.classList.add('chat-open'); document.body.classList.add('chat-open');
   if(_socket) _socket.emit('dm:viewing',{peerId:_chatPeerId});
   await atualizarBadgeDM();
   _dmSelecionadas.clear();_dmResposta=null;
@@ -3777,7 +3779,7 @@ function bindPasswordEyes(root){
   });
 }
 function openSheet(html){ pausarVideosFeed(); const estava=$('#overlay').classList.contains('show'); $('#sheet').classList.remove('keyboard-fit'); $('#sheet').innerHTML=`<button class="sheet-close" onclick="closeSheet()">×</button>`+html; $('#overlay').classList.add('show'); ajustarViewportTeclado(); if(!estava){ try{ history.pushState({rzSheet:true,rzTab:activeTab},'',location.href); }catch(e){} } bindPasswordEyes($('#sheet')); }
-function closeSheet(fromPop=false){ $$('#sheet video').forEach(v=>{try{v.pause();}catch(e){}}); try{_chatStopRecording?.();}catch(e){} _chatStopRecording=null; if(_socket&&_chatPeerId)_socket.emit('dm:viewing',{peerId:null}); const aberto=$('#overlay').classList.contains('show'); $('#overlay').classList.remove('show','chat-full'); _chatUser=null; _chatPeerId=null; if(aberto&&!fromPop&&history.state?.rzSheet){ try{ history.back(); }catch(e){} } }
+function closeSheet(fromPop=false){ $$('#sheet video').forEach(v=>{try{v.pause();}catch(e){}}); try{_chatStopRecording?.();}catch(e){} _chatStopRecording=null; if(_socket&&_chatPeerId)_socket.emit('dm:viewing',{peerId:null}); const aberto=$('#overlay').classList.contains('show'); $('#overlay').classList.remove('show','chat-full'); document.documentElement.classList.remove('chat-open'); document.body.classList.remove('chat-open'); _chatUser=null; _chatPeerId=null; if(aberto&&!fromPop&&history.state?.rzSheet){ try{ history.back(); }catch(e){} } }
 
 // ESC sempre volta uma camada, como em aplicativos de desktop.
 document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if($('.chat-viewer')){e.preventDefault();return fecharViewerChat()}if($('.media-preview-overlay')){e.preventDefault();return $('.media-preview-overlay').remove()}if($('#dmDeleteOverlay')){e.preventDefault();return fecharMenuMensagem()}if($('#storyview')?.classList.contains('on')){e.preventDefault();return fecharStories()}if($('#overlay')?.classList.contains('show')){e.preventDefault();return closeSheet()}if($('#nav')?.classList.contains('open')){e.preventDefault();return closeDrawer()}if(activeTab!=='inicio'){e.preventDefault();goBack()}},true);
