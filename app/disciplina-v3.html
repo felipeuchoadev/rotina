@@ -3123,10 +3123,11 @@ function feedPostHTML(post){
   const liked = (post.likes||[]).some(l=>l.usuarioId===meuId);
   const prof={nome:post.usuario?.nomeGuerra||'?', foto:post.usuario?.fotoUrl, genero:post.usuario?.genero};
   const un=post.usuario?.username||'';
+  const patentePost=rankOf(Number(post.usuario?.xp)||0);
   const nCom = post._count ? post._count.comentarios : 0;
   return `<div class="post" data-post="${post.id}">
     <div class="post-top">
-      <span class="who-link" data-perfil="${esc(un)}">${avatarHTML(prof,'avatar xs')}<div><div class="n">${esc(prof.nome)}</div><div class="t">@${esc(un)} · ${timeago(post.criadoEm)}</div></div></span>
+      <span class="who-link" data-perfil="${esc(un)}">${avatarHTML(prof,'avatar xs')}<div><div class="n">${esc(prof.nome)}</div><div class="t" style="display:flex;align-items:center;gap:5px;flex-wrap:wrap">@${esc(un)} · ${timeago(post.criadoEm)} · ${insignia(patentePost.id,'insignia sm')}<b>${esc(patentePost.name)}</b></div></div></span>
       ${meu?`<button class="post-menu" data-menu="${post.id}" data-off="${post.comentariosOff?1:0}" data-priv="${post.privado?1:0}">⋯</button>`:''}
     </div>
     ${media?`<div class="post-like-zone" data-double-like="${post.id}" data-liked="${liked?1:0}">${media}<span class="double-heart">❤️</span></div>`:''}
