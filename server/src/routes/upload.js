@@ -16,13 +16,13 @@ const UPLOAD_DIR = process.env.UPLOAD_DIR || './uploads';
 const PUBLIC_BASE = process.env.PUBLIC_MEDIA_BASE || '/uploads';
 const execFileAsync = promisify(execFile);
 
-async function comprimirComFfmpeg(buffer, ext, tipo) {
+async function comprimirComFfmpeg(buffer, ext, tipo, corte = null) {
   const dir = await mkdtemp(path.join(os.tmpdir(), 'rz-media-'));
   const entrada = path.join(dir, 'entrada' + ext), saida = path.join(dir, tipo === 'video' ? 'saida.mp4' : 'saida.ogg');
   try {
     await writeFile(entrada, buffer);
     const args = tipo === 'video'
-      ? ['-y','-i',entrada,'-vf','scale=min(1280\\,iw):-2','-c:v','libx264','-preset','superfast','-crf','27','-c:a','aac','-b:a','96k','-movflags','+faststart',saida]
+      ? ['-y','-i',entrada,...(corte?['-ss',String(corte.inicio),'-t',String(corte.duracao)]:[]),'-vf','scale=min(1280\\,iw):-2','-c:v','libx264','-preset','superfast','-crf','27','-c:a','aac','-b:a','96k','-movflags','+faststart',saida]
       : ['-y','-i',entrada,'-vn','-c:a','libopus','-b:a','64k',saida];
     await execFileAsync('ffmpeg', args, { timeout: 180000, maxBuffer: 2 * 1024 * 1024 });
     const comprimido = await readFile(saida);
@@ -51,8 +51,13 @@ uploadRouter.post('/', upload.single('arquivo'), async (req, res) => {
       return res.status(201).json({ url: `${PUBLIC_BASE}/${nome}`, tipo: 'foto' });
     } else if (req.file.mimetype.startsWith('video/')) {
       const ext = (req.file.originalname.match(/\.[a-z0-9]+$/i) || ['.mp4'])[0];
+      const recebeuCorte = req.body.inicio !== undefined || req.body.fim !== undefined;
+      const inicio = Number(req.body.inicio), fim = Number(req.body.fim);
+      const corte = recebeuCorte && Number.isFinite(inicio) && Number.isFinite(fim) && inicio >= 0 && fim > inicio && fim - inicio <= 60.05
+        ? { inicio, duracao: Math.min(60, fim - inicio) } : null;
+      if (recebeuCorte && !corte) return res.status(400).json({ erro: 'Trecho de vídeo inválido. Escolha até 60 segundos.' });
       let nome = `${id}.mp4`;
-      let buf=req.file.buffer; try{const comprimido=await comprimirComFfmpeg(buf,ext,'video');if(comprimido.length<buf.length)buf=comprimido;else nome=`${id}${ext}`;}catch(e){nome=`${id}${ext}`;console.warn('Compressão de vídeo indisponível:',e.message);}
+      let buf=req.file.buffer; try{const comprimido=await comprimirComFfmpeg(buf,ext,'video',corte);if(corte||comprimido.length<buf.length)buf=comprimido;else nome=`${id}${ext}`;}catch(e){if(corte)throw e;nome=`${id}${ext}`;console.warn('Compressão de vídeo indisponível:',e.message);}
       await writeFile(path.join(UPLOAD_DIR, nome), buf);
       return res.status(201).json({ url: `${PUBLIC_BASE}/${nome}`, tipo: 'video' });
     } else if (req.file.mimetype.startsWith('audio/')) {
