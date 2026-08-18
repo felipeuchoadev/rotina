@@ -2890,7 +2890,7 @@ function compartilharNoFeedSheet(r){
     <button class="btn" id="cpEnviar">Publicar</button>`);
   const ta=$('#cpTxt'); autoGrow(ta); ta.oninput=()=>autoGrow(ta);
   $('#cpEnviar').onclick=async()=>{
-    try{ await api('/batalha/feed',{method:'POST',body:{texto:$('#cpTxt').value.trim(), midiaUrl:r.url, midiaTipo:(r.midiaTipo==='video'?'video':'foto'), tipo:'manual', privado:$('#cpPriv').checked}}); closeSheet(); toast('Publicado, soldado! 📣'); if(activeTab==='batalha') renderBatalha(); }
+    try{ await api('/batalha/feed',{method:'POST',body:{texto:$('#cpTxt').value.trim(), midiaUrl:r.url, midiaTipo:(r.midiaTipo==='video'?'video':'foto'), tipo:'manual', privado:$('#cpPriv').checked}}); closeSheet(); toast(`Publicado, ${rankOf(computeXP()).name}! 📣`); if(activeTab==='batalha') renderBatalha(); }
     catch(e){ toast('Falha ao publicar.'); }
   };
 }
@@ -3396,7 +3396,7 @@ function composePost(prefill=''){
     const texto=$('#postLeg').value.trim();
     if(!midiaUrl && !texto) return toast('Coloque uma foto/vídeo ou uma legenda.');
     try{ await api('/batalha/feed',{method:'POST',body:{texto, midiaUrl, midiaTipo, tipo:'manual'}});
-      closeSheet(); toast('Publicado, soldado.'); renderBatalha(); }
+      closeSheet(); toast(`Publicado, ${rankOf(computeXP()).name}! 📣`); renderBatalha(); }
     catch(e){ toast('Falha ao publicar.'); }
   };
 }
@@ -3436,7 +3436,7 @@ async function gerarPublicacaoDoDia(){
     const texto = linhas.length?('Relatório de hoje 🪖\n'+linhas.join('\n')+'\n\nRumo à ESA. Sem desculpa.'):'';
     const selecionadas=[...midiasSel].sort((a,b)=>a-b).map(i=>midiasHoje[i]).filter(Boolean), midias=selecionadas.map(m=>({url:m.url,tipo:m.midiaTipo==='video'?'video':'foto'})), primeira=midias[0]||null;
     if(!texto && !midias.length){ return toast('Marque pelo menos uma coisa.'); }
-    try{ await api('/batalha/feed',{method:'POST',body:{texto,midias,midiaUrl:primeira?.url||null,midiaTipo:primeira?.tipo||null,tipo:'manual',privado:$('#giPriv').checked}});midias.forEach(m=>_feedPostedUrls.add(m.url));closeSheet();toast('Publicado! 📣');renderBatalha(); }
+    try{ await api('/batalha/feed',{method:'POST',body:{texto,midias,midiaUrl:primeira?.url||null,midiaTipo:primeira?.tipo||null,tipo:'manual',privado:$('#giPriv').checked}});midias.forEach(m=>_feedPostedUrls.add(m.url));closeSheet();toast(`Publicado, ${rankOf(computeXP()).name}! 📣`);renderBatalha(); }
     catch(e){ toast('Falha ao publicar.'); }
   };
 }
