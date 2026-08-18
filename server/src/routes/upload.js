@@ -22,7 +22,7 @@ async function comprimirComFfmpeg(buffer, ext, tipo) {
   try {
     await writeFile(entrada, buffer);
     const args = tipo === 'video'
-      ? ['-y','-i',entrada,'-vf','scale=1280:-2:force_original_aspect_ratio=decrease','-c:v','libx264','-preset','veryfast','-crf','27','-c:a','aac','-b:a','96k','-movflags','+faststart',saida]
+      ? ['-y','-i',entrada,'-vf','scale=min(1280\\,iw):-2','-c:v','libx264','-preset','superfast','-crf','27','-c:a','aac','-b:a','96k','-movflags','+faststart',saida]
       : ['-y','-i',entrada,'-vn','-c:a','libopus','-b:a','64k',saida];
     await execFileAsync('ffmpeg', args, { timeout: 120000, maxBuffer: 2 * 1024 * 1024 });
     const comprimido = await readFile(saida);
@@ -51,6 +51,13 @@ uploadRouter.post('/', upload.single('arquivo'), async (req, res) => {
       return res.status(201).json({ url: `${PUBLIC_BASE}/${nome}`, tipo: 'foto' });
     } else if (req.file.mimetype.startsWith('video/')) {
       const ext = (req.file.originalname.match(/\.[a-z0-9]+$/i) || ['.mp4'])[0];
+      // Celulares e redes sociais normalmente já entregam MP4/H.264 bem compacto.
+      // Reprocessar esses arquivos só reduz qualidade e pode prender a publicação.
+      if (req.file.mimetype === 'video/mp4' && req.file.size <= 25 * 1024 * 1024) {
+        const nome = `${id}.mp4`;
+        await writeFile(path.join(UPLOAD_DIR, nome), req.file.buffer);
+        return res.status(201).json({ url: `${PUBLIC_BASE}/${nome}`, tipo: 'video' });
+      }
       let nome = `${id}.mp4`;
       let buf=req.file.buffer; try{buf=await comprimirComFfmpeg(buf,ext,'video');}catch(e){nome=`${id}${ext}`;console.warn('Compressão de vídeo indisponível:',e.message);}
       await writeFile(path.join(UPLOAD_DIR, nome), buf);
