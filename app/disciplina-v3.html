@@ -3582,7 +3582,7 @@ async function adminHistoricoAvisosSheet(){
 
 let _avisosPendentes=[];
 async function checarAvisosAdmin(){
-  if(!authToken||document.querySelector('.system-notice'))return;
+  if(!authToken||S?.profile?.isAdmin||document.querySelector('.system-notice'))return;
   try{_avisosPendentes=(await api('/avisos')).avisos||[];mostrarProximoAviso()}catch(e){}
 }
 function mostrarProximoAviso(){

@@ -96,7 +96,11 @@ adminRouter.post('/avisos',async(req,res)=>{
   const titulo=String(req.body.titulo||'').trim().slice(0,80),mensagem=String(req.body.mensagem||'').trim().slice(0,1000);
   const destinatarioId=req.body.destinatarioId?String(req.body.destinatarioId):null;
   if(!titulo||!mensagem)return res.status(400).json({erro:'Título e mensagem são obrigatórios.'});
-  if(destinatarioId&&!await prisma.usuario.findUnique({where:{id:destinatarioId},select:{id:true}}))return res.status(404).json({erro:'Destinatário não encontrado.'});
+  if(destinatarioId){
+    const destino=await prisma.usuario.findUnique({where:{id:destinatarioId},select:{id:true,isAdmin:true}});
+    if(!destino)return res.status(404).json({erro:'Destinatário não encontrado.'});
+    if(destino.isAdmin)return res.status(400).json({erro:'Avisos são destinados apenas aos usuários.'});
+  }
   const aviso=await prisma.adminAviso.create({data:{adminId:req.userId,destinatarioId,titulo,mensagem}});
   await auditar(req.userId,destinatarioId,'aviso:publicar',{avisoId:aviso.id,publico:!destinatarioId});
   if(destinatarioId)emitToUser(destinatarioId,'aviso:novo',{id:aviso.id});else emitFeed('aviso:novo',{id:aviso.id});
