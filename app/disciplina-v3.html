@@ -505,6 +505,13 @@ body.th-shake{animation:thshake .55s;}
   .biocard s{font-size:9px;}
   .sumcard .prog{display:none;}   /* tela minúscula: esconde a barrinha pra o texto respirar */
 }
+@media (min-width:600px) and (max-width:899px){
+  #app{max-width:min(760px,100%)}
+  .screen{padding:0 clamp(24px,5vw,42px)}
+  body{font-size:17px}
+  .topbar{padding-top:18px}
+  .card,.sumcard,.rowitem{border-radius:18px}
+}
 @media (min-width:900px){
   /* DESKTOP: sidebar fixa (sem gaveta, sem ☰) */
   .nav{transform:none !important; box-shadow:none; top:0; bottom:0; left:0; right:auto; width:108px; height:100vh; border-top:none; border-right:1px solid var(--line); padding:18px 0; max-width:none;}
