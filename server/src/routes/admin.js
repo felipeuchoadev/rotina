@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { prisma } from '../lib/db.js';
 import { exigirAuth, hashSenha } from '../lib/auth.js';
 import { publico } from './auth.js';
+import { emitFeed, emitToUser } from '../realtime.js';
 
 export const adminRouter = Router();
 adminRouter.use(exigirAuth);
@@ -73,6 +74,28 @@ adminRouter.post('/usuarios/:id/redefinir-senha', async (req,res)=>{
 
 adminRouter.get('/auditoria', async (_req,res)=>{
   const itens=await prisma.adminAudit.findMany({orderBy:{criadoEm:'desc'},take:100}); res.json({itens});
+});
+
+adminRouter.get('/avisos',async(_req,res)=>{
+  const avisos=await prisma.adminAviso.findMany({orderBy:{criadoEm:'desc'},take:50,include:{_count:{select:{dispensas:true}}}});
+  res.json({avisos});
+});
+
+adminRouter.post('/avisos',async(req,res)=>{
+  const titulo=String(req.body.titulo||'').trim().slice(0,80),mensagem=String(req.body.mensagem||'').trim().slice(0,1000);
+  const destinatarioId=req.body.destinatarioId?String(req.body.destinatarioId):null;
+  if(!titulo||!mensagem)return res.status(400).json({erro:'Título e mensagem são obrigatórios.'});
+  if(destinatarioId&&!await prisma.usuario.findUnique({where:{id:destinatarioId},select:{id:true}}))return res.status(404).json({erro:'Destinatário não encontrado.'});
+  const aviso=await prisma.adminAviso.create({data:{adminId:req.userId,destinatarioId,titulo,mensagem}});
+  await auditar(req.userId,destinatarioId,'aviso:publicar',{avisoId:aviso.id,publico:!destinatarioId});
+  if(destinatarioId)emitToUser(destinatarioId,'aviso:novo',{id:aviso.id});else emitFeed('aviso:novo',{id:aviso.id});
+  res.status(201).json({aviso});
+});
+
+adminRouter.patch('/avisos/:id',async(req,res)=>{
+  const id=Number(req.params.id),ativo=!!req.body.ativo;
+  const aviso=await prisma.adminAviso.update({where:{id},data:{ativo}});
+  await auditar(req.userId,aviso.destinatarioId,'aviso:estado',{avisoId:id,ativo});res.json({aviso});
 });
 
 export default adminRouter;

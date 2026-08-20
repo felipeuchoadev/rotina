@@ -11,12 +11,14 @@
 > ainda é `app/disciplina-v3.html`; logo `redzone-logo.png`. Conta de teste:
 > `felipeestudos220807@gmail.com` / `felipe220807@` (pergunta de segurança: time = Flamengo).
 
-> 🟢 **VERSÃO ATUAL: SW `redzone-v76`.** App/back TODOS no ar e testados. Sync ao vivo ponta a ponta
+> 🟡 **PRÓXIMA v77 (local):** painel de avisos administrativos descartáveis e sincronizados por conta; v76 responsiva também aguarda publicação.
+>
+> 🟢 **VERSÃO PUBLICADA: SW `redzone-v75`.** App/back no ar. Sync ao vivo ponta a ponta
 > (mudou num aparelho → aparece nos outros em ms) + autoupdate ao vivo (deploy → conectados recarregam em ms)
 > JÁ FUNCIONAM. Deploy = `scp app/* server/src/**` pra VM (chave `Chaves/oracle_vm`, user `ubuntu`,
 > `redsystems.ddns.net:/opt/disciplina/`) + `systemctl restart disciplina` se mexeu no `server/` + **bump do SW**.
 
-> 🛡️ **v76:** painel administrativo protegido por função de proprietário (busca/edição/bloqueio/redefinição de senha com auditoria), login por e-mail ou usuário, Esc fecha o seletor de emojis e escala revisada para tablet/TV.
+> 🛡️ **v76/v77:** painel administrativo protegido, responsividade de tablet/TV e comunicados do proprietário para todos ou para usuário específico.
 
 ## PRÓXIMA SESSÃO (combinado p/ amanhã, 2026-08-11) ⭐
 **REDESIGN a partir de mockup do ChatGPT.** O Felipe gera a estética no ChatGPT e **manda a imagem**; eu

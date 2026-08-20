@@ -553,6 +553,11 @@ body.th-shake{animation:thshake .55s;}
 .admin-user{display:flex;align-items:center;gap:12px;padding:13px;border:1px solid var(--line);border-radius:15px;background:var(--surface);margin:8px 0;cursor:pointer}
 .admin-user:hover{border-color:var(--accent)}.admin-user .grow{flex:1;min-width:0}.admin-user .grow b,.admin-user .grow span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .admin-badge{padding:5px 9px;border-radius:999px;background:color-mix(in srgb,var(--accent) 16%,var(--surface));color:var(--accent2);font-size:11px;font-weight:800}
+.admin-tools{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin:0 0 18px}
+.admin-tool{padding:16px;border:1px solid var(--line);border-radius:16px;background:var(--surface);cursor:pointer;color:var(--text);text-align:left}.admin-tool b,.admin-tool span{display:block}.admin-tool span{color:var(--text-dim);font-size:13px;margin-top:5px}
+.system-notice{position:fixed;inset:0;z-index:220;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(8px)}
+.system-notice-card{position:relative;width:min(520px,100%);padding:28px 24px 24px;border-radius:22px;border:1px solid color-mix(in srgb,var(--accent) 42%,var(--line));background:var(--surface);box-shadow:0 28px 80px rgba(0,0,0,.65)}
+.system-notice-card h2{margin:0 38px 10px 0;font-size:24px}.system-notice-card p{white-space:pre-wrap;line-height:1.55;color:var(--text-dim);margin:0}.system-notice-close{position:absolute;right:13px;top:13px;width:38px;height:38px;border:0;border-radius:50%;background:var(--surface2);color:var(--text);font-size:22px;cursor:pointer}.system-notice-brand{font-size:11px;font-weight:900;letter-spacing:.14em;color:var(--accent2);margin-bottom:10px}
 </style>
 </head>
 <body>
@@ -1322,6 +1327,7 @@ async function enterApp(){
     setTimeout(async()=>{ try{ const p=await Notification.requestPermission(); if(p==='granted'){ S.config.notif=true; save('config'); subscribePush(); toast('Notificações ligadas. 🔔'); } }catch(e){} }, 1500);
   }
   handleDeepLink();
+  setTimeout(checarAvisosAdmin,700);
   if(!window._dlBound){ window._dlBound=true; window.addEventListener('hashchange', handleDeepLink); }
 }
 let _syncWatchBusy=false;
@@ -3486,9 +3492,12 @@ async function renderAdmin(){
   root.innerHTML=`${topbar('ADMINISTRAÇÃO')}
     <div class="hero"><div><div class="eyebrow">CENTRAL DO PROPRIETÁRIO</div><div class="hero-name">Controle e suporte</div><div class="muted small">Alterações sensíveis ficam registradas. Senhas antigas nunca são exibidas.</div></div></div>
     <div id="adminStats" class="admin-stats"><div class="admin-stat"><span>Carregando dados…</span></div></div>
+    <div class="admin-tools"><button class="admin-tool" id="adminAvisos"><b>📢 Enviar aviso</b><span>Mensagem única para todos ou para um usuário.</span></button><button class="admin-tool" id="adminHistoricoAvisos"><b>🗂️ Avisos publicados</b><span>Veja alcance e desative comunicados.</span></button></div>
     <div class="admin-search"><input id="adminQ" placeholder="Buscar por nome, usuário ou e-mail"><button class="btn sm" id="adminBuscar">Buscar</button></div>
     <div id="adminLista"><p class="muted">Carregando usuários…</p></div>`;
   $('#adminBuscar').onclick=()=>carregarAdminUsuarios($('#adminQ').value);
+  $('#adminAvisos').onclick=adminAvisoSheet;
+  $('#adminHistoricoAvisos').onclick=adminHistoricoAvisosSheet;
   $('#adminQ').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();carregarAdminUsuarios(e.target.value)}};
   try{
     const r=await api('/admin/resumo');
@@ -3523,6 +3532,30 @@ async function abrirAdminUsuario(id){
 function adminSenhaSheet(id,nome){
   openSheet(`<h3>Redefinir senha</h3><p class="muted small">Crie uma senha temporária para ${esc(nome)}. A senha atual não pode ser vista.</p><div class="field"><label>Nova senha</label><input id="adNovaSenha" type="password" autocomplete="new-password"></div><div class="err" id="adSenhaErr"></div><button class="btn" id="adSenhaOk">Redefinir</button>`);
   $('#adSenhaOk').onclick=async()=>{const senha=$('#adNovaSenha').value;if(senha.length<8)return $('#adSenhaErr').textContent='Use pelo menos 8 caracteres.';try{await api('/admin/usuarios/'+encodeURIComponent(id)+'/redefinir-senha',{method:'POST',body:{senha}});toast('Senha redefinida e ação registrada.');closeSheet()}catch(e){$('#adSenhaErr').textContent=e.data?.erro||'Falha ao redefinir.'}};
+}
+async function adminAvisoSheet(){
+  let usuarios=[];try{usuarios=(await api('/admin/usuarios?limite=100')).usuarios||[]}catch(e){}
+  openSheet(`<h3>📢 Novo aviso</h3><p class="small muted">Aparece uma vez para cada destinatário. Depois do X, não volta a aparecer naquela conta.</p>
+    <div class="field"><label>Destinatário</label><select id="avDest"><option value="">Todos os usuários</option>${usuarios.filter(u=>!u.isAdmin).map(u=>`<option value="${u.id}">${esc(u.nomeGuerra)} (@${esc(u.username)})</option>`).join('')}</select></div>
+    <div class="field"><label>Título</label><input id="avTitulo" maxlength="80" placeholder="Ex: Manutenção programada"></div>
+    <div class="field"><label>Mensagem</label><textarea id="avMsg" maxlength="1000" rows="6" placeholder="Escreva o comunicado…"></textarea></div>
+    <div class="err" id="avErr"></div><button class="btn" id="avEnviar">Publicar aviso</button>`);
+  $('#avEnviar').onclick=async()=>{const titulo=$('#avTitulo').value.trim(),mensagem=$('#avMsg').value.trim(),destinatarioId=$('#avDest').value||null;if(!titulo||!mensagem)return $('#avErr').textContent='Escreva o título e a mensagem.';const b=$('#avEnviar');b.disabled=true;b.textContent='Publicando…';try{await api('/admin/avisos',{method:'POST',body:{titulo,mensagem,destinatarioId}});closeSheet();toast(destinatarioId?'Aviso enviado ao usuário.':'Aviso publicado para todos.')}catch(e){b.disabled=false;b.textContent='Publicar aviso';$('#avErr').textContent=e.data?.erro||'Não foi possível publicar.'}};
+}
+async function adminHistoricoAvisosSheet(){
+  openSheet('<h3>🗂️ Avisos publicados</h3><div id="avHist"><p class="muted">Carregando…</p></div>');
+  try{const r=await api('/admin/avisos'),box=$('#avHist');box.innerHTML=(r.avisos||[]).length?r.avisos.map(a=>`<div class="rowitem"><div class="txt"><div class="t">${esc(a.titulo)}</div><div class="s">${a.destinatarioId?'Individual':'Todos'} · ${a._count?.dispensas||0} fecharam · ${a.ativo?'ativo':'desativado'}</div></div><button class="btn sm ghost" data-av-toggle="${a.id}" data-ativo="${a.ativo?'1':'0'}">${a.ativo?'Desativar':'Reativar'}</button></div>`).join(''):'<p class="muted">Nenhum aviso publicado.</p>';$$('[data-av-toggle]',box).forEach(b=>b.onclick=async()=>{await api('/admin/avisos/'+b.dataset.avToggle,{method:'PATCH',body:{ativo:b.dataset.ativo!=='1'}});adminHistoricoAvisosSheet()})}catch(e){$('#avHist').innerHTML='<p class="err">Falha ao carregar os avisos.</p>'}
+}
+
+let _avisosPendentes=[];
+async function checarAvisosAdmin(){
+  if(!authToken||document.querySelector('.system-notice'))return;
+  try{_avisosPendentes=(await api('/avisos')).avisos||[];mostrarProximoAviso()}catch(e){}
+}
+function mostrarProximoAviso(){
+  if(document.querySelector('.system-notice'))return;const a=_avisosPendentes.shift();if(!a)return;
+  const el=document.createElement('div');el.className='system-notice';el.innerHTML=`<div class="system-notice-card"><button class="system-notice-close" aria-label="Fechar aviso">×</button><div class="system-notice-brand">COMUNICADO REDZONE</div><h2>${esc(a.titulo)}</h2><p>${esc(a.mensagem)}</p></div>`;
+  const fechar=async()=>{el.remove();try{await api('/avisos/'+a.id+'/dispensar',{method:'POST'})}catch(e){}mostrarProximoAviso()};$('.system-notice-close',el).onclick=fechar;document.body.appendChild(el);
 }
 
 function renderPerfil(){
@@ -3894,7 +3927,7 @@ function openSheet(html){ pausarVideosFeed(); const estava=$('#overlay').classLi
 function closeSheet(fromPop=false){ $$('#sheet video').forEach(v=>{try{v.pause();}catch(e){}}); try{_chatStopRecording?.();}catch(e){} _chatStopRecording=null; if(_socket&&_chatPeerId)_socket.emit('dm:viewing',{peerId:null}); const aberto=$('#overlay').classList.contains('show'); $('#overlay').classList.remove('show','chat-full'); document.documentElement.classList.remove('chat-open'); document.body.classList.remove('chat-open'); _chatUser=null; _chatPeerId=null; if(aberto&&!fromPop&&history.state?.rzSheet){ try{ history.back(); }catch(e){} } }
 
 // ESC sempre volta uma camada, como em aplicativos de desktop.
-document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if($('#emojiPanel')?.classList.contains('open')){e.preventDefault();e.stopPropagation();return $('#emojiPanel').classList.remove('open')}if($('#chatAttachPanel')?.classList.contains('open')){e.preventDefault();e.stopPropagation();return $('#chatAttachPanel').classList.remove('open')}if($('.story-viewers-panel')){e.preventDefault();return $('[data-viewers-close]')?.click()}if($('.camera-overlay')){e.preventDefault();return $('[data-cam-close]')?.click()}if($('.chat-viewer')){e.preventDefault();return fecharViewerChat()}if($('.media-preview-overlay')){e.preventDefault();return $('.media-preview-overlay').remove()}if($('#dmDeleteOverlay')){e.preventDefault();return fecharMenuMensagem()}if($('#storyview')?.classList.contains('on')){e.preventDefault();return fecharStories()}if($('#overlay')?.classList.contains('show')){e.preventDefault();return closeSheet()}if($('#nav')?.classList.contains('open')){e.preventDefault();return closeDrawer()}if(activeTab!=='inicio'){e.preventDefault();goBack()}},true);
+document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if($('.system-notice-close')){e.preventDefault();return $('.system-notice-close').click()}if($('#emojiPanel')?.classList.contains('open')){e.preventDefault();e.stopPropagation();return $('#emojiPanel').classList.remove('open')}if($('#chatAttachPanel')?.classList.contains('open')){e.preventDefault();e.stopPropagation();return $('#chatAttachPanel').classList.remove('open')}if($('.story-viewers-panel')){e.preventDefault();return $('[data-viewers-close]')?.click()}if($('.camera-overlay')){e.preventDefault();return $('[data-cam-close]')?.click()}if($('.chat-viewer')){e.preventDefault();return fecharViewerChat()}if($('.media-preview-overlay')){e.preventDefault();return $('.media-preview-overlay').remove()}if($('#dmDeleteOverlay')){e.preventDefault();return fecharMenuMensagem()}if($('#storyview')?.classList.contains('on')){e.preventDefault();return fecharStories()}if($('#overlay')?.classList.contains('show')){e.preventDefault();return closeSheet()}if($('#nav')?.classList.contains('open')){e.preventDefault();return closeDrawer()}if(activeTab!=='inicio'){e.preventDefault();goBack()}},true);
 $('#overlay').addEventListener('click',e=>{ if(e.target.id==='overlay') closeSheet(); });
 window.closeSheet=closeSheet;
 /* ENTER global: confirma/avança. Shift+Enter cria nova linha. */
@@ -3932,6 +3965,7 @@ function connectSocket(){
     _socket.on('post:like',d=>{ if(!d)return; $$(`[data-post="${d.postId}"] [data-like]`).forEach(el=>{ const n=$('b',el); if(n)n.textContent=d.total; }); });
     _socket.on('post:comentario',d=>{ if(!d||d.total==null)return; $$(`[data-post="${d.postId}"] [data-comment]`).forEach(el=>{ const n=$('b',el); if(n)n.textContent=d.total; }); });
     _socket.on('notif:nova',()=>{ const btn=$('#sinoBtn'); if(!btn)return; let b=$('.notif-badge',btn); if(!b){b=document.createElement('span');b.className='notif-badge';btn.appendChild(b);} const n=Math.min(99,(parseInt(b.textContent)||0)+1); b.textContent=n>9?'9+':n; });
+    _socket.on('aviso:novo',()=>checarAvisosAdmin());
     // SYNC AO VIVO ponta a ponta: mudou num aparelho → reflete nos outros na hora (sem F5)
     _socket.on('state:changed', (d)=>{ if(!d || d.src===CLIENT_ID) return; applyRemoteState(d.chave, d.valor,d.versao); });
     _socket.on('profile:changed', (d)=>{ if(!d || d.src===CLIENT_ID) return; applyRemoteProfile(d.usuario); });

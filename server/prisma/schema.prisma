@@ -68,6 +68,32 @@ model AdminAudit {
   @@map("admin_audit")
 }
 
+model AdminAviso {
+  id             Int      @id @default(autoincrement())
+  adminId        String
+  destinatarioId String?
+  titulo         String
+  mensagem       String
+  ativo          Boolean  @default(true)
+  criadoEm       DateTime @default(now())
+  dispensas      AvisoDispensa[]
+
+  @@index([ativo, criadoEm])
+  @@index([destinatarioId, ativo])
+  @@map("admin_avisos")
+}
+
+model AvisoDispensa {
+  aviso     AdminAviso @relation(fields: [avisoId], references: [id], onDelete: Cascade)
+  avisoId   Int
+  usuarioId String
+  fechadoEm DateTime   @default(now())
+
+  @@id([avisoId, usuarioId])
+  @@index([usuarioId])
+  @@map("aviso_dispensas")
+}
+
 model PushSub {
   id        Int      @id @default(autoincrement())
   usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
