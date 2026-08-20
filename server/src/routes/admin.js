@@ -4,6 +4,7 @@ import { prisma } from '../lib/db.js';
 import { exigirAuth, hashSenha, assinarTokenSuporte } from '../lib/auth.js';
 import { publico } from './auth.js';
 import { emitFeed, emitToUser } from '../realtime.js';
+import { validarEmailPadrao } from '../lib/email.js';
 
 export const adminRouter = Router();
 adminRouter.use(exigirAuth);
@@ -58,6 +59,7 @@ const editSchema = z.object({
 adminRouter.patch('/usuarios/:id', async (req, res) => {
   const parsed=editSchema.safeParse(req.body); if(!parsed.success)return res.status(400).json({erro:'Dados inválidos.',detalhes:parsed.error.flatten()});
   const d={...parsed.data}; if(d.email)d.email=d.email.toLowerCase().trim(); if(d.username)d.username=d.username.toLowerCase();
+  if(d.email){const v=validarEmailPadrao(d.email);if(!v.ok)return res.status(400).json({campo:'email',erro:v.erro,sugestao:v.sugestao||null});}
   if(d.dataNasc!==undefined)d.dataNasc=d.dataNasc?new Date(d.dataNasc):null;
   try{
     const usuario=await prisma.usuario.update({where:{id:req.params.id},data:d});

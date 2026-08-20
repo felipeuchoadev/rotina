@@ -5,6 +5,7 @@ import { prisma } from '../lib/db.js';
 import { hashSenha, conferirSenha, assinarToken, exigirAuth } from '../lib/auth.js';
 import { rankOf } from '../lib/xp.js';
 import { enviarEmail, mailAtivo } from '../lib/mail.js';
+import { validarEmailPadrao } from '../lib/email.js';
 
 export const authRouter = Router();
 const sha = (s) => crypto.createHash('sha256').update(s).digest('hex');
@@ -31,6 +32,8 @@ const normResp = (s) => String(s || '').trim();
 authRouter.post('/cadastro', async (req, res) => {
   const parsed = cadastroSchema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ erro: 'Dados inválidos.', detalhes: parsed.error.flatten() });
+  const emailValido=validarEmailPadrao(parsed.data.email);
+  if(!emailValido.ok)return res.status(400).json({campo:'email',erro:emailValido.erro,sugestao:emailValido.sugestao||null});
   const d = { ...parsed.data, username: parsed.data.username.toLowerCase(), nomeGuerra: parsed.data.nomeGuerra.trim() };
 
   const [emailExiste, userExiste, nomeExiste] = await Promise.all([
@@ -164,7 +167,8 @@ authRouter.post('/trocar-senha', exigirAuth, async (req, res) => {
 authRouter.post('/trocar-email', exigirAuth, async (req, res) => {
   const novo = String(req.body.novoEmail || '').toLowerCase().trim();
   const senha = String(req.body.senha || '');
-  if (!/^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(novo)) return res.status(400).json({ erro: 'E-mail inválido.' });
+  const emailValido=validarEmailPadrao(novo);
+  if(!emailValido.ok)return res.status(400).json({campo:'email',erro:emailValido.erro,sugestao:emailValido.sugestao||null});
   const usuario = await prisma.usuario.findUnique({ where: { id: req.userId } });
   if (!usuario || !(await conferirSenha(senha, usuario.senhaHash))) return res.status(401).json({ erro: 'Senha incorreta.' });
   const jaTem = await prisma.usuario.findUnique({ where: { email: novo } });
