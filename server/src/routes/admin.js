@@ -1,0 +1,78 @@
+import { Router } from 'express';
+import { z } from 'zod';
+import { prisma } from '../lib/db.js';
+import { exigirAuth, hashSenha } from '../lib/auth.js';
+import { publico } from './auth.js';
+
+export const adminRouter = Router();
+adminRouter.use(exigirAuth);
+adminRouter.use(async (req, res, next) => {
+  const admin = await prisma.usuario.findUnique({ where: { id: req.userId }, select: { isAdmin: true, bloqueado: true } });
+  if (!admin?.isAdmin || admin.bloqueado) return res.status(403).json({ erro: 'Acesso exclusivo do proprietário.' });
+  next();
+});
+
+const auditar = (adminId, alvoId, acao, detalhes = null) => prisma.adminAudit.create({ data: { adminId, alvoId, acao, detalhes } });
+
+adminRouter.get('/resumo', async (_req, res) => {
+  const [usuarios, bloqueados, posts, mensagens, estados] = await Promise.all([
+    prisma.usuario.count(), prisma.usuario.count({ where: { bloqueado: true } }), prisma.feedPost.count(),
+    prisma.mensagem.count(), prisma.userState.count(),
+  ]);
+  res.json({ usuarios, bloqueados, posts, mensagens, estados });
+});
+
+adminRouter.get('/usuarios', async (req, res) => {
+  const q = String(req.query.q || '').trim();
+  const limite = Math.min(100, Math.max(10, Number(req.query.limite) || 40));
+  const where = q ? { OR: [
+    { email: { contains: q, mode: 'insensitive' } }, { username: { contains: q, mode: 'insensitive' } },
+    { nomeGuerra: { contains: q, mode: 'insensitive' } },
+  ] } : {};
+  const usuarios = await prisma.usuario.findMany({ where, orderBy: { criadoEm: 'desc' }, take: limite,
+    select: { id:true,email:true,username:true,nomeGuerra:true,fotoUrl:true,genero:true,xp:true,isAdmin:true,bloqueado:true,criadoEm:true,ultimoAcesso:true } });
+  res.json({ usuarios });
+});
+
+adminRouter.get('/usuarios/:id', async (req, res) => {
+  const usuario = await prisma.usuario.findUnique({ where: { id: req.params.id } });
+  if (!usuario) return res.status(404).json({ erro: 'Usuário não encontrado.' });
+  const [states, posts, mensagens, auditoria] = await Promise.all([
+    prisma.userState.findMany({ where:{usuarioId:usuario.id}, select:{chave:true,versao:true} }),
+    prisma.feedPost.count({where:{usuarioId:usuario.id}}),
+    prisma.mensagem.count({where:{OR:[{deId:usuario.id},{paraId:usuario.id}]}}),
+    prisma.adminAudit.findMany({where:{alvoId:usuario.id},orderBy:{criadoEm:'desc'},take:20}),
+  ]);
+  res.json({ usuario: publico(usuario), isAdmin:usuario.isAdmin, bloqueado:usuario.bloqueado,
+    resumo:{posts,mensagens,estados:states.map(s=>s.chave)}, auditoria });
+});
+
+const editSchema = z.object({
+  email:z.string().email().optional(), username:z.string().regex(/^[a-z0-9_]{3,20}$/).optional(),
+  nomeGuerra:z.string().trim().min(1).max(40).optional(), genero:z.enum(['m','f']).nullable().optional(),
+  dataNasc:z.string().nullable().optional(), pesoKg:z.number().min(1).max(500).optional(),
+  alturaCm:z.number().int().min(50).max(260).optional(), metaAgua:z.number().int().min(250).max(20000).optional(),
+  tema:z.string().max(30).optional(), privado:z.boolean().optional(), bloqueado:z.boolean().optional(),
+});
+adminRouter.patch('/usuarios/:id', async (req, res) => {
+  const parsed=editSchema.safeParse(req.body); if(!parsed.success)return res.status(400).json({erro:'Dados inválidos.',detalhes:parsed.error.flatten()});
+  const d={...parsed.data}; if(d.email)d.email=d.email.toLowerCase().trim(); if(d.username)d.username=d.username.toLowerCase();
+  if(d.dataNasc!==undefined)d.dataNasc=d.dataNasc?new Date(d.dataNasc):null;
+  try{
+    const usuario=await prisma.usuario.update({where:{id:req.params.id},data:d});
+    await auditar(req.userId,usuario.id,'usuario:editar',{campos:Object.keys(parsed.data)});
+    res.json({usuario:publico(usuario),bloqueado:usuario.bloqueado});
+  }catch(e){ if(e?.code==='P2002')return res.status(409).json({erro:'E-mail ou username já está em uso.'}); throw e; }
+});
+
+adminRouter.post('/usuarios/:id/redefinir-senha', async (req,res)=>{
+  const senha=String(req.body.senha||''); if(senha.length<8)return res.status(400).json({erro:'A nova senha precisa ter pelo menos 8 caracteres.'});
+  await prisma.usuario.update({where:{id:req.params.id},data:{senhaHash:await hashSenha(senha),resetToken:null,resetExp:null}});
+  await auditar(req.userId,req.params.id,'senha:redefinir'); res.json({ok:true});
+});
+
+adminRouter.get('/auditoria', async (_req,res)=>{
+  const itens=await prisma.adminAudit.findMany({orderBy:{criadoEm:'desc'},take:100}); res.json({itens});
+});
+
+export default adminRouter;

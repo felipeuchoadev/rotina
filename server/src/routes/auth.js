@@ -74,14 +74,18 @@ authRouter.get('/disponivel', async (req, res) => {
   res.json(out);
 });
 
-// Login por e-mail + senha
+// Login por e-mail ou username + senha
 authRouter.post('/login', async (req, res) => {
-  const schema = z.object({ email: z.string().email(), senha: z.string() });
+  const schema = z.object({ identificador: z.string().min(1).optional(), email: z.string().optional(), senha: z.string() });
   const parsed = schema.safeParse(req.body);
   if (!parsed.success) return res.status(400).json({ erro: 'E-mail ou senha inválidos.' });
-  const email = parsed.data.email.toLowerCase().trim();
-  const usuario = await prisma.usuario.findUnique({ where: { email } });
-  if (!usuario) return res.status(401).json({ erro: 'E-mail não encontrado.' });
+  const identificador = String(parsed.data.identificador || parsed.data.email || '').toLowerCase().trim();
+  if (!identificador) return res.status(400).json({ erro: 'Informe seu e-mail ou usuário.' });
+  const usuario = identificador.includes('@')
+    ? await prisma.usuario.findUnique({ where: { email: identificador } })
+    : await prisma.usuario.findUnique({ where: { username: identificador } });
+  if (!usuario) return res.status(401).json({ erro: 'Conta não encontrada.' });
+  if (usuario.bloqueado) return res.status(403).json({ erro: 'Esta conta está temporariamente bloqueada. Fale com o suporte REDZONE.' });
   const ok = await conferirSenha(parsed.data.senha, usuario.senhaHash);
   if (!ok) return res.status(401).json({ erro: 'Senha incorreta, recruta.' });
   const token = assinarToken(usuario);
@@ -191,6 +195,7 @@ function publico(u) {
     id: u.id, email: u.email, username: u.username, nomeGuerra: u.nomeGuerra,
     fotoUrl: u.fotoUrl, idade: u.idade, dataNasc: u.dataNasc, genero: u.genero, pesoKg: u.pesoKg, alturaCm: u.alturaCm,
     metaAgua: u.metaAgua, tema: u.tema, xp: u.xp, privado: u.privado, criadoEm: u.criadoEm,
+    isAdmin: !!u.isAdmin,
   };
 }
 export { publico };

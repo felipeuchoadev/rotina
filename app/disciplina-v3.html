@@ -334,6 +334,14 @@ html.chat-open,body.chat-open{overflow:hidden!important;overscroll-behavior:none
 .authback:hover{background:color-mix(in srgb,var(--accent) 14%, var(--surface));}
 /* telas baixas / teclado aberto: começa do topo e rola, em vez de centralizar e cortar */
 @media (max-height:760px){ #auth{ justify-content:flex-start; } }
+/* Tablet: o formulário deixa de parecer uma miniatura no centro da tela. */
+@media (min-width:600px) and (max-width:1199px){
+  #auth{max-width:min(720px,88vw);padding:clamp(34px,6vw,68px);}
+  .emblema.big{width:clamp(260px,38vw,390px)}
+  .auth-sub{font-size:clamp(16px,2vw,20px)}
+  .tabs button,.field input,.field select,.btn{font-size:clamp(16px,1.8vw,19px)}
+  .field input,.field select{min-height:54px}.tabs button,.btn{min-height:52px}
+}
 /* logo se camufla no fundo escuro: 'screen' faz o preto do PNG sumir e só o brilho/desenho aparece
    (sem borda arredondada e sem drop-shadow retangular, que era o "quadrado" que aparecia) */
 .emblema{width:190px; height:190px; margin:0 auto 2px; display:block; object-fit:contain; mix-blend-mode:screen;}
@@ -517,10 +525,27 @@ body.th-shake{animation:thshake .55s;}
   .themes{grid-template-columns:repeat(4,1fr);}
 }
 @media (min-width:1700px){
-  #app{max-width:1360px;}
-  body{font-size:18px;}
-  .hero-name{font-size:27px;}
+  #app{max-width:min(1760px,calc(100vw - 140px));}
+  body{font-size:clamp(18px,1vw,22px);}
+  .screen{padding:0 clamp(54px,5vw,96px)}
+  .hero-name{font-size:clamp(27px,1.7vw,34px);}
+  .card,.sumcard,.rowitem{border-radius:clamp(16px,1vw,24px)}
 }
+@media (min-width:2400px){
+  .nav{width:140px}.nav-inner{padding:12px 16px}.nav button{font-size:14px;padding:17px 6px}.nav button svg{width:28px;height:28px}
+  #app{max-width:min(2200px,calc(100vw - 180px));padding-left:140px}
+  .screen{padding:0 clamp(80px,6vw,150px)}
+  #auth{max-width:820px}.emblema.big{width:420px}.auth-sub{font-size:22px}
+}
+
+/* Painel do proprietário */
+.admin-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin:14px 0 22px}
+.admin-stat{padding:18px;border:1px solid var(--line);border-radius:16px;background:var(--surface)}
+.admin-stat b{display:block;font-size:26px;color:var(--accent2)}.admin-stat span{color:var(--text-dim);font-size:13px}
+.admin-search{display:flex;gap:10px;margin-bottom:14px}.admin-search input{flex:1;min-width:0}
+.admin-user{display:flex;align-items:center;gap:12px;padding:13px;border:1px solid var(--line);border-radius:15px;background:var(--surface);margin:8px 0;cursor:pointer}
+.admin-user:hover{border-color:var(--accent)}.admin-user .grow{flex:1;min-width:0}.admin-user .grow b,.admin-user .grow span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.admin-badge{padding:5px 9px;border-radius:999px;background:color-mix(in srgb,var(--accent) 16%,var(--surface));color:var(--accent2);font-size:11px;font-weight:800}
 </style>
 </head>
 <body>
@@ -555,6 +580,7 @@ body.th-shake{animation:thshake .55s;}
   <section id="scr-recordacoes" class="screen"></section>
   <section id="scr-batalha" class="screen"></section>
   <section id="scr-perfil" class="screen"></section>
+  <section id="scr-admin" class="screen"></section>
 
   <div class="navbd" id="navBackdrop" onclick="closeDrawer()"></div>
   <nav class="nav" id="nav"><div class="nav-inner" id="navInner"></div></nav>
@@ -950,7 +976,7 @@ async function loadUserData(){
   const g = (k,d)=> st[k]!==undefined && st[k]!==null ? st[k] : d;
   S = {
     profile: { id:u.id, nome:u.nomeGuerra, username:u.username, email:u.email, foto:u.fotoUrl, genero:u.genero,
-               idade:u.idade, dataNasc:(u.dataNasc?String(u.dataNasc).slice(0,10):null), peso:u.pesoKg, altura:u.alturaCm, metaAgua:u.metaAgua, tema:u.tema, privado:u.privado, xpBonus:g('xp:bonus',0) },
+               idade:u.idade, dataNasc:(u.dataNasc?String(u.dataNasc).slice(0,10):null), peso:u.pesoKg, altura:u.alturaCm, metaAgua:u.metaAgua, tema:u.tema, privado:u.privado, isAdmin:!!u.isAdmin, xpBonus:g('xp:bonus',0) },
     treinoTemplate: g('treino:tpl', DEFAULT_TREINO_TEMPLATE()),
     treinoWeeks:    g('treino:weeks', null),
     treinoLogs:     g('treino:logs', []),
@@ -1027,7 +1053,7 @@ function renderAuth(){
       ${emblemaESA(true)}
       <div class="auth-sub" style="margin-top:0">Disciplina é território. Domina o seu.</div>
       <div class="tabs"><button class="on">Entrar</button><button id="toSignup">Criar conta</button></div>
-      <div class="field"><label>E-mail</label><input id="lgEmail" type="email" placeholder="voce@gmail.com" autocomplete="email"></div>
+    <div class="field"><label>E-mail ou usuário</label><input id="lgEmail" type="text" placeholder="voce@gmail.com" autocomplete="username"></div>
       <div class="field"><label>Senha</label><input id="lgPass" type="password" placeholder="••••••••" autocomplete="current-password"></div>
       <div class="err" id="lgErr"></div>
       <button class="btn" id="lgBtn">Voltar à Batalha</button>
@@ -1145,14 +1171,14 @@ async function signupFinish(){
     err.textContent = e.status===409 ? (e.data?.erro||'E-mail ou username já cadastrado.') : (e.data?.erro||'Falha no cadastro. Sem conexão?'); }
 }
 async function doLogin(){
-  const email=$('#lgEmail').value.trim().toLowerCase(), pass=$('#lgPass').value, err=$('#lgErr');
-  if(!validEmail(email)) return err.textContent='E-mail inválido.';
+  const identificador=$('#lgEmail').value.trim().toLowerCase(), pass=$('#lgPass').value, err=$('#lgErr');
+  if(!identificador) return err.textContent='Informe seu e-mail ou usuário.';
   const btn=$('#lgBtn'); if(btn){ btn.disabled=true; btn.textContent='Entrando…'; }
   try{
-    const r = await api('/auth/login',{auth:false, method:'POST', body:{ email, senha:pass }});
+    const r = await api('/auth/login',{auth:false, method:'POST', body:{ identificador, senha:pass }});
     setToken(r.token); await enterApp();
   }catch(e){ if(btn){ btn.disabled=false; btn.textContent='Voltar à Batalha'; }
-    err.textContent = e.status===401 ? 'E-mail ou senha incorretos.' : (e.data?.erro || 'Falha no login. Sem conexão?'); }
+    err.textContent = e.status===401 ? 'Usuário/e-mail ou senha incorretos.' : (e.data?.erro || 'Falha no login. Sem conexão?'); }
 }
 async function logout(){ setToken(null); location.reload(); }
 function esqueciSenhaSheet(){
@@ -1220,13 +1246,14 @@ const TABS = [
   {id:'recordacoes', ico:'🖼️', label:'Memórias'},
   {id:'batalha', ico:'⚔️', label:'Batalha'},
   {id:'perfil', ico:'🎖️', label:'Perfil'},
+  {id:'admin', ico:'🛡️', label:'Admin', admin:true},
 ];
 let activeTab='inicio';
-const NAV_ICO = {inicio:'i-home', treinos:'i-treino', alimentacao:'i-alim', estudos:'i-estudo', rotina:'i-rotina', recordacoes:'i-fotos', batalha:'i-batalha', perfil:'i-perfil'};
+const NAV_ICO = {inicio:'i-home', treinos:'i-treino', alimentacao:'i-alim', estudos:'i-estudo', rotina:'i-rotina', recordacoes:'i-fotos', batalha:'i-batalha', perfil:'i-perfil',admin:'i-perfil'};
 function svgIcon(id){ return `<svg viewBox="0 0 24 24"><use href="#${id}"/></svg>`; }
 
 function renderNav(){
-  $('#navInner').innerHTML = TABS.map(t=>`
+  $('#navInner').innerHTML = TABS.filter(t=>!t.admin||S?.profile?.isAdmin).map(t=>`
     <button data-tab="${t.id}" class="${activeTab===t.id?'active':''}">
       ${svgIcon(NAV_ICO[t.id])}${t.label}</button>`).join('');
   $$('#navInner button').forEach(b=> b.onclick=()=>go(b.dataset.tab));
@@ -1267,7 +1294,7 @@ function go(tab, isBack, restaurarSalvo=false){
   try{ sessionStorage.setItem(`rz:view:${currentUser||'anon'}:tab`,tab); }catch(e){}
   $$('.screen').forEach(s=>s.classList.remove('active'));
   $('#scr-'+tab).classList.add('active');
-  ({inicio:renderInicio, treinos:renderTreinos, alimentacao:renderAlimentacao, estudos:renderEstudos, rotina:renderRotina, recordacoes:renderRecordacoes, batalha:renderBatalha, perfil:renderPerfil})[tab]();
+  ({inicio:renderInicio, treinos:renderTreinos, alimentacao:renderAlimentacao, estudos:renderEstudos, rotina:renderRotina, recordacoes:renderRecordacoes, batalha:renderBatalha, perfil:renderPerfil, admin:renderAdmin})[tab]();
   const destino=mesmaAba?yAtual:((isBack||restaurarSalvo)?ySalvo:0);
   requestAnimationFrame(()=>requestAnimationFrame(()=>window.scrollTo(0,Math.max(0,destino))));
 }
@@ -1276,8 +1303,8 @@ async function enterApp(){
   await loadUserData();
   $('#auth').classList.add('hidden');
   $('#app').classList.remove('hidden');
-  let abaSalva='inicio';
-  try{ const x=sessionStorage.getItem(`rz:view:${currentUser||'anon'}:tab`); if(TABS.some(t=>t.id===x)) abaSalva=x; }catch(e){}
+  let abaSalva=S.profile.isAdmin?'admin':'inicio';
+  try{ const x=sessionStorage.getItem(`rz:view:${currentUser||'anon'}:tab`); if(TABS.some(t=>t.id===x&&(!t.admin||S.profile.isAdmin))) abaSalva=x; }catch(e){}
   activeTab=abaSalva; renderNav(); go(abaSalva,true,true);
   try{ history.replaceState({rzTab:abaSalva},'',location.href); }catch(e){}
   startClock(); startTryHard(); connectSocket(); reportXP(); flushQueue();
@@ -3445,6 +3472,52 @@ async function gerarPublicacaoDoDia(){
    PERFIL
 ========================================================================= */
 let perfilTab='conta';
+let _adminUsuarios=[];
+async function renderAdmin(){
+  const root=$('#scr-admin');
+  if(!S?.profile?.isAdmin){ root.innerHTML=topbar('ACESSO NEGADO')+'<div class="card">Área exclusiva do proprietário.</div>'; return; }
+  root.innerHTML=`${topbar('ADMINISTRAÇÃO')}
+    <div class="hero"><div><div class="eyebrow">CENTRAL DO PROPRIETÁRIO</div><div class="hero-name">Controle e suporte</div><div class="muted small">Alterações sensíveis ficam registradas. Senhas antigas nunca são exibidas.</div></div></div>
+    <div id="adminStats" class="admin-stats"><div class="admin-stat"><span>Carregando dados…</span></div></div>
+    <div class="admin-search"><input id="adminQ" placeholder="Buscar por nome, usuário ou e-mail"><button class="btn sm" id="adminBuscar">Buscar</button></div>
+    <div id="adminLista"><p class="muted">Carregando usuários…</p></div>`;
+  $('#adminBuscar').onclick=()=>carregarAdminUsuarios($('#adminQ').value);
+  $('#adminQ').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();carregarAdminUsuarios(e.target.value)}};
+  try{
+    const r=await api('/admin/resumo');
+    $('#adminStats').innerHTML=[['Usuários',r.usuarios],['Bloqueados',r.bloqueados],['Publicações',r.posts],['Mensagens',r.mensagens],['Registros',r.estados]].map(x=>`<div class="admin-stat"><b>${x[1]}</b><span>${x[0]}</span></div>`).join('');
+    await carregarAdminUsuarios('');
+  }catch(e){ $('#adminLista').innerHTML=`<div class="card"><b>Não foi possível abrir a administração.</b><div class="muted small">${esc(e.data?.erro||e.message||'Tente novamente.')}</div></div>`; }
+}
+async function carregarAdminUsuarios(q=''){
+  const box=$('#adminLista');if(!box)return;box.innerHTML='<p class="muted">Buscando…</p>';
+  try{const r=await api('/admin/usuarios?q='+encodeURIComponent(q));_adminUsuarios=r.usuarios||[];
+    box.innerHTML=_adminUsuarios.length?_adminUsuarios.map(u=>`<div class="admin-user" data-admin-user="${u.id}">${avatarHTML({nome:u.nomeGuerra,foto:u.fotoUrl,genero:u.genero},'avatar sm')}<div class="grow"><b>${esc(u.nomeGuerra)}</b><span class="muted small">@${esc(u.username)} · ${esc(u.email)}</span></div>${u.isAdmin?'<span class="admin-badge">DONO</span>':''}${u.bloqueado?'<span class="admin-badge">BLOQUEADO</span>':''}</div>`).join(''):'<p class="muted">Nenhum usuário encontrado.</p>';
+    $$('[data-admin-user]',box).forEach(el=>el.onclick=()=>abrirAdminUsuario(el.dataset.adminUser));
+  }catch(e){box.innerHTML='<p class="err">Falha ao buscar usuários.</p>'}
+}
+async function abrirAdminUsuario(id){
+  try{const r=await api('/admin/usuarios/'+encodeURIComponent(id)),u=r.usuario;
+    openSheet(`<h3>🛡️ Suporte ao usuário</h3>
+      <div class="rowitem">${avatarHTML({nome:u.nomeGuerra,foto:u.fotoUrl,genero:u.genero},'avatar sm')}<div class="txt"><div class="t">${esc(u.nomeGuerra)}</div><div class="s">@${esc(u.username)} · ${r.resumo.posts} post(s) · ${r.resumo.mensagens} mensagem(ns)</div></div></div>
+      <div class="field"><label>Nome de guerra</label><input id="adNome" value="${esc(u.nomeGuerra)}"></div>
+      <div class="field"><label>Username</label><input id="adUser" value="${esc(u.username)}"></div>
+      <div class="field"><label>E-mail</label><input id="adEmail" type="email" value="${esc(u.email)}"></div>
+      <div class="grid2"><div class="field"><label>Peso (kg)</label><input id="adPeso" type="number" step="0.01" value="${u.pesoKg||''}"></div><div class="field"><label>Altura (cm)</label><input id="adAltura" type="number" value="${u.alturaCm||''}"></div></div>
+      <label class="rowitem"><input id="adBloq" type="checkbox" ${r.bloqueado?'checked':''} style="width:22px;height:22px"><div class="txt"><div class="t">Bloquear temporariamente</div><div class="s">Impede novos logins até a reativação.</div></div></label>
+      <button class="btn" id="adSalvar">Salvar alterações</button>
+      <button class="btn ghost" id="adSenha" style="margin-top:9px">Redefinir senha</button>
+      <p class="small muted" style="margin-top:12px">Dados internos existentes: ${esc(r.resumo.estados.join(', ')||'nenhum')}. Toda ação desta tela é auditada.</p>`);
+    $('#adSalvar').onclick=async()=>{const body={nomeGuerra:$('#adNome').value.trim(),username:$('#adUser').value.trim().toLowerCase(),email:$('#adEmail').value.trim().toLowerCase(),bloqueado:$('#adBloq').checked};const p=Number($('#adPeso').value),a=Number($('#adAltura').value);if(p)body.pesoKg=p;if(a)body.alturaCm=a;
+      try{await api('/admin/usuarios/'+encodeURIComponent(id),{method:'PATCH',body});toast('Usuário atualizado com segurança.');closeSheet();renderAdmin()}catch(e){toast(e.data?.erro||'Não foi possível salvar.')}};
+    $('#adSenha').onclick=()=>adminSenhaSheet(id,u.nomeGuerra);
+  }catch(e){toast(e.data?.erro||'Não foi possível abrir esse usuário.')}
+}
+function adminSenhaSheet(id,nome){
+  openSheet(`<h3>Redefinir senha</h3><p class="muted small">Crie uma senha temporária para ${esc(nome)}. A senha atual não pode ser vista.</p><div class="field"><label>Nova senha</label><input id="adNovaSenha" type="password" autocomplete="new-password"></div><div class="err" id="adSenhaErr"></div><button class="btn" id="adSenhaOk">Redefinir</button>`);
+  $('#adSenhaOk').onclick=async()=>{const senha=$('#adNovaSenha').value;if(senha.length<8)return $('#adSenhaErr').textContent='Use pelo menos 8 caracteres.';try{await api('/admin/usuarios/'+encodeURIComponent(id)+'/redefinir-senha',{method:'POST',body:{senha}});toast('Senha redefinida e ação registrada.');closeSheet()}catch(e){$('#adSenhaErr').textContent=e.data?.erro||'Falha ao redefinir.'}};
+}
+
 function renderPerfil(){
   const p=S.profile; const xp=computeXP(); const r=rankOf(xp);
   $('#scr-perfil').innerHTML=`
@@ -3814,7 +3887,7 @@ function openSheet(html){ pausarVideosFeed(); const estava=$('#overlay').classLi
 function closeSheet(fromPop=false){ $$('#sheet video').forEach(v=>{try{v.pause();}catch(e){}}); try{_chatStopRecording?.();}catch(e){} _chatStopRecording=null; if(_socket&&_chatPeerId)_socket.emit('dm:viewing',{peerId:null}); const aberto=$('#overlay').classList.contains('show'); $('#overlay').classList.remove('show','chat-full'); document.documentElement.classList.remove('chat-open'); document.body.classList.remove('chat-open'); _chatUser=null; _chatPeerId=null; if(aberto&&!fromPop&&history.state?.rzSheet){ try{ history.back(); }catch(e){} } }
 
 // ESC sempre volta uma camada, como em aplicativos de desktop.
-document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if($('.story-viewers-panel')){e.preventDefault();return $('[data-viewers-close]')?.click()}if($('.camera-overlay')){e.preventDefault();return $('[data-cam-close]')?.click()}if($('.chat-viewer')){e.preventDefault();return fecharViewerChat()}if($('.media-preview-overlay')){e.preventDefault();return $('.media-preview-overlay').remove()}if($('#dmDeleteOverlay')){e.preventDefault();return fecharMenuMensagem()}if($('#storyview')?.classList.contains('on')){e.preventDefault();return fecharStories()}if($('#overlay')?.classList.contains('show')){e.preventDefault();return closeSheet()}if($('#nav')?.classList.contains('open')){e.preventDefault();return closeDrawer()}if(activeTab!=='inicio'){e.preventDefault();goBack()}},true);
+document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if($('#emojiPanel')?.classList.contains('open')){e.preventDefault();e.stopPropagation();return $('#emojiPanel').classList.remove('open')}if($('#chatAttachPanel')?.classList.contains('open')){e.preventDefault();e.stopPropagation();return $('#chatAttachPanel').classList.remove('open')}if($('.story-viewers-panel')){e.preventDefault();return $('[data-viewers-close]')?.click()}if($('.camera-overlay')){e.preventDefault();return $('[data-cam-close]')?.click()}if($('.chat-viewer')){e.preventDefault();return fecharViewerChat()}if($('.media-preview-overlay')){e.preventDefault();return $('.media-preview-overlay').remove()}if($('#dmDeleteOverlay')){e.preventDefault();return fecharMenuMensagem()}if($('#storyview')?.classList.contains('on')){e.preventDefault();return fecharStories()}if($('#overlay')?.classList.contains('show')){e.preventDefault();return closeSheet()}if($('#nav')?.classList.contains('open')){e.preventDefault();return closeDrawer()}if(activeTab!=='inicio'){e.preventDefault();goBack()}},true);
 $('#overlay').addEventListener('click',e=>{ if(e.target.id==='overlay') closeSheet(); });
 window.closeSheet=closeSheet;
 /* ENTER global: confirma/avança. Shift+Enter cria nova linha. */

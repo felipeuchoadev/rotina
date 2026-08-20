@@ -14,6 +14,7 @@ import { batalhaRouter } from './routes/batalha.js';
 import { dmRouter } from './routes/dm.js';
 import { pushRouter } from './routes/push.js';
 import { uploadRouter } from './routes/upload.js';
+import { adminRouter } from './routes/admin.js';
 import { initRealtime, watchDeploys } from './realtime.js';
 import { iniciarAgenda } from './lib/agenda.js';
 
@@ -43,6 +44,7 @@ app.use('/api/batalha', batalhaRouter);
 app.use('/api/dm', dmRouter);
 app.use('/api/push', pushRouter);
 app.use('/api/upload', uploadRouter);
+app.use('/api/admin', adminRouter);
 
 // 404 e handler de erro
 app.use('/api', (req, res) => res.status(404).json({ erro: 'Rota não encontrada.' }));

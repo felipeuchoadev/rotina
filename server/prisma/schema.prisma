@@ -33,6 +33,8 @@ model Usuario {
   tema       String   @default("red")
   xp         Int      @default(0) // auto-reportado pelo cliente, usado no ranking
   privado    Boolean  @default(false)
+  isAdmin    Boolean  @default(false)
+  bloqueado  Boolean  @default(false)
   criadoEm   DateTime @default(now())
   ultimoAcesso DateTime?
 
@@ -51,6 +53,19 @@ model Usuario {
   pushSubs     PushSub[]
 
   @@map("usuarios")
+}
+
+model AdminAudit {
+  id        Int      @id @default(autoincrement())
+  adminId   String
+  alvoId    String?
+  acao      String
+  detalhes  Json?
+  criadoEm  DateTime @default(now())
+
+  @@index([adminId, criadoEm])
+  @@index([alvoId, criadoEm])
+  @@map("admin_audit")
 }
 
 model PushSub {
