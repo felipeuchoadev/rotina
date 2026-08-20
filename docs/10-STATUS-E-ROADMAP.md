@@ -112,6 +112,7 @@ Tudo testado ao vivo na VM, SW `redzone-v8`.
 ## Regras de operação (NÃO QUEBRAR)
 - **NUNCA** `DELETE FROM usuarios` / `TRUNCATE` / `prisma db push --accept-data-loss` (apaga contas reais).
 - Mudança de schema: `prisma db push` **sem** `--accept-data-loss` (só adiciona).
+- Depois de qualquer migração/schema: executar também `prisma generate` antes de reiniciar o serviço. O script `npm run prisma:migrate` já faz os dois.
 - Deploy de app = copiar `app/disciplina-v3.html` pra VM + (se backend) `systemctl restart disciplina`. Nunca tocar no banco.
 - Backup automático do banco: `/opt/disciplina/backup.sh` (cron 6h).
 - Testar no site ao vivo (o navegador local nega permissões de push).
