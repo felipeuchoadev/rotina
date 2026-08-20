@@ -4,6 +4,7 @@
 // durante o dia ainda podem ser avisadas sem gerar notificações repetidas.
 import { prisma } from './db.js';
 import { enviarPush } from './push.js';
+import { emitToUser } from '../realtime.js';
 
 function brasiliaAgora() {
   return new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
@@ -96,7 +97,6 @@ export async function rodarAgenda() {
   }
   let enviados = 0;
   for (const [usuarioId, estado] of porUsuario) {
-    if (estado.config?.notif !== true) continue;
     const datas = Array.isArray(estado.datas) ? estado.datas : [];
     for (const item of datas) {
       const marco = marcoAgenda(item, hoje); if (!marco) continue;
@@ -104,8 +104,9 @@ export async function rodarAgenda() {
       const dedupe = `agenda:${isoDe(hoje)}:${usuarioId}:${id}:${marco.chave}`;
       if (await jaEnviado(dedupe)) continue;
       const body = textoAviso(item, marco.chave, marco.faltam);
-      await prisma.notificacao.create({ data: { usuarioId, tipo: 'aviso', texto: body } }).catch(() => null);
-      await enviarPush(usuarioId, { title: 'REDZONE', body, tag: dedupe, url: '/rotina/#tab=inicio' });
+      const notificacao=await prisma.notificacao.create({ data: { usuarioId, tipo: 'aviso', texto: body } }).catch(() => null);
+      if(notificacao)emitToUser(usuarioId,'notif:nova',notificacao);
+      if(estado.config?.notif === true)await enviarPush(usuarioId, { title: 'REDZONE', body, tag: dedupe, url: '/rotina/#tab=inicio' });
       await marcarEnviado(dedupe); enviados++;
     }
   }

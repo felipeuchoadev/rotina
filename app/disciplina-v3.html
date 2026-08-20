@@ -23,6 +23,7 @@
 }
 *{box-sizing:border-box; -webkit-tap-highlight-color:transparent;}
 html,body{margin:0; padding:0; overflow-x:clip;}
+html.modal-open,body.modal-open{overflow:hidden!important;overscroll-behavior:none;}
 /* html pega a cor do tema pra NUNCA aparecer branco por trás (overscroll/teclado no celular) */
 html{background:var(--bg2);}
 body{
@@ -255,7 +256,7 @@ textarea.auto{resize:none; overflow:hidden; min-height:48px;}
 /* wordmark REDZONE transparente (PNG) no topo do menu, no lugar do texto */
 .nav-inner::before{content:''; display:block; height:34px; margin:2px 12px 14px; background:url(redzone-wordmark.png) left center/contain no-repeat;}
 .nav button{background:none; border:none; color:#fff; width:100%; display:flex; flex-direction:row; align-items:center; gap:13px; padding:13px 12px; font-size:15px; font-weight:700; white-space:nowrap; border-radius:12px; text-align:left;}
-.nav button svg{width:22px; height:22px; stroke:currentColor; fill:none; stroke-width:1.8; flex:0 0 22px;}
+.nav button svg{width:24px; height:24px; stroke:currentColor; fill:none; stroke-width:2.25; stroke-linecap:round;stroke-linejoin:round;flex:0 0 24px;}
 .nav button.active{color:var(--accent); background:color-mix(in srgb,var(--accent) 13%, transparent);}
 .navbd{position:fixed; inset:0; z-index:65; background:rgba(0,0,0,.5); display:none;}
 .navbd.show{display:block;}
@@ -508,7 +509,7 @@ body.th-shake{animation:thshake .55s;}
 @media (min-width:600px) and (max-width:899px){
   #app{max-width:min(760px,100%)}
   .screen{padding:0 clamp(24px,5vw,42px)}
-  body{font-size:17px}
+  body{font-size:18px}
   .topbar{padding-top:18px}
   .card,.sumcard,.rowitem{border-radius:18px}
 }
@@ -518,7 +519,7 @@ body.th-shake{animation:thshake .55s;}
   .nav-inner{flex-direction:column; height:100%; justify-content:flex-start; gap:6px; padding:0 10px;}
   .nav-inner::before{display:none;}
   .nav button{flex:0 0 auto; width:100%; flex-direction:column; gap:4px; padding:12px 4px; font-size:10.5px; text-align:center; justify-content:center;}
-  .nav button svg{width:21px; height:21px;}
+  .nav button svg{width:25px; height:25px;}
   .nav button.active{background:color-mix(in srgb,var(--accent) 14%, transparent);}
   .hamb{display:none !important;}
   .navbd{display:none !important;}
@@ -555,6 +556,10 @@ body.th-shake{animation:thshake .55s;}
 .admin-badge{padding:5px 9px;border-radius:999px;background:color-mix(in srgb,var(--accent) 16%,var(--surface));color:var(--accent2);font-size:11px;font-weight:800}
 .admin-tools{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin:0 0 18px}
 .admin-tool{padding:16px;border:1px solid var(--line);border-radius:16px;background:var(--surface);cursor:pointer;color:var(--text);text-align:left}.admin-tool b,.admin-tool span{display:block}.admin-tool span{color:var(--text-dim);font-size:13px;margin-top:5px}
+.admin-mode .nav,.admin-mode .navbd{display:none!important}.admin-mode #scr-admin{padding-bottom:40px}.admin-head{display:flex;align-items:center;justify-content:space-between;padding:22px 0 14px;border-bottom:1px solid var(--line)}.admin-head strong{font-size:22px}.admin-search input{background:var(--surface);border:1px solid var(--line);color:var(--text);border-radius:14px;padding:12px 14px;outline:none}.admin-search input:focus{border-color:var(--accent)}
+@media(min-width:900px){#app.admin-mode{padding-left:0;max-width:1180px}.admin-mode .screen{padding-left:42px;padding-right:42px}}
+.support-banner{position:fixed;z-index:58;left:50%;bottom:18px;transform:translateX(-50%);display:flex;align-items:center;gap:12px;max-width:calc(100vw - 24px);padding:10px 14px;border:1px solid var(--accent);border-radius:16px;background:var(--surface);box-shadow:0 12px 36px rgba(0,0,0,.45)}
+.support-banner button{border:0;border-radius:11px;padding:9px 12px;background:var(--accent);color:#fff;font-weight:800;cursor:pointer}
 .system-notice{position:fixed;inset:0;z-index:220;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;padding:20px;backdrop-filter:blur(8px)}
 .system-notice-card{position:relative;width:min(520px,100%);padding:28px 24px 24px;border-radius:22px;border:1px solid color-mix(in srgb,var(--accent) 42%,var(--line));background:var(--surface);box-shadow:0 28px 80px rgba(0,0,0,.65)}
 .system-notice-card h2{margin:0 38px 10px 0;font-size:24px}.system-notice-card p{white-space:pre-wrap;line-height:1.55;color:var(--text-dim);margin:0}.system-notice-close{position:absolute;right:13px;top:13px;width:38px;height:38px;border:0;border-radius:50%;background:var(--surface2);color:var(--text);font-size:22px;cursor:pointer}.system-notice-brand{font-size:11px;font-weight:900;letter-spacing:.14em;color:var(--accent2);margin-bottom:10px}
@@ -571,6 +576,8 @@ body.th-shake{animation:thshake .55s;}
  <symbol id="i-rotina" viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2 2M9 2h6"/></symbol>
  <symbol id="i-batalha" viewBox="0 0 24 24"><path d="M4 4 L20 20 M20 4 L4 20 M3 6 L6 3 M18 3 L21 6 M6 21 L3 18 M21 18 L18 21"/></symbol>
  <symbol id="i-perfil" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></symbol>
+ <symbol id="i-history" viewBox="0 0 24 24"><path d="M4 8V3m0 5h5"/><path d="M4.7 8A8 8 0 1 1 4 15"/><path d="M12 8v5l3 2"/></symbol>
+ <symbol id="i-admin" viewBox="0 0 24 24"><path d="M12 3l8 4v5c0 5-3.4 8-8 9-4.6-1-8-4-8-9V7z"/><path d="M9 12l2 2 4-5"/></symbol>
  <symbol id="i-dm" viewBox="0 0 24 24"><path d="M4 6a2 2 0 012-2h12a2 2 0 012 2v8a2 2 0 01-2 2H9l-5 4z"/></symbol>
  <symbol id="i-sino" viewBox="0 0 24 24"><path d="M6 9a6 6 0 0112 0c0 5 2 6 2 6H4s2-1 2-6M10 20a2 2 0 004 0"/></symbol>
  <symbol id="i-fotos" viewBox="0 0 24 24"><rect x="3" y="5" width="14" height="14" rx="2"/><path d="M3 15l4-4 3 3 4-4 3 3"/><circle cx="8" cy="9" r="1"/><path d="M20 8v11a2 2 0 01-2 2H8"/></symbol>
@@ -1261,11 +1268,13 @@ const TABS = [
   {id:'admin', ico:'🛡️', label:'Admin', admin:true},
 ];
 let activeTab='inicio';
-const NAV_ICO = {inicio:'i-home', treinos:'i-treino', alimentacao:'i-alim', estudos:'i-estudo', rotina:'i-rotina', recordacoes:'i-fotos', batalha:'i-batalha', perfil:'i-perfil',admin:'i-perfil'};
+const NAV_ICO = {inicio:'i-home', treinos:'i-treino', alimentacao:'i-alim', estudos:'i-estudo', rotina:'i-rotina', recordacoes:'i-fotos', batalha:'i-batalha', perfil:'i-perfil',admin:'i-admin'};
 function svgIcon(id){ return `<svg viewBox="0 0 24 24"><use href="#${id}"/></svg>`; }
 
 function renderNav(){
-  $('#navInner').innerHTML = TABS.filter(t=>!t.admin||S?.profile?.isAdmin).map(t=>`
+  const adminPuro=!!S?.profile?.isAdmin&&!sessionStorage.getItem('rz:admin:returnToken');
+  const tabs=adminPuro?TABS.filter(t=>t.admin):TABS.filter(t=>!t.admin);
+  $('#navInner').innerHTML = tabs.map(t=>`
     <button data-tab="${t.id}" class="${activeTab===t.id?'active':''}">
       ${svgIcon(NAV_ICO[t.id])}${t.label}</button>`).join('');
   $$('#navInner button').forEach(b=> b.onclick=()=>go(b.dataset.tab));
@@ -1315,9 +1324,11 @@ async function enterApp(){
   await loadUserData();
   $('#auth').classList.add('hidden');
   $('#app').classList.remove('hidden');
+  $('#app').classList.toggle('admin-mode',!!S.profile.isAdmin&&!sessionStorage.getItem('rz:admin:returnToken'));
   let abaSalva=S.profile.isAdmin?'admin':'inicio';
   try{ const x=sessionStorage.getItem(`rz:view:${currentUser||'anon'}:tab`); if(TABS.some(t=>t.id===x&&(!t.admin||S.profile.isAdmin))) abaSalva=x; }catch(e){}
   activeTab=abaSalva; renderNav(); go(abaSalva,true,true);
+  renderSupportBanner();
   try{ history.replaceState({rzTab:abaSalva},'',location.href); }catch(e){}
   startClock(); startTryHard(); connectSocket(); reportXP(); flushQueue();
   startSyncWatchdog();
@@ -1734,7 +1745,7 @@ function resumoDetalheSheet(tipo){
 
 /* ---------- helper de topo neutro ---------- */
 function backBtnHTML(){ return _navStack.length ? `<button class="hamb backbtn" onclick="goBack()" aria-label="Voltar">‹</button>` : ''; }
-function topbar(title){ return `<div class="topbar"><div style="display:flex;align-items:center;gap:10px"><button class="hamb" onclick="openDrawer()">☰</button>${backBtnHTML()}<div class="brand">${title}</div></div><div style="display:flex;align-items:center;gap:7px"><button class="icobtn" onclick="abrirHistorico('${title}')" aria-label="Histórico desta área" title="Histórico">↶</button>${homeClockHTML()}</div></div>`; }
+function topbar(title){ return `<div class="topbar"><div style="display:flex;align-items:center;gap:10px"><button class="hamb" onclick="openDrawer()">☰</button>${backBtnHTML()}<div class="brand">${title}</div></div><div style="display:flex;align-items:center;gap:7px"><button class="icobtn" onclick="abrirHistorico('${title}')" aria-label="Histórico desta área" title="Histórico">${svgIcon('i-history')}</button>${homeClockHTML()}</div></div>`; }
 const HIST_KEYS={TREINOS:['treino:tpl','treino:weeks','treino:logs','treino:recordes'],ESTUDOS:['estudo:materias','estudo:semana','estudo:logs'],ALIMENTAÇÃO:['alim:semana','alim:pesos','alim:agua','alim:hist'],ROTINA:['rotina','rotina:hist','rotina:plano','rotina:dias'],MEMÓRIAS:['recordacoes'],PERFIL:['config']};
 const HIST_LABEL={'treino:tpl':'Plano de treino','treino:weeks':'Semanas','treino:logs':'Treinos realizados','treino:recordes':'Recordes','estudo:materias':'Matérias','estudo:semana':'Plano de estudos','estudo:logs':'Estudos realizados','alim:semana':'Alimentação','alim:pesos':'Pesos','alim:agua':'Água','alim:hist':'Histórico alimentar','rotina':'Hábitos','rotina:hist':'Rotina realizada','rotina:plano':'Plano de rotina','rotina:dias':'Calendário da rotina','recordacoes':'Memórias','config':'Configurações'};
 function resumoHistorico(v){if(Array.isArray(v))return `${v.length} registro(s)`;if(v&&typeof v==='object')return `${Object.keys(v).length} item(ns)`;return String(v??'Sem dados');}
@@ -3489,15 +3500,17 @@ let _adminUsuarios=[];
 async function renderAdmin(){
   const root=$('#scr-admin');
   if(!S?.profile?.isAdmin){ root.innerHTML=topbar('ACESSO NEGADO')+'<div class="card">Área exclusiva do proprietário.</div>'; return; }
-  root.innerHTML=`${topbar('ADMINISTRAÇÃO')}
+  root.innerHTML=`<div class="admin-head"><strong>🛡️ ADMINISTRAÇÃO REDZONE</strong><div>${homeClockHTML()}</div></div>
     <div class="hero"><div><div class="eyebrow">CENTRAL DO PROPRIETÁRIO</div><div class="hero-name">Controle e suporte</div><div class="muted small">Alterações sensíveis ficam registradas. Senhas antigas nunca são exibidas.</div></div></div>
     <div id="adminStats" class="admin-stats"><div class="admin-stat"><span>Carregando dados…</span></div></div>
-    <div class="admin-tools"><button class="admin-tool" id="adminAvisos"><b>📢 Enviar aviso</b><span>Mensagem única para todos ou para um usuário.</span></button><button class="admin-tool" id="adminHistoricoAvisos"><b>🗂️ Avisos publicados</b><span>Veja alcance e desative comunicados.</span></button></div>
+    <div class="admin-tools"><button class="admin-tool" id="adminAvisos"><b>📢 Enviar aviso</b><span>Mensagem única para todos ou para um usuário.</span></button><button class="admin-tool" id="adminHistoricoAvisos"><b>🗂️ Avisos publicados</b><span>Veja alcance e desative comunicados.</span></button><button class="admin-tool" id="adminAuditoria"><b>🕘 Auditoria</b><span>Histórico das ações administrativas.</span></button><button class="admin-tool" id="adminSair"><b>↪ Sair</b><span>Encerrar a sessão administrativa.</span></button></div>
     <div class="admin-search"><input id="adminQ" placeholder="Buscar por nome, usuário ou e-mail"><button class="btn sm" id="adminBuscar">Buscar</button></div>
     <div id="adminLista"><p class="muted">Carregando usuários…</p></div>`;
   $('#adminBuscar').onclick=()=>carregarAdminUsuarios($('#adminQ').value);
   $('#adminAvisos').onclick=adminAvisoSheet;
   $('#adminHistoricoAvisos').onclick=adminHistoricoAvisosSheet;
+  $('#adminAuditoria').onclick=adminAuditoriaSheet;
+  $('#adminSair').onclick=logout;
   $('#adminQ').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();carregarAdminUsuarios(e.target.value)}};
   try{
     const r=await api('/admin/resumo');
@@ -3522,12 +3535,26 @@ async function abrirAdminUsuario(id){
       <div class="grid2"><div class="field"><label>Peso (kg)</label><input id="adPeso" type="number" step="0.01" value="${u.pesoKg||''}"></div><div class="field"><label>Altura (cm)</label><input id="adAltura" type="number" value="${u.alturaCm||''}"></div></div>
       <label class="rowitem"><input id="adBloq" type="checkbox" ${r.bloqueado?'checked':''} style="width:22px;height:22px"><div class="txt"><div class="t">Bloquear temporariamente</div><div class="s">Impede novos logins até a reativação.</div></div></label>
       <button class="btn" id="adSalvar">Salvar alterações</button>
+      ${u.isAdmin?'':`<button class="btn" id="adEntrar" style="margin-top:9px">Entrar na conta em modo suporte</button>`}
       <button class="btn ghost" id="adSenha" style="margin-top:9px">Redefinir senha</button>
       <p class="small muted" style="margin-top:12px">Dados internos existentes: ${esc(r.resumo.estados.join(', ')||'nenhum')}. Toda ação desta tela é auditada.</p>`);
     $('#adSalvar').onclick=async()=>{const body={nomeGuerra:$('#adNome').value.trim(),username:$('#adUser').value.trim().toLowerCase(),email:$('#adEmail').value.trim().toLowerCase(),bloqueado:$('#adBloq').checked};const p=Number($('#adPeso').value),a=Number($('#adAltura').value);if(p)body.pesoKg=p;if(a)body.alturaCm=a;
       try{await api('/admin/usuarios/'+encodeURIComponent(id),{method:'PATCH',body});toast('Usuário atualizado com segurança.');closeSheet();renderAdmin()}catch(e){toast(e.data?.erro||'Não foi possível salvar.')}};
     $('#adSenha').onclick=()=>adminSenhaSheet(id,u.nomeGuerra);
+    if($('#adEntrar'))$('#adEntrar').onclick=()=>entrarComoUsuario(id,u.nomeGuerra);
   }catch(e){toast(e.data?.erro||'Não foi possível abrir esse usuário.')}
+}
+async function entrarComoUsuario(id,nome){
+  if(!confirm(`Entrar na conta de ${nome} em modo suporte? Esta ação será registrada.`))return;
+  try{const r=await api('/admin/usuarios/'+encodeURIComponent(id)+'/entrar-como',{method:'POST'});sessionStorage.setItem('rz:admin:returnToken',authToken);sessionStorage.setItem('rz:admin:supportName',nome);setToken(r.token);location.reload()}catch(e){toast(e.data?.erro||'Não foi possível iniciar o suporte.')}
+}
+function renderSupportBanner(){
+  document.querySelector('.support-banner')?.remove();const token=sessionStorage.getItem('rz:admin:returnToken');if(!token)return;
+  const el=document.createElement('div');el.className='support-banner';el.innerHTML=`<b>Modo suporte: ${esc(sessionStorage.getItem('rz:admin:supportName')||currentUser)}</b><button>Voltar ao painel</button>`;el.querySelector('button').onclick=()=>{const t=sessionStorage.getItem('rz:admin:returnToken');sessionStorage.removeItem('rz:admin:returnToken');sessionStorage.removeItem('rz:admin:supportName');setToken(t);location.reload()};document.body.appendChild(el);
+}
+async function adminAuditoriaSheet(){
+  openSheet('<h3>🕘 Auditoria administrativa</h3><div id="adAudit"><p class="muted">Carregando…</p></div>');
+  try{const r=await api('/admin/auditoria');$('#adAudit').innerHTML=(r.itens||[]).length?r.itens.map(i=>`<div class="rowitem"><div class="txt"><div class="t">${esc(i.acao)}</div><div class="s">${new Date(i.criadoEm).toLocaleString('pt-BR')}${i.alvoId?' · usuário '+esc(i.alvoId):''}</div></div></div>`).join(''):'<p class="muted">Nenhuma ação registrada.</p>'}catch(e){$('#adAudit').innerHTML='<p class="err">Não foi possível carregar a auditoria.</p>'}
 }
 function adminSenhaSheet(id,nome){
   openSheet(`<h3>Redefinir senha</h3><p class="muted small">Crie uma senha temporária para ${esc(nome)}. A senha atual não pode ser vista.</p><div class="field"><label>Nova senha</label><input id="adNovaSenha" type="password" autocomplete="new-password"></div><div class="err" id="adSenhaErr"></div><button class="btn" id="adSenhaOk">Redefinir</button>`);
@@ -3923,8 +3950,9 @@ function bindPasswordEyes(root){
     wrap.appendChild(btn);
   });
 }
-function openSheet(html){ pausarVideosFeed(); const estava=$('#overlay').classList.contains('show'); $('#sheet').classList.remove('keyboard-fit'); $('#sheet').innerHTML=`<button class="sheet-close" onclick="closeSheet()">×</button>`+html; $('#overlay').classList.add('show'); ajustarViewportTeclado(); if(!estava){ try{ history.pushState({rzSheet:true,rzTab:activeTab},'',location.href); }catch(e){} } bindPasswordEyes($('#sheet')); }
-function closeSheet(fromPop=false){ $$('#sheet video').forEach(v=>{try{v.pause();}catch(e){}}); try{_chatStopRecording?.();}catch(e){} _chatStopRecording=null; if(_socket&&_chatPeerId)_socket.emit('dm:viewing',{peerId:null}); const aberto=$('#overlay').classList.contains('show'); $('#overlay').classList.remove('show','chat-full'); document.documentElement.classList.remove('chat-open'); document.body.classList.remove('chat-open'); _chatUser=null; _chatPeerId=null; if(aberto&&!fromPop&&history.state?.rzSheet){ try{ history.back(); }catch(e){} } }
+function modalLock(on){document.documentElement.classList.toggle('modal-open',!!on);document.body.classList.toggle('modal-open',!!on)}
+function openSheet(html){ pausarVideosFeed(); const estava=$('#overlay').classList.contains('show'); $('#sheet').classList.remove('keyboard-fit'); $('#sheet').innerHTML=`<button class="sheet-close" onclick="closeSheet()">×</button>`+html; $('#overlay').classList.add('show'); modalLock(true); ajustarViewportTeclado(); if(!estava){ try{ history.pushState({rzSheet:true,rzTab:activeTab},'',location.href); }catch(e){} } bindPasswordEyes($('#sheet')); }
+function closeSheet(fromPop=false){ $$('#sheet video').forEach(v=>{try{v.pause();}catch(e){}}); try{_chatStopRecording?.();}catch(e){} _chatStopRecording=null; if(_socket&&_chatPeerId)_socket.emit('dm:viewing',{peerId:null}); const aberto=$('#overlay').classList.contains('show'); $('#overlay').classList.remove('show','chat-full'); document.documentElement.classList.remove('chat-open'); document.body.classList.remove('chat-open'); modalLock(false); _chatUser=null; _chatPeerId=null; if(aberto&&!fromPop&&history.state?.rzSheet){ try{ history.back();}catch(e){} } }
 
 // ESC sempre volta uma camada, como em aplicativos de desktop.
 document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if($('.system-notice-close')){e.preventDefault();return $('.system-notice-close').click()}if($('#emojiPanel')?.classList.contains('open')){e.preventDefault();e.stopPropagation();return $('#emojiPanel').classList.remove('open')}if($('#chatAttachPanel')?.classList.contains('open')){e.preventDefault();e.stopPropagation();return $('#chatAttachPanel').classList.remove('open')}if($('.story-viewers-panel')){e.preventDefault();return $('[data-viewers-close]')?.click()}if($('.camera-overlay')){e.preventDefault();return $('[data-cam-close]')?.click()}if($('.chat-viewer')){e.preventDefault();return fecharViewerChat()}if($('.media-preview-overlay')){e.preventDefault();return $('.media-preview-overlay').remove()}if($('#dmDeleteOverlay')){e.preventDefault();return fecharMenuMensagem()}if($('#storyview')?.classList.contains('on')){e.preventDefault();return fecharStories()}if($('#overlay')?.classList.contains('show')){e.preventDefault();return closeSheet()}if($('#nav')?.classList.contains('open')){e.preventDefault();return closeDrawer()}if(activeTab!=='inicio'){e.preventDefault();goBack()}},true);

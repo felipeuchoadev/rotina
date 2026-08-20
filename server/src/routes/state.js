@@ -65,7 +65,8 @@ stateRouter.get('/', async (req, res) => {
 
 stateRouter.get('/historico/lista', async (req,res)=>{
   const chaves=String(req.query.chaves||'').split(',').map(x=>x.trim()).filter(Boolean);
-  const rows=await prisma.stateHistory.findMany({where:{usuarioId:req.userId,...(chaves.length?{chave:{in:chaves}}:{})},orderBy:{criadoEm:'desc'},take:200});
+  const limite=Math.min(1000,Math.max(50,Number(req.query.limite)||500));
+  const rows=await prisma.stateHistory.findMany({where:{usuarioId:req.userId,...(chaves.length?{chave:{in:chaves}}:{})},orderBy:{criadoEm:'desc'},take:limite});
   res.json(rows.map(r=>({id:String(r.id),chave:r.chave,valor:r.valor,criadoEm:r.criadoEm})));
 });
 
@@ -94,8 +95,6 @@ stateRouter.put('/:chave', async (req, res) => {
   });
   if(!atual||JSON.stringify(atual.valor)!==JSON.stringify(valor)){
     await prisma.stateHistory.create({data:{usuarioId:req.userId,chave:req.params.chave,valor}}).catch(()=>{});
-    const excesso=await prisma.stateHistory.findMany({where:{usuarioId:req.userId},orderBy:{criadoEm:'desc'},skip:2000,select:{id:true}}).catch(()=>[]);
-    if(excesso.length)prisma.stateHistory.deleteMany({where:{id:{in:excesso.map(x=>x.id)}}}).catch(()=>{});
   }
   if(['treino:logs','estudo:logs','alim:agua'].includes(req.params.chave)) await recalcularXp(req.userId);
   if(['datas','config'].includes(req.params.chave)) rodarAgenda().catch(()=>{});
@@ -106,7 +105,9 @@ stateRouter.put('/:chave', async (req, res) => {
 
 stateRouter.delete('/:chave', async (req, res) => {
   if (req.params.chave === 'xp:bonus') return res.status(403).json({ erro: 'Ajuste de XP é reservado ao sistema.' });
+  const anterior=await prisma.userState.findUnique({where:{usuarioId_chave:{usuarioId:req.userId,chave:req.params.chave}}});
   await prisma.userState.deleteMany({ where: { usuarioId: req.userId, chave: req.params.chave } });
+  if(anterior)await prisma.stateHistory.create({data:{usuarioId:req.userId,chave:req.params.chave,valor:null}}).catch(()=>{});
   if (['treino:logs', 'estudo:logs', 'alim:agua'].includes(req.params.chave)) await recalcularXp(req.userId);
   emitToUser(req.userId, 'state:changed', { chave: req.params.chave, valor: null, src: req.query.src || null });
   res.status(204).end();

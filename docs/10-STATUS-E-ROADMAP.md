@@ -11,7 +11,7 @@
 > ainda é `app/disciplina-v3.html`; logo `redzone-logo.png`. Conta de teste:
 > `felipeestudos220807@gmail.com` / `felipe220807@` (pergunta de segurança: time = Flamengo).
 
-> 🟡 **PRÓXIMA v77 (local):** painel de avisos administrativos descartáveis e sincronizados por conta; v76 responsiva também aguarda publicação.
+> 🟡 **PRÓXIMA v78 (local):** central administrativa exclusiva, avisos descartáveis, modo suporte auditado, histórico permanente, datas importantes internas e interface ampliada. Aguarda autorização de publicação.
 >
 > 🟢 **VERSÃO PUBLICADA: SW `redzone-v75`.** App/back no ar. Sync ao vivo ponta a ponta
 > (mudou num aparelho → aparece nos outros em ms) + autoupdate ao vivo (deploy → conectados recarregam em ms)

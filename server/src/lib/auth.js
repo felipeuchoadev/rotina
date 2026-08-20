@@ -13,6 +13,9 @@ export async function conferirSenha(senha, hash) {
 export function assinarToken(usuario) {
   return jwt.sign({ sub: usuario.id, username: usuario.username }, JWT_SECRET, { expiresIn: JWT_EXPIRES });
 }
+export function assinarTokenSuporte(usuario, adminId) {
+  return jwt.sign({ sub: usuario.id, username: usuario.username, supportAdminId: adminId }, JWT_SECRET, { expiresIn: '2h' });
+}
 
 // Middleware: exige Authorization: Bearer <token> e injeta req.userId
 export function exigirAuth(req, res, next) {
@@ -22,6 +25,7 @@ export function exigirAuth(req, res, next) {
   try {
     const payload = jwt.verify(token, JWT_SECRET);
     req.userId = payload.sub;
+    req.supportAdminId = payload.supportAdminId || null;
     next();
   } catch {
     return res.status(401).json({ erro: 'Token inválido ou expirado.' });

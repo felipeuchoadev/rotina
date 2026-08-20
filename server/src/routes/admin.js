@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../lib/db.js';
-import { exigirAuth, hashSenha } from '../lib/auth.js';
+import { exigirAuth, hashSenha, assinarTokenSuporte } from '../lib/auth.js';
 import { publico } from './auth.js';
 import { emitFeed, emitToUser } from '../realtime.js';
 
@@ -70,6 +70,15 @@ adminRouter.post('/usuarios/:id/redefinir-senha', async (req,res)=>{
   const senha=String(req.body.senha||''); if(senha.length<8)return res.status(400).json({erro:'A nova senha precisa ter pelo menos 8 caracteres.'});
   await prisma.usuario.update({where:{id:req.params.id},data:{senhaHash:await hashSenha(senha),resetToken:null,resetExp:null}});
   await auditar(req.userId,req.params.id,'senha:redefinir'); res.json({ok:true});
+});
+
+adminRouter.post('/usuarios/:id/entrar-como', async (req,res)=>{
+  const usuario=await prisma.usuario.findUnique({where:{id:req.params.id}});
+  if(!usuario)return res.status(404).json({erro:'Usuário não encontrado.'});
+  if(usuario.isAdmin)return res.status(400).json({erro:'Não é possível iniciar suporte em outra conta administrativa.'});
+  if(usuario.bloqueado)return res.status(400).json({erro:'Reative a conta antes de acessá-la.'});
+  await auditar(req.userId,usuario.id,'suporte:entrar');
+  res.json({token:assinarTokenSuporte(usuario,req.userId),usuario:publico(usuario)});
 });
 
 adminRouter.get('/auditoria', async (_req,res)=>{
