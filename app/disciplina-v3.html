@@ -709,7 +709,7 @@ setInterval(()=>{ if(authToken&&offQueue().length&&navigator.onLine) flushQueue(
 
 /* id único DESTE aparelho/aba — usado pra não ecoar de volta a própria escrita no sync ao vivo */
 const CLIENT_ID = (Math.random().toString(36).slice(2)+'-'+Date.now().toString(36));
-const APP_BUILD = 'redzone-v92';
+const APP_BUILD = 'redzone-v93';
 // evita re-render que rouba o foco enquanto a pessoa digita (o dado já foi aplicado em S de qualquer forma)
 function _syncPodeRender(){ const a=document.activeElement; return !(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||'')); }
 // ANTI-LOOP: ao aplicar uma mudança que VEIO do servidor, um re-render pode disparar escritas de
@@ -1092,9 +1092,8 @@ function renderAuth(){
       ${emblemaESA(true)}
       <div class="auth-sub" style="margin-top:0">Disciplina é território. Domina o seu.</div>
       <div class="tabs"><button class="on">Entrar</button><button id="toSignup">Criar conta</button></div>
-    <div class="field"><label>E-mail ou usuário</label><input id="lgEmail" name="username" type="text" value="${esc(localStorage.getItem('rz:login:lembrado')||'')}" placeholder="voce@gmail.com" autocomplete="username"></div>
+    <div class="field"><label>E-mail ou usuário</label><input id="lgEmail" name="username" type="text" placeholder="voce@gmail.com" autocomplete="username"></div>
       <div class="field"><label>Senha</label><input id="lgPass" name="password" type="password" placeholder="••••••••" autocomplete="current-password"></div>
-      <label class="rowitem" style="cursor:pointer;padding:10px 12px"><input id="lgLembrar" type="checkbox" ${localStorage.getItem('rz:login:lembrado')?'checked':''} style="width:20px;height:20px"><div class="txt"><div class="t">Lembrar meu login neste aparelho</div><div class="s">A senha pode ser salva pelo gerenciador do navegador.</div></div></label>
       <div class="err" id="lgErr"></div>
       <button class="btn" id="lgBtn">Voltar à Batalha</button>
       <p class="auth-sub" style="margin-top:12px"><a id="toEsqueci" style="cursor:pointer">Esqueci minha senha</a></p>`;
@@ -1222,7 +1221,7 @@ async function doLogin(){
   const btn=$('#lgBtn'); if(btn){ btn.disabled=true; btn.textContent='Entrando…'; }
   try{
     const r = await api('/auth/login',{auth:false, method:'POST', body:{ identificador, senha:pass }});
-    if($('#lgLembrar')?.checked) localStorage.setItem('rz:login:lembrado',identificador); else localStorage.removeItem('rz:login:lembrado');
+    localStorage.removeItem('rz:login:lembrado');
     setToken(r.token); await enterApp();
   }catch(e){ if(btn){ btn.disabled=false; btn.textContent='Voltar à Batalha'; }
     err.textContent = e.status===401 ? 'Usuário/e-mail ou senha incorretos.' : (e.data?.erro || 'Falha no login. Sem conexão?'); }

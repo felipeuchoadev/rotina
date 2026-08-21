@@ -23,7 +23,7 @@
 >
 > 🟢 **v81:** autoupdate resistente a reinícios sem F5, restauração de aba/posição e relógio de Brasília sincronizado pelo servidor em todos os dispositivos.
 >
-> 🟢 **VERSÃO PUBLICADA: SW `redzone-v92`.** App/back no ar. Perfil administrativo identificado com o selo ADM
+> 🟢 **VERSÃO PUBLICADA: SW `redzone-v93`.** App/back no ar. Opção interna ineficaz de lembrar login removida; navegador mantém seu gerenciador nativo
 > (mudou num aparelho → aparece nos outros em ms) + autoupdate ao vivo (deploy → conectados recarregam em ms)
 > JÁ FUNCIONAM. Deploy = `scp app/* server/src/**` pra VM (chave `Chaves/oracle_vm`, user `ubuntu`,
 > `redsystems.ddns.net:/opt/disciplina/`) + `systemctl restart disciplina` se mexeu no `server/` + **bump do SW**.
