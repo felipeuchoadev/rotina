@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import { prisma } from './lib/db.js';
 
 let io = null;
+let appDirAtual = null;
 const online = new Map();
 const vistoPorUltimo = new Map();
 const visualizando = new Map();
@@ -21,6 +22,7 @@ function addView(usuarioId, peerId, delta) {
 let _lastDeploy = 0;
 export function watchDeploys(appDir) {
   try {
+    appDirAtual=appDir;
     fs.watch(appDir, (evt, file) => {
       if (file && file !== 'disciplina-v3.html' && file !== 'service-worker.js') return;
       const now = Date.now();
@@ -57,6 +59,9 @@ export function initRealtime(httpServer, corsOrigins) {
     if (socket.userId) socket.join('user:' + socket.userId); // sala pessoal (DM/notificações)
     online.set(socket.userId,(online.get(socket.userId)||0)+1);
     io.to('feed').emit('presence:update',{userId:socket.userId,online:true});
+    // Se o servidor reiniciou depois do deploy, o fs.watch antigo pode ter perdido
+    // a troca. Compara a versão do cliente ao conectar e atualiza só aquele aparelho.
+    try{const sw=fs.readFileSync(appDirAtual+'/service-worker.js','utf8'),build=sw.match(/const CACHE = ['"]([^'"]+)/)?.[1];if(build&&socket.handshake.auth?.build!==build)setTimeout(()=>socket.emit('app:update',{build,at:Date.now()}),250);}catch{}
     (async()=>{ try{ const pendentes=await prisma.mensagem.findMany({where:{paraId:socket.userId,entregue:false},select:{id:true,deId:true}}); if(!pendentes.length)return; await prisma.mensagem.updateMany({where:{id:{in:pendentes.map(m=>m.id)}},data:{entregue:true}}); for(const m of pendentes)emitToUser(m.deId,'dm:entregue',{id:m.id}); }catch{} })();
     socket.on('presence:check',async(userId,cb)=>{ if(typeof cb!=='function') return; let lastSeen=vistoPorUltimo.get(userId)||null; if(!lastSeen){ try{ lastSeen=(await prisma.usuario.findUnique({where:{id:userId},select:{ultimoAcesso:true}}))?.ultimoAcesso||null; }catch{} } cb({online:!!online.get(userId),lastSeen}); });
     socket.on('dm:typing',(d)=>{ if(d&&d.paraId) io.to('user:'+d.paraId).emit('dm:typing',{deId:socket.userId,digitando:!!d.digitando}); });

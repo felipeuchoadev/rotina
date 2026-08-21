@@ -24,6 +24,7 @@ const app = express();
 const PORT = process.env.PORT || 8090;
 const CORS_ORIGINS = (process.env.CORS_ORIGINS || '').split(',').map((s) => s.trim()).filter(Boolean);
 const UPLOAD_DIR = process.env.UPLOAD_DIR || './uploads';
+const APP_DIR = process.env.APP_DIR || path.resolve(__dirname, '../../app');
 
 app.set('trust proxy', 1); // atrás do Caddy/Nginx
 app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
@@ -58,11 +59,10 @@ app.use((err, req, res, _next) => {
 const server = http.createServer(app);
 initRealtime(server, CORS_ORIGINS.length ? CORS_ORIGINS : true);
 
-// diretório do front (pra observar deploys e empurrar autoupdate ao vivo)
-const APP_DIR = process.env.APP_DIR || path.resolve(__dirname, '../../app');
+// Começa a observar antes de aceitar conexões para não perder o deploy durante reinícios.
+watchDeploys(APP_DIR);
 
 server.listen(PORT, () => {
   console.log(`DISCIPLINA API no ar em http://localhost:${PORT} (CORS: ${CORS_ORIGINS.join(', ') || '*'})`);
   iniciarAgenda(); // avisos programados de aniversários/datas
-  watchDeploys(APP_DIR); // autoupdate ao vivo: novo deploy → todos recarregam na hora
 });

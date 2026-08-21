@@ -694,6 +694,7 @@ setInterval(()=>{ if(authToken&&offQueue().length&&navigator.onLine) flushQueue(
 
 /* id único DESTE aparelho/aba — usado pra não ecoar de volta a própria escrita no sync ao vivo */
 const CLIENT_ID = (Math.random().toString(36).slice(2)+'-'+Date.now().toString(36));
+const APP_BUILD = 'redzone-v81';
 // evita re-render que rouba o foco enquanto a pessoa digita (o dado já foi aplicado em S de qualquer forma)
 function _syncPodeRender(){ const a=document.activeElement; return !(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||'')); }
 // ANTI-LOOP: ao aplicar uma mudança que VEIO do servidor, um re-render pode disparar escritas de
@@ -1329,6 +1330,7 @@ function go(tab, isBack, restaurarSalvo=false){
 }
 
 async function enterApp(){
+  await sincronizarRelogioBrasilia();
   await loadUserData();
   $('#auth').classList.add('hidden');
   $('#app').classList.remove('hidden');
@@ -1359,8 +1361,13 @@ function startSyncWatchdog(){
   },2000);
 }
 
-/* Relógio de Brasília (canto sup. direito, grande, só horário) */
-function brasiliaNow(){ return new Date(new Date().toLocaleString('en-US',{timeZone:'America/Sao_Paulo'})); }
+/* Relógio de Brasília sincronizado com o servidor: celular e PC usam a mesma fonte. */
+let _serverClockOffset=0,_clockSyncBusy=false;
+async function sincronizarRelogioBrasilia(){
+  if(_clockSyncBusy)return;_clockSyncBusy=true;const inicio=Date.now();
+  try{const r=await fetch(API_BASE+'/saude',{cache:'no-store'});if(!r.ok)throw new Error('hora indisponível');const d=await r.json(),fim=Date.now(),servidor=Date.parse(d.hora);if(Number.isFinite(servidor))_serverClockOffset=servidor-((inicio+fim)/2);}catch(e){}finally{_clockSyncBusy=false;}
+}
+function brasiliaNow(){ const instante=new Date(Date.now()+_serverClockOffset); return new Date(instante.toLocaleString('en-US',{timeZone:'America/Sao_Paulo'})); }
 function clockHTML(){ const d=brasiliaNow(); const hh=String(d.getHours()).padStart(2,'0'), mm=String(d.getMinutes()).padStart(2,'0'), ss=String(d.getSeconds()).padStart(2,'0');
   return `<div class="clock">${hh}:${mm}<small>${ss}s</small></div>`; }
 function fmtDataLonga(d){ return d.toLocaleDateString('pt-BR',{weekday:'short', day:'2-digit', month:'long'}).replace('.',''); }
@@ -1368,7 +1375,7 @@ function fmtDataLonga(d){ return d.toLocaleDateString('pt-BR',{weekday:'short', 
 function homeClockHTML(){ const d=brasiliaNow(); const hh=String(d.getHours()).padStart(2,'0'), mm=String(d.getMinutes()).padStart(2,'0'), ss=String(d.getSeconds()).padStart(2,'0');
   return `<div class="homeclock"><div class="hc-time">${hh}:${mm}<small>${ss}</small></div><div class="hc-date">${fmtDataLonga(d)}</div></div>`; }
 let _curDay = null;
-function startClock(){ clearInterval(window._clk); _curDay=todayISO(); window._clk=setInterval(()=>{
+function startClock(){ clearInterval(window._clk);clearInterval(window._clockSyncTimer);_curDay=todayISO();window._clockSyncTimer=setInterval(sincronizarRelogioBrasilia,60000); window._clk=setInterval(()=>{
   const d=brasiliaNow();
   const hh=String(d.getHours()).padStart(2,'0'), mm=String(d.getMinutes()).padStart(2,'0'), ss=String(d.getSeconds()).padStart(2,'0');
   $$('.clock').forEach(c=>{ c.innerHTML=`${hh}:${mm}<small>${ss}s</small>`; });
@@ -3959,7 +3966,19 @@ function bindPasswordEyes(root){
 }
 function modalLock(on){document.documentElement.classList.toggle('modal-open',!!on);document.body.classList.toggle('modal-open',!!on)}
 function openSheet(html){ pausarVideosFeed(); const estava=$('#overlay').classList.contains('show'); $('#sheet').classList.remove('keyboard-fit'); $('#sheet').innerHTML=`<button class="sheet-close" onclick="closeSheet()">×</button>`+html; $('#overlay').classList.add('show'); modalLock(true); ajustarViewportTeclado(); if(!estava){ try{ history.pushState({rzSheet:true,rzTab:activeTab},'',location.href); }catch(e){} } bindPasswordEyes($('#sheet')); }
-function closeSheet(fromPop=false){ $$('#sheet video').forEach(v=>{try{v.pause();}catch(e){}}); try{_chatStopRecording?.();}catch(e){} _chatStopRecording=null; if(_socket&&_chatPeerId)_socket.emit('dm:viewing',{peerId:null}); const aberto=$('#overlay').classList.contains('show'); $('#overlay').classList.remove('show','chat-full'); document.documentElement.classList.remove('chat-open'); document.body.classList.remove('chat-open'); modalLock(false); _chatUser=null; _chatPeerId=null; if(aberto&&!fromPop&&history.state?.rzSheet){ try{ history.back();}catch(e){} } }
+function closeSheet(fromPop=false){ $$('#sheet video').forEach(v=>{try{v.pause();}catch(e){}}); try{_chatStopRecording?.();}catch(e){} _chatStopRecording=null; if(_socket&&_chatPeerId)_socket.emit('dm:viewing',{peerId:null}); const aberto=$('#overlay').classList.contains('show'); $('#overlay').classList.remove('show','chat-full'); document.documentElement.classList.remove('chat-open'); document.body.classList.remove('chat-open'); modalLock(false); _chatUser=null; _chatPeerId=null; if(aberto&&!fromPop&&history.state?.rzSheet){ try{ history.back();}catch(e){} } if(window.__appUpdatePending)setTimeout(()=>executarAtualizacaoApp(),80); }
+
+function executarAtualizacaoApp(){
+  if(window.__appReloading)return;window.__appReloading=true;salvarPosicaoAtual();
+  try{sessionStorage.setItem('rz:reloadAt',String(Date.now()));if(_chatUser){sessionStorage.setItem('rz:dm:draft:'+_chatUser,$('#chatTxt')?.value||'');location.hash='dm='+encodeURIComponent(_chatUser);}}catch(e){}
+  try{toast('🔄 REDZONE atualizado. Mantendo você no mesmo lugar…');}catch(e){}
+  setTimeout(()=>location.reload(),350);
+}
+function solicitarAtualizacaoApp(){
+  if(window.__appReloading)return;
+  if($('#overlay')?.classList.contains('show')){window.__appUpdatePending=true;try{toast('🔄 Atualização pronta — será aplicada ao fechar esta janela.');}catch(e){}return;}
+  executarAtualizacaoApp();
+}
 
 // ESC sempre volta uma camada, como em aplicativos de desktop.
 document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if($('.system-notice-close')){e.preventDefault();return $('.system-notice-close').click()}if($('#emojiPanel')?.classList.contains('open')){e.preventDefault();e.stopPropagation();return $('#emojiPanel').classList.remove('open')}if($('#chatAttachPanel')?.classList.contains('open')){e.preventDefault();e.stopPropagation();return $('#chatAttachPanel').classList.remove('open')}if($('.story-viewers-panel')){e.preventDefault();return $('[data-viewers-close]')?.click()}if($('.camera-overlay')){e.preventDefault();return $('[data-cam-close]')?.click()}if($('.chat-viewer')){e.preventDefault();return fecharViewerChat()}if($('.media-preview-overlay')){e.preventDefault();return $('.media-preview-overlay').remove()}if($('#dmDeleteOverlay')){e.preventDefault();return fecharMenuMensagem()}if($('#storyview')?.classList.contains('on')){e.preventDefault();return fecharStories()}if($('#overlay')?.classList.contains('show')){e.preventDefault();return closeSheet()}if($('#nav')?.classList.contains('open')){e.preventDefault();return closeDrawer()}if(activeTab!=='inicio'){e.preventDefault();goBack()}},true);
@@ -3995,7 +4014,7 @@ function connectSocket(){
   const base = location.pathname.includes('/rotina') ? '/rotina' : '';
   const src = origin + base + '/socket.io/socket.io.js';
   const boot=()=>{ try{
-    _socket = io(origin, { path: base + '/socket.io', auth:{ token:authToken }, transports:['websocket','polling'] });
+    _socket = io(origin, { path: base + '/socket.io', auth:{ token:authToken,build:APP_BUILD }, transports:['websocket','polling'],reconnection:true,reconnectionDelay:500,reconnectionDelayMax:3000 });
     _socket.on('post:novo',()=>{ if(activeTab==='batalha') toast('Nova publicação no feed. Toque em ↻ Atualizar quando quiser ver.'); });
     _socket.on('post:like',d=>{ if(!d)return; $$(`[data-post="${d.postId}"] [data-like]`).forEach(el=>{ const n=$('b',el); if(n)n.textContent=d.total; }); });
     _socket.on('post:comentario',d=>{ if(!d||d.total==null)return; $$(`[data-post="${d.postId}"] [data-comment]`).forEach(el=>{ const n=$('b',el); if(n)n.textContent=d.total; }); });
@@ -4005,7 +4024,7 @@ function connectSocket(){
     _socket.on('state:changed', (d)=>{ if(!d || d.src===CLIENT_ID) return; applyRemoteState(d.chave, d.valor,d.versao); });
     _socket.on('profile:changed', (d)=>{ if(!d || d.src===CLIENT_ID) return; applyRemoteProfile(d.usuario); });
     // AUTOUPDATE ao vivo: desenvolvedor subiu versão nova → recarrega na hora (HTML é network-first, pega o novo)
-    _socket.on('app:update', ()=>{ if(window.__appReloading) return; window.__appReloading=true; salvarPosicaoAtual(); try{ sessionStorage.setItem('rz:reloadAt', String(Date.now()));if(_chatUser){sessionStorage.setItem('rz:dm:draft:'+_chatUser,$('#chatTxt')?.value||'');location.hash='dm='+encodeURIComponent(_chatUser);}}catch(e){} try{ toast('🔄 Nova versão chegou — atualizando…'); }catch(e){} setTimeout(()=>{ try{ location.reload(); }catch(e){} }, 600); });
+    _socket.on('app:update', solicitarAtualizacaoApp);
     _socket.on('dm:nova', (m)=>{
       _socket.emit('dm:delivered',{id:m.id});
       const nome=m.de?.nomeGuerra||'Alguém';
@@ -4059,7 +4078,6 @@ async function subscribePush(){
   try{ const h=location.hash||''; if(h.includes('reset=')){ const t=new URLSearchParams(h.slice(1)).get('reset'); if(t) resetarSenhaSheet(t); } }catch(e){}
   // registra service worker (só funciona em https/host real; ignora falha local)
   if('serviceWorker' in navigator){
-    navigator.serviceWorker.register('service-worker.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
     navigator.serviceWorker.addEventListener('message',e=>{ if(e.data?.type!=='OPEN_DEEP_LINK'||!e.data.url)return; try{ const u=new URL(e.data.url,location.origin); if(u.origin===location.origin&&u.pathname===location.pathname){location.hash=u.hash;handleDeepLink();}else location.assign(u.href); }catch(_){} });
     // autoupdate: quando uma versão nova assume, recarrega sozinho (sem F5)
     let _reloaded=false;
@@ -4067,12 +4085,14 @@ async function subscribePush(){
       if(_reloaded) return;
       // se o socket 'app:update' já recarregou agora há pouco, NÃO recarrega de novo (evita reload duplo/lentidão)
       try{ if(Date.now()-(+sessionStorage.getItem('rz:reloadAt')||0) < 12000){ return; } }catch(e){}
-      _reloaded=true; location.reload();
+      _reloaded=true; solicitarAtualizacaoApp();
     });
+    // O listener vem antes do registro para não perder controllerchange em conexões rápidas.
+    navigator.serviceWorker.register('service-worker.js',{updateViaCache:'none'}).then(r=>r.update()).catch(()=>{});
     // checa por atualização periodicamente (app aberto por muito tempo)
     // O socket entrega deploy em tempo real; esta checagem é só contingência e não deve gastar dados a cada 5s.
     const checarVersao=()=>{if(document.visibilityState==='visible')navigator.serviceWorker.getRegistration().then(r=>r&&r.update()).catch(()=>{});};
-    setInterval(checarVersao,15000);document.addEventListener('visibilitychange',checarVersao);
+    setInterval(checarVersao,10000);document.addEventListener('visibilitychange',()=>{checarVersao();if(document.visibilityState==='visible')sincronizarRelogioBrasilia();});
   }
 })();
 </script>
