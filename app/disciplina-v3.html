@@ -706,7 +706,7 @@ setInterval(()=>{ if(authToken&&offQueue().length&&navigator.onLine) flushQueue(
 
 /* id único DESTE aparelho/aba — usado pra não ecoar de volta a própria escrita no sync ao vivo */
 const CLIENT_ID = (Math.random().toString(36).slice(2)+'-'+Date.now().toString(36));
-const APP_BUILD = 'redzone-v83';
+const APP_BUILD = 'redzone-v84';
 // evita re-render que rouba o foco enquanto a pessoa digita (o dado já foi aplicado em S de qualquer forma)
 function _syncPodeRender(){ const a=document.activeElement; return !(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||'')); }
 // ANTI-LOOP: ao aplicar uma mudança que VEIO do servidor, um re-render pode disparar escritas de
@@ -2031,8 +2031,9 @@ function weekProgressSheet(i){
     // o que foi treinado nesse dia (nomes dos exercícios dos logs)
     const exs=[...new Set(logsDia.map(l=>l.nome).filter(Boolean))];
     const ativo=logsDia.reduce((a,l)=>a+(l.ativoMs||0),0), pausa=logsDia.reduce((a,l)=>a+(l.pausaMs||0),0);
-    const provas=logsDia.filter(l=>l.prova).map(l=>({url:l.prova,leg:l.legenda||''}));
-    const prova = provas.length ? `<div class="week-proof-grid">${provas.map(p=>`<div class="rec-cell" data-prova="${esc(p.url)}" data-leg="${esc(p.leg)}"><img src="${p.url}" alt="Comprovação" onerror="this.style.opacity=.15"><span class="rec-play">↗</span></div>`).join('')}</div>` : '';
+    const provas=logsDia.filter(l=>l.prova).map(l=>({url:l.prova,tipo:l.provaTipo||'',leg:l.legenda||''}));
+    if(!provas.length&&pv?.prova) provas.push({url:pv.prova,tipo:pv.tipo||'',leg:pv.legenda||''});
+    const prova = provas.length ? `<div class="week-proof-grid">${provas.map(p=>{const vid=p.tipo==='video'||/\.(mp4|webm|mov|m4v)(\?|$)/i.test(p.url);return `<div class="rec-cell" data-prova="${esc(p.url)}" data-tipo="${vid?'video':'image'}" data-leg="${esc(p.leg)}">${vid?`<video src="${p.url}" muted playsinline preload="metadata"></video><span class="rec-play">▶</span>`:`<img src="${p.url}" alt="Comprovação" loading="lazy" onerror="this.style.opacity=.15"><span class="rec-play">↗</span>`}</div>`}).join('')}</div>` : '';
     const detalhe = ok ? (exs.length?exs.join(', '):'concluído') : (iso>=todayISO()?'não treinou ainda':'não treinou');
     return `<div class="rowitem ${ok?'done':''}">
       <div class="chk">${ok?'✓':''}</div>
@@ -2042,11 +2043,11 @@ function weekProgressSheet(i){
   openSheet(`<h3>Semana ${i+1} — progresso</h3>
     <p class="small muted">${done}/7 dias cumpridos${done>=7?' · 🏆 semana perfeita!':''}. Início ${start.toLocaleDateString('pt-BR')}.</p>
     ${linhas}`);
-  $$('#sheet [data-prova]').forEach(el=>el.onclick=()=>verMidiaSimples(el.dataset.prova, el.dataset.leg));
+  $$('#sheet [data-prova]').forEach(el=>el.onclick=()=>verMidiaSimples(el.dataset.prova, el.dataset.leg, el.dataset.tipo));
 }
 // visualizador simples de mídia (comprovação) com legenda + download
-function verMidiaSimples(url, legenda){
-  const isVid=/\.(mp4|webm|mov|m4v)(\?|$)/i.test(url);
+function verMidiaSimples(url, legenda, tipo=''){
+  const isVid=tipo==='video'||/\.(mp4|webm|mov|m4v)(\?|$)/i.test(url);
   openSheet(`<h3>Comprovação</h3>
     <div style="border-radius:12px;overflow:hidden;background:#000">${isVid?`<video src="${url}" controls playsinline style="width:100%;max-height:60vh"></video>`:`<img src="${url}" style="width:100%;max-height:60vh;object-fit:contain">`}</div>
     ${legenda?`<p class="small" style="margin-top:10px;color:var(--text)">📝 ${esc(legenda)}</p>`:''}
