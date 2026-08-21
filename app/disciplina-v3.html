@@ -709,7 +709,7 @@ setInterval(()=>{ if(authToken&&offQueue().length&&navigator.onLine) flushQueue(
 
 /* id único DESTE aparelho/aba — usado pra não ecoar de volta a própria escrita no sync ao vivo */
 const CLIENT_ID = (Math.random().toString(36).slice(2)+'-'+Date.now().toString(36));
-const APP_BUILD = 'redzone-v89';
+const APP_BUILD = 'redzone-v90';
 // evita re-render que rouba o foco enquanto a pessoa digita (o dado já foi aplicado em S de qualquer forma)
 function _syncPodeRender(){ const a=document.activeElement; return !(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||'')); }
 // ANTI-LOOP: ao aplicar uma mudança que VEIO do servidor, um re-render pode disparar escritas de
@@ -2680,6 +2680,7 @@ function renderAlimRelatorio(){
    ROTINA (hábitos com horário + notificação)
 ========================================================================= */
 let rotClearMode=false; let rotClearSel=new Set();
+let rotAddMode=false; let rotAddSel=new Set();
 function renderRotina(){
   const edit=S.config.editMode;
   $('#scr-rotina').innerHTML=`
@@ -2693,14 +2694,18 @@ function renderRotina(){
       <div class="rotina-cal">
         <div class="section-title" style="margin-top:0;display:flex;align-items:center;justify-content:space-between">
           <span>Calendário — sua rotina por dia</span>
-          <button class="btn sm ghost" id="rotLimpar" style="padding:6px 10px">${rotClearMode?'✖ cancelar':'🗑️ limpar dias'}</button>
+          <span style="display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end">
+            ${edit?`<button class="btn sm" id="rotAdicionarDias" style="padding:6px 10px">${rotAddMode?'✖ cancelar':'＋ adicionar nos dias'}</button>`:''}
+            <button class="btn sm ghost" id="rotLimpar" style="padding:6px 10px">${rotClearMode?'✖ cancelar':'🗑️ limpar dias'}</button>
+          </span>
         </div>
-        <p class="small muted" style="margin:0 2px 8px">${rotClearMode?'Selecione na tela os dias que quer remover e confirme na lixeira abaixo.':edit?'Toque num dia pra adicionar atividades (com horário opcional) e aplicar a vários dias.':'Toque num dia pra ver o que tem planejado.'}</p>
+        <p class="small muted" style="margin:0 2px 8px">${rotClearMode?'Selecione os dias que quer remover e confirme abaixo.':rotAddMode?'Selecione um ou vários dias e confirme abaixo para adicionar a atividade.':edit?'Toque num dia para editar ou use “＋ adicionar nos dias” para selecionar vários.':'Toque num dia pra ver o que tem planejado.'}</p>
         <div id="rotinaCal"></div>
       </div>
     </div>`;
   if(edit) $('#addHabito').onclick=()=>editHabitoSheet(null);
-  if($('#rotLimpar')) $('#rotLimpar').onclick=()=>{ rotClearMode=!rotClearMode; rotClearSel=new Set(); renderRotina(); };
+  if($('#rotAdicionarDias')) $('#rotAdicionarDias').onclick=()=>{ rotAddMode=!rotAddMode; rotAddSel=new Set(); rotClearMode=false; rotClearSel=new Set(); renderRotina(); };
+  if($('#rotLimpar')) $('#rotLimpar').onclick=()=>{ rotClearMode=!rotClearMode; rotClearSel=new Set(); rotAddMode=false; rotAddSel=new Set(); renderRotina(); };
   renderRotinaList(); renderCalendarioRotina();
 }
 // status de um dia: sempre usa as mesmas atividades exibidas no calendário
@@ -2743,7 +2748,7 @@ function renderCalendarioRotina(){
       else { cls='sem'; }
     }
     if(iso===hoje) cls+=' hoje';
-    if(rotClearMode && rotClearSel.has(iso)) cls+=' selc';
+    if((rotClearMode&&rotClearSel.has(iso))||(rotAddMode&&rotAddSel.has(iso))) cls+=' selc';
     cells+=`<div class="calc ${cls}" data-caldia="${iso}">${content}</div>`;
   }
   $('#rotinaCal').innerHTML=`<div class="calbox">
@@ -2755,6 +2760,7 @@ function renderCalendarioRotina(){
     <div class="calgrid caldow">${['D','S','T','Q','Q','S','S'].map(x=>`<div class="caldw">${x}</div>`).join('')}</div>
     <div class="calgrid">${cells}</div>
     <div class="callegend"><span><i class="lok"></i>tudo feito ✅</span><span><i class="lfail"></i>incompleto ✕</span><span><i class="lfut"></i>futuro</span></div>
+    ${rotAddMode?`<button class="btn" id="rotAddConfirm" style="margin-top:12px">＋ Adicionar atividade em ${rotAddSel.size} dia(s)</button>`:''}
     ${rotClearMode?`<button class="btn" id="rotLimparConfirm" style="margin-top:12px;background:linear-gradient(135deg,var(--accent),var(--accent2))">🗑️ Limpar ${rotClearSel.size} dia(s) selecionado(s)</button>`:''}
   </div>`;
   $('#rotPrev').onclick=()=>{ rotCalM--; if(rotCalM<0){ rotCalM=11; rotCalY--; } renderCalendarioRotina(); };
@@ -2762,14 +2768,33 @@ function renderCalendarioRotina(){
   $$('#rotinaCal [data-caldia]').forEach(c=>c.onclick=()=>{
     const iso=c.dataset.caldia;
     if(rotClearMode){ if(rotClearSel.has(iso)) rotClearSel.delete(iso); else rotClearSel.add(iso); renderCalendarioRotina(); }
+    else if(rotAddMode){ if(rotAddSel.has(iso)) rotAddSel.delete(iso); else rotAddSel.add(iso); renderCalendarioRotina(); }
     else diaRotinaSheet(iso);
   });
+  if(rotAddMode && $('#rotAddConfirm')) $('#rotAddConfirm').onclick=()=>adicionarAtividadeDiasSheet([...rotAddSel]);
   if(rotClearMode && $('#rotLimparConfirm')) $('#rotLimparConfirm').onclick=async()=>{
     if(!rotClearSel.size) return toast('Selecione os dias que quer limpar.');
     if(!S.rotinaDias) S.rotinaDias={};
     rotClearSel.forEach(iso=>{ delete S.rotinaDias[iso]; });
     await save('rotina:dias'); const n=rotClearSel.size; rotClearMode=false; rotClearSel=new Set();
     toast(`${n} dia(s) limpo(s).`); renderRotina();
+  };
+}
+function adicionarAtividadeDiasSheet(dias){
+  dias=[...new Set(dias)].sort();
+  if(!dias.length) return toast('Selecione pelo menos um dia no calendário.');
+  openSheet(`<h3>Adicionar em ${dias.length} dia(s)</h3>
+    <p class="small muted">A atividade será incluída somente nos dias selecionados.</p>
+    <div class="field"><label>Atividade</label><input id="multiActNome" placeholder="Ex: Corrida, estudar Matemática..."></div>
+    <div class="field"><label>Horário (opcional · HH:MM)</label>${campoHorario('multiActHora')}</div>
+    <button class="btn" id="multiActSalvar">＋ Adicionar nos dias selecionados</button>`);
+  ativarCampoHorario('multiActHora');
+  $('#multiActSalvar').onclick=async()=>{
+    const nome=$('#multiActNome').value.trim(); if(!nome) return toast('Qual é a atividade?');
+    const hora=normalizarHorario($('#multiActHora').value); if(hora===null) return toast('Horário inválido. Use HH:MM, por exemplo 08:00.');
+    if(!S.rotinaDias) S.rotinaDias={}; let adicionados=0;
+    dias.forEach(iso=>{ const lista=S.rotinaDias[iso]||(S.rotinaDias[iso]=[]); const duplicada=lista.some(a=>String(a.nome||'').trim().toLocaleLowerCase('pt-BR')===nome.toLocaleLowerCase('pt-BR')&&(a.hora||'')===hora); if(!duplicada){lista.push({id:uid(),nome,hora,done:false,updatedAt:Date.now()});adicionados++;} });
+    await save('rotina:dias'); rotAddMode=false; rotAddSel=new Set(); closeSheet(); renderRotina(); toast(`Atividade adicionada em ${adicionados} dia(s).`);
   };
 }
 function isoDeData(x){ return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`; }
