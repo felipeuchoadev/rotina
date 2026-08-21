@@ -30,7 +30,8 @@ async function comprimirComFfmpeg(buffer, ext, tipo, corte = null) {
   } finally { await rm(dir, { recursive: true, force: true }).catch(()=>{}); }
 }
 
-// Guarda em memória; imagem é recomprimida, vídeo é gravado como veio.
+// Toda mídia passa pelo otimizador antes de ser persistida. O arquivo original
+// só vence quando já é menor que a nova codificação (ou seja, já está mais comprimido).
 const upload = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 60 * 1024 * 1024 }, // 60 MB (vídeo curto)
@@ -77,20 +78,26 @@ uploadRouter.post('/', receberArquivo, async (req, res) => {
         ? { inicio, duracao: Math.min(60, fim - inicio) } : null;
       if (recebeuCorte && !corte) return res.status(400).json({ erro: 'Trecho de vídeo inválido. Escolha até 60 segundos.' });
       let nome = `${id}.mp4`;
-      let buf=req.file.buffer; try{const comprimido=await comprimirComFfmpeg(buf,extEntrada,'video',corte);if(corte||comprimido.length<buf.length)buf=comprimido;else nome=`${id}${extEntrada}`;}catch(e){if(corte)throw e;nome=`${id}${extEntrada}`;console.warn('Compressão de vídeo indisponível:',e.message);}
+      const comprimido = await comprimirComFfmpeg(req.file.buffer, extEntrada, 'video', corte);
+      const usarComprimido = corte || comprimido.length < req.file.buffer.length;
+      const buf = usarComprimido ? comprimido : req.file.buffer;
+      if (!usarComprimido) nome = `${id}${extEntrada}`;
       await writeFile(path.join(UPLOAD_DIR, nome), buf);
       return res.status(201).json({ url: `${PUBLIC_BASE}/${nome}`, tipo: 'video' });
     } else if (ehAudio) {
       const extEntrada = ext || '.webm';
       let nome = `${id}.ogg`;
-      let buf=req.file.buffer; try{const comprimido=await comprimirComFfmpeg(buf,extEntrada,'audio');if(comprimido.length<buf.length)buf=comprimido;else nome=`${id}${extEntrada}`;}catch(e){nome=`${id}${extEntrada}`;console.warn('Compressão de áudio indisponível:',e.message);}
+      const comprimido = await comprimirComFfmpeg(req.file.buffer, extEntrada, 'audio');
+      const usarComprimido = comprimido.length < req.file.buffer.length;
+      const buf = usarComprimido ? comprimido : req.file.buffer;
+      if (!usarComprimido) nome = `${id}${extEntrada}`;
       await writeFile(path.join(UPLOAD_DIR, nome), buf);
       return res.status(201).json({ url: `${PUBLIC_BASE}/${nome}`, tipo: 'audio' });
     }
     return res.status(415).json({ erro: 'Tipo de arquivo não suportado.' });
   } catch (e) {
     console.error('upload erro', e);
-    return res.status(500).json({ erro: 'Falha ao processar a mídia.' });
+    return res.status(500).json({ erro: 'Não foi possível comprimir essa mídia. Tente gravar ou selecionar novamente.' });
   }
 });
 
