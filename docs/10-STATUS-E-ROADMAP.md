@@ -11,11 +11,13 @@
 > ainda é `app/disciplina-v3.html`; logo `redzone-logo.png`. Conta de teste:
 > `felipeestudos220807@gmail.com` / `felipe220807@` (pergunta de segurança: time = Flamengo).
 
-> 🟢 **v82 PUBLICADA:** semanas antigas em gaveta, futuras com cadeado, detalhes reais de tempo/descanso/mídia e comprovação por galeria, foto ou vídeo feitos na hora.
+> 🟢 **v83 PUBLICADA:** recordes compactos + painel único de evolução no padrão do relatório de horas, sem barra gigante quando existe só uma marca.
+>
+> 🟢 **v82:** semanas antigas em gaveta, futuras com cadeado, detalhes reais de tempo/descanso/mídia e comprovação por galeria, foto ou vídeo feitos na hora.
 >
 > 🟢 **v81:** autoupdate resistente a reinícios sem F5, restauração de aba/posição e relógio de Brasília sincronizado pelo servidor em todos os dispositivos.
 >
-> 🟢 **VERSÃO PUBLICADA: SW `redzone-v82`.** App/back no ar. Sync ao vivo ponta a ponta
+> 🟢 **VERSÃO PUBLICADA: SW `redzone-v83`.** App/back no ar. Sync ao vivo ponta a ponta
 > (mudou num aparelho → aparece nos outros em ms) + autoupdate ao vivo (deploy → conectados recarregam em ms)
 > JÁ FUNCIONAM. Deploy = `scp app/* server/src/**` pra VM (chave `Chaves/oracle_vm`, user `ubuntu`,
 > `redsystems.ddns.net:/opt/disciplina/`) + `systemctl restart disciplina` se mexeu no `server/` + **bump do SW**.
