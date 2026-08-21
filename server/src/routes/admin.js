@@ -18,7 +18,7 @@ const auditar = (adminId, alvoId, acao, detalhes = null) => prisma.adminAudit.cr
 
 adminRouter.get('/resumo', async (_req, res) => {
   const [usuarios, bloqueados, posts, mensagens, estados] = await Promise.all([
-    prisma.usuario.count(), prisma.usuario.count({ where: { bloqueado: true } }), prisma.feedPost.count(),
+    prisma.usuario.count({ where:{isAdmin:false} }), prisma.usuario.count({ where: { bloqueado: true, isAdmin:false } }), prisma.feedPost.count(),
     prisma.mensagem.count(), prisma.userState.count(),
   ]);
   res.json({ usuarios, bloqueados, posts, mensagens, estados });
@@ -27,10 +27,10 @@ adminRouter.get('/resumo', async (_req, res) => {
 adminRouter.get('/usuarios', async (req, res) => {
   const q = String(req.query.q || '').trim();
   const limite = Math.min(100, Math.max(10, Number(req.query.limite) || 40));
-  const where = q ? { OR: [
+  const where = q ? { isAdmin:false, OR: [
     { email: { contains: q, mode: 'insensitive' } }, { username: { contains: q, mode: 'insensitive' } },
     { nomeGuerra: { contains: q, mode: 'insensitive' } },
-  ] } : {};
+  ] } : { isAdmin:false };
   const usuarios = await prisma.usuario.findMany({ where, orderBy: { criadoEm: 'desc' }, take: limite,
     select: { id:true,email:true,username:true,nomeGuerra:true,fotoUrl:true,genero:true,xp:true,isAdmin:true,bloqueado:true,criadoEm:true,ultimoAcesso:true } });
   res.json({ usuarios });

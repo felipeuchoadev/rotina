@@ -9,7 +9,7 @@ import { enviarPush } from '../lib/push.js';
 export const batalhaRouter = Router();
 batalhaRouter.use(exigirAuth);
 
-const pubSel = { id: true, username: true, nomeGuerra: true, fotoUrl: true, genero: true, privado: true, xp: true };
+const pubSel = { id: true, username: true, nomeGuerra: true, fotoUrl: true, genero: true, privado: true, xp: true, isAdmin:true };
 
 async function notificar(usuarioId, tipo, texto, deUsername, alvoPostId, alvoCommentId = null) {
   if (!usuarioId) return;
@@ -38,6 +38,7 @@ async function contextoSocial(userId) {
 batalhaRouter.get('/ranking', async (req, res) => {
   const { bloqueados } = await contextoSocial(req.userId);
   const usuarios = await prisma.usuario.findMany({
+    where: { isAdmin: false },
     select: { id: true, username: true, nomeGuerra: true, fotoUrl: true, genero: true, xp: true },
     orderBy: { xp: 'desc' }, take: 100,
   });
@@ -54,7 +55,7 @@ batalhaRouter.get('/feed', async (req, res) => {
     include: { usuario: { select: pubSel }, likes: { select: { usuarioId: true } }, _count: { select: { comentarios: true } } },
   });
   const visiveis = posts.filter(p =>
-    !bloqueados.has(p.usuarioId) &&
+    !p.usuario.isAdmin && !bloqueados.has(p.usuarioId) &&
     (p.usuarioId === req.userId || (!p.privado && (!p.usuario.privado || sigoSet.has(p.usuarioId))))
   ).slice(offset, offset + limite);
   res.json(visiveis);

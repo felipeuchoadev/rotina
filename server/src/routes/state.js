@@ -23,10 +23,10 @@ function mergeRotinaDias(atual, recebido) {
 
 async function recalcularXp(usuarioId) {
   const rows = await prisma.userState.findMany({
-    where: { usuarioId, chave: { in: ['treino:logs', 'estudo:logs', 'alim:agua', 'xp:bonus'] } },
+    where: { usuarioId, chave: { in: ['treino:logs', 'estudo:logs', 'alim:agua', 'rotina:dias', 'xp:bonus'] } },
   });
   const s = Object.fromEntries(rows.map(r => [r.chave, r.valor]));
-  const hoje = new Date().toISOString().slice(0, 10);
+  const hoje = new Intl.DateTimeFormat('en-CA', { timeZone:'America/Sao_Paulo', year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date());
   const dataLegitima = value => /^\d{4}-\d{2}-\d{2}$/.test(String(value || '')) && value <= hoje;
   const minutosLegitimos = value => {
     const ms = Number(value);
@@ -48,6 +48,16 @@ async function recalcularXp(usuarioId) {
   for (const [dia, valor] of Object.entries(agua)) {
     const ml = Number(valor);
     if (dataLegitima(dia) && Number.isFinite(ml) && ml >= metaAgua && ml <= 20_000) xp += 15;
+  }
+  // Rotina vale apenas no dia correto. Cumprir rende XP; deixar uma atividade
+  // planejada para trás desconta XP. O dia atual ainda não sofre penalidade.
+  const rotina = s['rotina:dias'] && typeof s['rotina:dias'] === 'object' && !Array.isArray(s['rotina:dias']) ? s['rotina:dias'] : {};
+  for (const [dia, atividades] of Object.entries(rotina)) {
+    if (!dataLegitima(dia) || !Array.isArray(atividades)) continue;
+    for (const atividade of atividades.slice(0, 100)) {
+      if (atividade?.done === true) xp += 10;
+      else if (dia < hoje) xp -= 10;
+    }
   }
   const bonus = Number(s['xp:bonus']);
   // Ajustes administrativos podem ser positivos ou negativos; o usuário não
@@ -101,7 +111,7 @@ stateRouter.put('/:chave', async (req, res) => {
   if(!atual||JSON.stringify(atual.valor)!==JSON.stringify(valor)){
     await prisma.stateHistory.create({data:{usuarioId:req.userId,chave:req.params.chave,valor}}).catch(()=>{});
   }
-  const xpAtual=['treino:logs','estudo:logs','alim:agua'].includes(req.params.chave) ? await recalcularXp(req.userId) : null;
+  const xpAtual=['treino:logs','estudo:logs','alim:agua','rotina:dias'].includes(req.params.chave) ? await recalcularXp(req.userId) : null;
   // sync ao vivo: avisa os OUTROS aparelhos do mesmo usuário (src = quem escreveu, pra não ecoar nele)
   emitToUser(req.userId, 'state:changed', { chave: req.params.chave, valor, versao:Number(versaoRecebida), src: req.body?.clientId || null });
   res.json({ ok: true, valor, versao:Number(versaoRecebida), ...(xpAtual!==null?{xp:xpAtual}:{}) });
@@ -112,7 +122,7 @@ stateRouter.delete('/:chave', async (req, res) => {
   const anterior=await prisma.userState.findUnique({where:{usuarioId_chave:{usuarioId:req.userId,chave:req.params.chave}}});
   await prisma.userState.deleteMany({ where: { usuarioId: req.userId, chave: req.params.chave } });
   if(anterior)await prisma.stateHistory.create({data:{usuarioId:req.userId,chave:req.params.chave,valor:null}}).catch(()=>{});
-  if (['treino:logs', 'estudo:logs', 'alim:agua'].includes(req.params.chave)) await recalcularXp(req.userId);
+  if (['treino:logs', 'estudo:logs', 'alim:agua', 'rotina:dias'].includes(req.params.chave)) await recalcularXp(req.userId);
   emitToUser(req.userId, 'state:changed', { chave: req.params.chave, valor: null, src: req.query.src || null });
   res.status(204).end();
 });

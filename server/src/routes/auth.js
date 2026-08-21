@@ -133,10 +133,20 @@ authRouter.post('/resetar-pergunta', async (req, res) => {
 });
 
 // Definir/alterar a pergunta de segurança (logado)
+authRouter.post('/minha-pergunta', exigirAuth, async (req, res) => {
+  const senhaAtual = String(req.body.senhaAtual || '');
+  const usuario = await prisma.usuario.findUnique({ where: { id:req.userId } });
+  if (!usuario || !(await conferirSenha(senhaAtual, usuario.senhaHash))) return res.status(401).json({ erro:'Senha incorreta.' });
+  res.json({ pergunta:usuario.secPergunta || null, configurada:!!usuario.secRespHash });
+});
+
 authRouter.post('/set-pergunta', exigirAuth, async (req, res) => {
   const secPergunta = String(req.body.secPergunta || '').trim().slice(0, 120);
   const resposta = normResp(req.body.secResposta);
+  const senhaAtual = String(req.body.senhaAtual || '');
   if (!secPergunta || !resposta) return res.status(400).json({ erro: 'Pergunta e resposta são obrigatórias.' });
+  const usuario = await prisma.usuario.findUnique({ where:{id:req.userId} });
+  if (!usuario || !(await conferirSenha(senhaAtual, usuario.senhaHash))) return res.status(401).json({ erro:'Senha incorreta.' });
   await prisma.usuario.update({ where: { id: req.userId }, data: { secPergunta, secRespHash: await hashSenha(resposta) } });
   res.json({ ok: true });
 });
