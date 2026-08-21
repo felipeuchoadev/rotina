@@ -709,7 +709,7 @@ setInterval(()=>{ if(authToken&&offQueue().length&&navigator.onLine) flushQueue(
 
 /* id único DESTE aparelho/aba — usado pra não ecoar de volta a própria escrita no sync ao vivo */
 const CLIENT_ID = (Math.random().toString(36).slice(2)+'-'+Date.now().toString(36));
-const APP_BUILD = 'redzone-v90';
+const APP_BUILD = 'redzone-v91';
 // evita re-render que rouba o foco enquanto a pessoa digita (o dado já foi aplicado em S de qualquer forma)
 function _syncPodeRender(){ const a=document.activeElement; return !(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||'')); }
 // ANTI-LOOP: ao aplicar uma mudança que VEIO do servidor, um re-render pode disparar escritas de
@@ -2692,9 +2692,9 @@ function renderRotina(){
     <div class="rotina-wrap">
       <div class="rotina-col"><div id="rotinaList"></div></div>
       <div class="rotina-cal">
-        <div class="section-title" style="margin-top:0;display:flex;align-items:center;justify-content:space-between">
-          <span>Calendário — sua rotina por dia</span>
-          <span style="display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end">
+        <div class="section-title" style="margin-top:0;display:flex;flex-direction:column;align-items:flex-start;gap:12px">
+          <span style="line-height:1.3">Calendário — sua rotina por dia</span>
+          <span style="display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-start;width:100%">
             ${edit?`<button class="btn sm" id="rotAdicionarDias" style="padding:6px 10px">${rotAddMode?'✖ cancelar':'＋ adicionar nos dias'}</button>`:''}
             <button class="btn sm ghost" id="rotLimpar" style="padding:6px 10px">${rotClearMode?'✖ cancelar':'🗑️ limpar dias'}</button>
           </span>
