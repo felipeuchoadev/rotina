@@ -36,10 +36,30 @@ const upload = multer({
   limits: { fileSize: 60 * 1024 * 1024 }, // 60 MB (vídeo curto)
 });
 
-uploadRouter.post('/', upload.single('arquivo'), async (req, res) => {
+function receberArquivo(req, res, next) {
+  upload.single('arquivo')(req, res, (erro) => {
+    if (!erro) return next();
+    if (erro instanceof multer.MulterError && erro.code === 'LIMIT_FILE_SIZE') {
+      return res.status(413).json({ erro: 'A mídia ultrapassa o limite de 60 MB.' });
+    }
+    console.error('recebimento de upload', erro);
+    return res.status(400).json({ erro: 'Não foi possível receber essa mídia.' });
+  });
+}
+
+uploadRouter.post('/', receberArquivo, async (req, res) => {
   if (!req.file) return res.status(400).json({ erro: 'Nenhum arquivo enviado.' });
   await mkdir(UPLOAD_DIR, { recursive: true });
-  const ehImagem = req.file.mimetype.startsWith('image/');
+  const mime = String(req.file.mimetype || '').toLowerCase();
+  const ext = path.extname(req.file.originalname || '').toLowerCase();
+  const extensoesImagem = new Set(['.jpg','.jpeg','.png','.webp','.gif','.heic','.heif']);
+  const extensoesVideo = new Set(['.mp4','.webm','.mov','.m4v','.mkv','.avi']);
+  const extensoesAudio = new Set(['.mp3','.wav','.ogg','.opus','.m4a','.aac']);
+  // Alguns navegadores gravam WebM, mas enviam application/octet-stream ou
+  // video/x-matroska. A extensão segura completa a identificação do conteúdo.
+  const ehImagem = mime.startsWith('image/') || extensoesImagem.has(ext);
+  const ehAudio = mime.startsWith('audio/') || extensoesAudio.has(ext);
+  const ehVideo = !ehAudio && (mime.startsWith('video/') || mime.includes('matroska') || extensoesVideo.has(ext));
   const id = randomUUID();
 
   try {
@@ -49,21 +69,21 @@ uploadRouter.post('/', upload.single('arquivo'), async (req, res) => {
       const nome = `${id}.jpg`;
       await writeFile(path.join(UPLOAD_DIR, nome), buf);
       return res.status(201).json({ url: `${PUBLIC_BASE}/${nome}`, tipo: 'foto' });
-    } else if (req.file.mimetype.startsWith('video/')) {
-      const ext = (req.file.originalname.match(/\.[a-z0-9]+$/i) || ['.mp4'])[0];
+    } else if (ehVideo) {
+      const extEntrada = ext || '.webm';
       const recebeuCorte = req.body.inicio !== undefined || req.body.fim !== undefined;
       const inicio = Number(req.body.inicio), fim = Number(req.body.fim);
       const corte = recebeuCorte && Number.isFinite(inicio) && Number.isFinite(fim) && inicio >= 0 && fim > inicio && fim - inicio <= 60.05
         ? { inicio, duracao: Math.min(60, fim - inicio) } : null;
       if (recebeuCorte && !corte) return res.status(400).json({ erro: 'Trecho de vídeo inválido. Escolha até 60 segundos.' });
       let nome = `${id}.mp4`;
-      let buf=req.file.buffer; try{const comprimido=await comprimirComFfmpeg(buf,ext,'video',corte);if(corte||comprimido.length<buf.length)buf=comprimido;else nome=`${id}${ext}`;}catch(e){if(corte)throw e;nome=`${id}${ext}`;console.warn('Compressão de vídeo indisponível:',e.message);}
+      let buf=req.file.buffer; try{const comprimido=await comprimirComFfmpeg(buf,extEntrada,'video',corte);if(corte||comprimido.length<buf.length)buf=comprimido;else nome=`${id}${extEntrada}`;}catch(e){if(corte)throw e;nome=`${id}${extEntrada}`;console.warn('Compressão de vídeo indisponível:',e.message);}
       await writeFile(path.join(UPLOAD_DIR, nome), buf);
       return res.status(201).json({ url: `${PUBLIC_BASE}/${nome}`, tipo: 'video' });
-    } else if (req.file.mimetype.startsWith('audio/')) {
-      const ext = (req.file.originalname.match(/\.[a-z0-9]+$/i) || ['.webm'])[0];
+    } else if (ehAudio) {
+      const extEntrada = ext || '.webm';
       let nome = `${id}.ogg`;
-      let buf=req.file.buffer; try{const comprimido=await comprimirComFfmpeg(buf,ext,'audio');if(comprimido.length<buf.length)buf=comprimido;else nome=`${id}${ext}`;}catch(e){nome=`${id}${ext}`;console.warn('Compressão de áudio indisponível:',e.message);}
+      let buf=req.file.buffer; try{const comprimido=await comprimirComFfmpeg(buf,extEntrada,'audio');if(comprimido.length<buf.length)buf=comprimido;else nome=`${id}${extEntrada}`;}catch(e){nome=`${id}${extEntrada}`;console.warn('Compressão de áudio indisponível:',e.message);}
       await writeFile(path.join(UPLOAD_DIR, nome), buf);
       return res.status(201).json({ url: `${PUBLIC_BASE}/${nome}`, tipo: 'audio' });
     }
