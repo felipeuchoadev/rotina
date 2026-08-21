@@ -1,7 +1,6 @@
 // Agenda de aniversários e datas importantes.
-// Reavalia a cada 30 minutos, a partir das 9h de Brasília. Cada aviso é
-// deduplicado por usuário + item + data + marco, portanto datas cadastradas
-// durante o dia ainda podem ser avisadas sem gerar notificações repetidas.
+// Executa à 00:00 de Brasília. Cada aviso é
+// deduplicado por usuário + item + data + marco para nunca repetir o aviso.
 import { prisma } from './db.js';
 import { enviarPush } from './push.js';
 import { emitToUser } from '../realtime.js';
@@ -70,12 +69,16 @@ export function marcoAgenda(item, hoje) {
   return null;
 }
 
-function textoAviso(item, chave, faltam) {
+function textoAviso(item, chave, faltam, ocorrencia) {
   const nome = item.nome || (item.tipo === 'evento' ? 'Data importante' : 'Aniversário');
   const evento = item.tipo === 'evento';
   if (chave.startsWith('proxima-')) return `Faltam ${faltam} dias para ${nome}.`;
-  if (evento) return chave === 'dia' ? `Hoje: ${nome}.` : chave === 'd' ? `Amanhã: ${nome}.` : chave === 's' ? `Falta 1 semana: ${nome}.` : `Falta 1 mês: ${nome}.`;
-  return chave === 'dia' ? `Hoje é aniversário de ${nome}! Manda os parabéns.` : chave === 'd' ? `Amanhã é aniversário de ${nome}. Não esquece.` : chave === 's' ? `Falta 1 semana pro aniversário de ${nome}.` : `Falta 1 mês pro aniversário de ${nome}.`;
+  if (evento) return chave === 'dia' ? `📅 Hoje é um dia importante: ${nome}.` : chave === 'd' ? `Amanhã: ${nome}.` : chave === 's' ? `Falta 1 semana: ${nome}.` : `Falta 1 mês: ${nome}.`;
+  if(chave==='dia'){
+    const idade=Number(item.anoBase)>0&&ocorrencia ? ocorrencia.getFullYear()-Number(item.anoBase) : null;
+    return `🎂 Hoje é aniversário de ${nome}! Envie seus parabéns e celebre esse novo ciclo.${idade>0&&idade<130?` ${nome} está completando ${idade} anos hoje.`:''} Deseje um feliz aniversário!`;
+  }
+  return chave === 'd' ? `Amanhã é aniversário de ${nome}. Não esquece.` : chave === 's' ? `Falta 1 semana pro aniversário de ${nome}.` : `Falta 1 mês pro aniversário de ${nome}.`;
 }
 
 async function jaEnviado(chave) {
@@ -87,7 +90,6 @@ async function marcarEnviado(chave) {
 
 export async function rodarAgenda() {
   const agora = brasiliaAgora();
-  if (agora.getHours() < 9) return { enviados: 0 };
   const hoje = new Date(agora); hoje.setHours(0, 0, 0, 0);
   const estados = await prisma.userState.findMany({ where: { chave: { in: ['datas', 'config'] } } }).catch(() => []);
   const porUsuario = new Map();
@@ -103,7 +105,7 @@ export async function rodarAgenda() {
       const id = String(item.id || `${item.data}-${item.nome || 'data'}`).replace(/[^a-zA-Z0-9_-]/g, '').slice(0, 60);
       const dedupe = `agenda:${isoDe(hoje)}:${usuarioId}:${id}:${marco.chave}`;
       if (await jaEnviado(dedupe)) continue;
-      const body = textoAviso(item, marco.chave, marco.faltam);
+      const body = textoAviso(item, marco.chave, marco.faltam, marco.ocorrencia);
       const notificacao=await prisma.notificacao.create({ data: { usuarioId, tipo: 'aviso', texto: body } }).catch(() => null);
       if(notificacao)emitToUser(usuarioId,'notif:nova',notificacao);
       if(estado.config?.notif === true)await enviarPush(usuarioId, { title: 'REDZONE', body, tag: dedupe, url: '/rotina/#tab=inicio' });
@@ -114,6 +116,9 @@ export async function rodarAgenda() {
 }
 
 export function iniciarAgenda() {
-  rodarAgenda().catch((e) => console.error('agenda:', e));
-  setInterval(() => { rodarAgenda().catch((e) => console.error('agenda:', e)); }, 30 * 60 * 1000);
+  const agendarMeiaNoite=()=>{
+    const agora=brasiliaAgora(),proxima=new Date(agora);proxima.setDate(proxima.getDate()+1);proxima.setHours(0,0,0,0);
+    setTimeout(async()=>{await rodarAgenda().catch((e)=>console.error('agenda:',e));agendarMeiaNoite();},Math.max(1000,proxima-agora));
+  };
+  agendarMeiaNoite();
 }

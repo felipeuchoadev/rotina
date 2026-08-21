@@ -771,10 +771,12 @@ function parseAltura(v){ let a=numBR(v); if(a>0&&a<3) a=a*100; return Math.round
 function fmtPeso(n){ return (n==null||isNaN(n))?'' : Number(n).toFixed(2).replace('.',','); }
 // altura em cm (176) -> metros com vírgula pra exibição ("1,76"). A máquina põe a vírgula.
 function fmtAltura(cm){ if(cm==null||isNaN(cm)) return ''; return (Number(cm)/100).toFixed(2).replace('.',','); }
+// Data civil (YYYY-MM-DD) sem conversão UTC. Evita 22/08 virar 21/08 em Fortaleza.
+function dataCivil(data){ const [y,m,d]=String(data||'').slice(0,10).split('-').map(Number); if(!y||!m||!d)return null; const x=new Date(y,m-1,d); return x.getFullYear()===y&&x.getMonth()===m-1&&x.getDate()===d?x:null; }
 // idade a partir da data de nascimento (YYYY-MM-DD)
-function idadeDe(dataNasc){ if(!dataNasc) return null; const d=new Date(dataNasc); if(isNaN(d)) return null; const h=brasiliaNow(); let a=h.getFullYear()-d.getFullYear(); const m=h.getMonth()-d.getMonth(); if(m<0||(m===0&&h.getDate()<d.getDate())) a--; return a; }
+function idadeDe(dataNasc){ const d=dataCivil(dataNasc); if(!d) return null; const h=brasiliaNow(); let a=h.getFullYear()-d.getFullYear(); const m=h.getMonth()-d.getMonth(); if(m<0||(m===0&&h.getDate()<d.getDate())) a--; return a; }
 // é aniversário hoje?
-function aniversarioHoje(dataNasc){ if(!dataNasc) return false; const d=new Date(dataNasc); const h=brasiliaNow(); return d.getMonth()===h.getMonth() && d.getDate()===h.getDate(); }
+function aniversarioHoje(dataNasc){ const d=dataCivil(dataNasc); if(!d) return false; const h=brasiliaNow(); return d.getMonth()===h.getMonth() && d.getDate()===h.getDate(); }
 function treinoFeitoHoje(exId){ return S.treinoLogs.some(l=>l.exId===exId && l.dateISO===todayISO()); }
 function estudoFeitoHoje(materiaId){ return S.estudoLogs.some(l=>String(l.materiaId)===String(materiaId) && l.dateISO===todayISO()); }
 function minsHojeItem(logs, campo, val){ return Math.round(logs.filter(l=>l.dateISO===todayISO() && String(l[campo])===String(val)).reduce((a,l)=>a+(l.ativoMs||0)/60000,0)); }
@@ -1520,8 +1522,7 @@ function contagemTxt(n){ return n===0?'HOJE 🎉' : n===1?'amanhã' : `em ${n} d
 // banner de parabéns no aniversário do próprio usuário
 function bdayBannerHTML(){
   if(!aniversarioHoje(S.profile.dataNasc)) return '';
-  const idade=idadeDe(S.profile.dataNasc);
-  return `<div class="bday">🎂 Feliz aniversário, ${esc(S.profile.nome)}!${idade!=null?` ${idade} anos de guerra.`:''}<br><span>Continua firme na missão, soldado. O app te deve um salve.</span></div>`;
+  return `<div class="bday">🥳 Parabéns, ${esc(S.profile.nome)}!<br><span>Que seu novo ciclo venha com saúde, força e muitas vitórias.</span></div>`;
 }
 
 function renderAgenda(){

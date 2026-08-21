@@ -2,7 +2,6 @@ import { Router } from 'express';
 import { prisma } from '../lib/db.js';
 import { exigirAuth } from '../lib/auth.js';
 import { emitToUser } from '../realtime.js';
-import { rodarAgenda } from '../lib/agenda.js';
 
 // Armazenamento chave-valor por usuário (dados pessoais do app).
 export const stateRouter = Router();
@@ -51,7 +50,9 @@ async function recalcularXp(usuarioId) {
     if (dataLegitima(dia) && Number.isFinite(ml) && ml >= metaAgua && ml <= 20_000) xp += 15;
   }
   const bonus = Number(s['xp:bonus']);
-  if (Number.isFinite(bonus) && bonus > 0) xp += Math.floor(bonus);
+  // Ajustes administrativos podem ser positivos ou negativos; o usuário não
+  // consegue editar esta chave pelas rotas públicas.
+  if (Number.isFinite(bonus)) xp += Math.floor(bonus);
   await prisma.usuario.update({ where: { id: usuarioId }, data: { xp: Math.max(0, Math.floor(xp)) } });
 }
 
@@ -97,7 +98,6 @@ stateRouter.put('/:chave', async (req, res) => {
     await prisma.stateHistory.create({data:{usuarioId:req.userId,chave:req.params.chave,valor}}).catch(()=>{});
   }
   if(['treino:logs','estudo:logs','alim:agua'].includes(req.params.chave)) await recalcularXp(req.userId);
-  if(['datas','config'].includes(req.params.chave)) rodarAgenda().catch(()=>{});
   // sync ao vivo: avisa os OUTROS aparelhos do mesmo usuário (src = quem escreveu, pra não ecoar nele)
   emitToUser(req.userId, 'state:changed', { chave: req.params.chave, valor, versao:Number(versaoRecebida), src: req.body?.clientId || null });
   res.json({ ok: true, valor, versao:Number(versaoRecebida) });
