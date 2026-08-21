@@ -465,6 +465,8 @@ body.th-shake{animation:thshake .55s;}
 @media (min-width:700px){ .rec-grid{grid-template-columns:repeat(5,1fr);} }
 .rec-cell{position:relative; aspect-ratio:1; border-radius:10px; overflow:hidden; background:#000; cursor:pointer;}
 .rec-cell img,.rec-cell video{width:100%; height:100%; object-fit:cover;}
+.record-media-thumb{width:58px;height:58px;flex:0 0 58px;aspect-ratio:auto;border:2px solid color-mix(in srgb,var(--accent) 45%,var(--line));box-shadow:0 4px 14px #0005}
+.record-media-thumb .rec-play{position:absolute;inset:0;display:grid;place-items:center;color:#fff;font-size:18px;text-shadow:0 2px 5px #000;background:#0002}
 .rec-badge{position:absolute; top:4px; left:4px; font-size:12px; filter:drop-shadow(0 1px 2px #000);}
 .rec-play{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; color:#fff; font-size:22px; text-shadow:0 2px 6px #000; pointer-events:none;}
 
@@ -707,7 +709,7 @@ setInterval(()=>{ if(authToken&&offQueue().length&&navigator.onLine) flushQueue(
 
 /* id único DESTE aparelho/aba — usado pra não ecoar de volta a própria escrita no sync ao vivo */
 const CLIENT_ID = (Math.random().toString(36).slice(2)+'-'+Date.now().toString(36));
-const APP_BUILD = 'redzone-v88';
+const APP_BUILD = 'redzone-v89';
 // evita re-render que rouba o foco enquanto a pessoa digita (o dado já foi aplicado em S de qualquer forma)
 function _syncPodeRender(){ const a=document.activeElement; return !(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||'')); }
 // ANTI-LOOP: ao aplicar uma mudança que VEIO do servidor, um re-render pode disparar escritas de
@@ -1743,20 +1745,29 @@ function resumoHojeHTML(){
     ${card('i-alim','Água', aguaHoje+' / '+S.profile.metaAgua+' ml', aguaPct, 'agua')}
   </div>`;
 }
+function miniaturaRegistro(log){
+  if(!log?.prova) return '';
+  const video=log.provaTipo==='video'||/\.(mp4|webm|mov|m4v|mkv)(\?|$)/i.test(log.prova);
+  return `<div class="rec-cell record-media-thumb" data-reg-media="${esc(log.prova)}" data-reg-tipo="${video?'video':'image'}" title="Ver comprovação">${video?`<video src="${esc(log.prova)}" muted playsinline preload="metadata"></video><span class="rec-play">▶</span>`:`<img src="${esc(log.prova)}" alt="Comprovação" loading="lazy"><span class="rec-play">↗</span>`}</div>`;
+}
+function ativarMiniaturasRegistro(root=document){
+  $$('[data-reg-media]',root).forEach(el=>el.onclick=()=>verMidiaSimples(el.dataset.regMedia,'',el.dataset.regTipo));
+}
 function resumoDetalheSheet(tipo){
   const dia=hojeDia(); const hoje=todayISO();
   let titulo='', corpo='';
   if(tipo==='treino'){
     titulo='Treino de hoje';
     const plan=(S.treinoTemplate[dia]||[]);
-    corpo = plan.length ? plan.map(ex=>{ const f=treinoFeitoHoje(ex.id); const min=f?minsHojeItem(S.treinoLogs,'exId',ex.id):0;
-      return `<div class="rowitem ${f?'done':''}"><div class="chk">${f?'✓':''}</div><div class="txt"><div class="t">${esc(ex.nome)}</div><div class="s">${f?`✅ Feito · ${min} min`:'⏳ Ainda não feito hoje'}</div></div></div>`;
+    corpo = plan.length ? plan.map(ex=>{ const logs=(S.treinoLogs||[]).filter(l=>l.dateISO===hoje&&l.exId===ex.id),f=logs.length>0,min=f?minsHojeItem(S.treinoLogs,'exId',ex.id):0,logMidia=[...logs].reverse().find(l=>l.prova);
+      return `<div class="rowitem ${f?'done':''}"><div class="chk">${f?'✓':''}</div><div class="txt"><div class="t">${esc(ex.nome)}</div><div class="s">${f?`✅ Feito · ${min} min`:'⏳ Ainda não feito hoje'}</div></div>${miniaturaRegistro(logMidia)}</div>`;
     }).join('') : '<p class="muted small">Nenhum treino planejado pra hoje.</p>';
   } else if(tipo==='estudo'){
     titulo='Estudo de hoje';
     const plan=(S.estudoSemana[dia]||[]);
     corpo = plan.length ? plan.map(mid=>{ const m=S.materias.find(x=>x.id===mid); if(!m) return ''; const logs=(S.estudoLogs||[]).filter(l=>l.dateISO===hoje&&l.materiaId===m.id), f=logs.length>0, min=f?minsHojeItem(S.estudoLogs,'materiaId',m.id):0; const ids=new Set(logs.flatMap(l=>l.conteudos||[])); const nomes=(m.conteudos||[]).filter(c=>ids.has(c.id)).map(c=>c.nome);
-      return `<div class="rowitem ${f?'done':''}" style="align-items:flex-start"><div class="chk">${f?'✓':''}</div><div class="txt"><div class="t">${esc(m.nome)}</div><div class="s">${f?`✅ Estudado · ${min} min`:'⏳ Ainda não estudado hoje'}</div>${nomes.length?`<div class="small" style="margin-top:7px;color:var(--text)"><b>Conteúdos:</b> ${nomes.map(esc).join(' • ')}</div>`:(f?'<div class="small muted" style="margin-top:6px">Sessão registrada sem conteúdo marcado.</div>':'')}</div></div>`;
+      const logMidia=[...logs].reverse().find(l=>l.prova);
+      return `<div class="rowitem ${f?'done':''}" style="align-items:flex-start"><div class="chk">${f?'✓':''}</div><div class="txt"><div class="t">${esc(m.nome)}</div><div class="s">${f?`✅ Estudado · ${min} min`:'⏳ Ainda não estudado hoje'}</div>${nomes.length?`<div class="small" style="margin-top:7px;color:var(--text)"><b>Conteúdos:</b> ${nomes.map(esc).join(' • ')}</div>`:(f?'<div class="small muted" style="margin-top:6px">Sessão registrada sem conteúdo marcado.</div>':'')}</div>${miniaturaRegistro(logMidia)}</div>`;
     }).join('') : '<p class="muted small">Nenhuma matéria pra hoje.</p>';
   } else if(tipo==='rotina'){
     titulo='Rotina de hoje';
@@ -1771,7 +1782,7 @@ function resumoDetalheSheet(tipo){
       <div class="xpbar" style="margin-top:10px"><i style="width:${Math.min(100,ml/meta*100)}%"></i></div>
       <p class="small muted" style="margin-top:8px">${ml>=meta?'💧 Meta batida hoje!':'Faltam '+(meta-ml)+' ml. Edita na aba Alimentação.'}</p></div>`;
   }
-  openSheet(`<h3>${titulo}</h3>${corpo}`);
+  openSheet(`<h3>${titulo}</h3>${corpo}`); ativarMiniaturasRegistro($('#sheet'));
 }
 
 /* ---------- helper de topo neutro ---------- */
@@ -1893,19 +1904,21 @@ function renderTreinoDia(){
   list.forEach(ex=>{
     const feito = treinoFeitoHoje(ex.id);
     const mins = feito ? minsHojeItem(S.treinoLogs,'exId',ex.id) : 0;
+    const logMidia=[...(S.treinoLogs||[])].reverse().find(l=>l.dateISO===todayISO()&&l.exId===ex.id&&l.prova);
     h+=`<div class="rowitem ${feito?'done':''}">
       ${feito?'<div class="chk">✓</div>':''}
       <div class="txt"><div class="t">${esc(ex.nome)}</div>
         ${ex.desc?`<div class="s">${esc(ex.desc)}</div>`:''}
         ${feito?`<div class="s" style="color:var(--ok)">✅ Feito hoje · ${mins} min</div>`:''}
         ${ex.videoUrl?`<video src="${ex.videoUrl}" controls playsinline style="border-radius:10px;margin-top:8px;max-height:200px;width:100%"></video>`:''}
-      </div>
+      </div>${miniaturaRegistro(logMidia)}
       ${edit ? `<button class="pencil" data-edex="${ex.id}">✏️</button><button class="pencil" data-delex="${ex.id}">🗑️</button>`
              : (feito ? '' : `<button class="btn sm" data-startex="${ex.id}">▶</button>`)}
     </div>`;
   });
   h+=`</div>`;
   $('#treinoDia').innerHTML=h;
+  ativarMiniaturasRegistro($('#treinoDia'));
   if(edit){ $('#addExec').onclick=()=>editExecSheet(d,null);
     $$('#treinoDia [data-edex]').forEach(b=>b.onclick=()=>editExecSheet(d,b.dataset.edex));
     $$('#treinoDia [data-delex]').forEach(b=>b.onclick=()=>{ S.treinoTemplate[d]=S.treinoTemplate[d].filter(x=>x.id!==b.dataset.delex); save('treino:tpl'); renderTreinoDia(); });
@@ -2252,17 +2265,19 @@ function renderEstudoDia(){
     const prox = m.conteudos.find(c=>!c.done);
     const feito = estudoFeitoHoje(m.id);
     const mins = feito ? minsHojeItem(S.estudoLogs,'materiaId',m.id) : 0;
+    const logMidia=[...(S.estudoLogs||[])].reverse().find(l=>l.dateISO===todayISO()&&l.materiaId===m.id&&l.prova);
     h+=`<div class="rowitem ${feito?'done':''}">
       ${feito?'<div class="chk">✓</div>':''}
       <div class="txt"><div class="t">${esc(m.nome)}</div>
         <div class="s">${prox?('Próximo: '+esc(prox.nome)):'✅ Tudo concluído'} — ${m.conteudos.filter(c=>c.done).length}/${m.conteudos.length}</div>
-        ${feito?`<div class="s" style="color:var(--ok)">✅ Estudado hoje · ${mins} min</div>`:''}</div>
+        ${feito?`<div class="s" style="color:var(--ok)">✅ Estudado hoje · ${mins} min</div>`:''}</div>${miniaturaRegistro(logMidia)}
       ${edit ? `<button class="pencil" data-redomat="${m.id}">↻</button>`
              : (feito ? '' : `<button class="btn sm" data-startmat="${m.id}">▶ Estudar</button>`)}
     </div>`;
   });
   h+=`</div>`;
   $('#estDia').innerHTML=h;
+  ativarMiniaturasRegistro($('#estDia'));
   if(edit){ $('#setDayMat').onclick=()=>setDayMateriasSheet(d);
     $$('#estDia [data-redomat]').forEach(b=>b.onclick=()=>startSession('estudo', d, b.dataset.redomat)); }
   $$('#estDia [data-startmat]').forEach(b=>b.onclick=()=>startSession('estudo', d, b.dataset.startmat));
@@ -2346,7 +2361,7 @@ function posEstudo(sess){
       m.conteudos.forEach(c=>{ if(marcados.includes(c.id)){ c.done=true; c.tempoMs=(c.tempoMs||0)+fatia; c.concluidoEm=todayISO(); } });
       save('estudo:materias');
     }
-    S.estudoLogs.push({ materia:m?.nome||'Estudo', materiaId:sess.refId, dateISO:todayISO(), ativoMs:sess.ativoMs, pausaMs:sess.pausedMs, conteudos:marcados, prova:prova?.url });
+    S.estudoLogs.push({ materia:m?.nome||'Estudo', materiaId:sess.refId, dateISO:todayISO(), ativoMs:sess.ativoMs, pausaMs:sess.pausedMs, conteudos:marcados, prova:prova?.url, provaTipo:prova?.tipo });
     save('estudo:logs'); reportXP();
     let rec=null;
     if(prova){ addRecordacao({tipo:'estudo', url:prova.url, midiaTipo:prova.tipo==='video'?'video':'image', texto:`Estudo: ${m?.nome||''}`}); rec=S.recordacoes[0]; }
