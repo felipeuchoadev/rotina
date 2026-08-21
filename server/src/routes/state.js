@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { prisma } from '../lib/db.js';
 import { exigirAuth } from '../lib/auth.js';
-import { emitToUser } from '../realtime.js';
+import { emitToUser, emitRanking } from '../realtime.js';
 
 // Armazenamento chave-valor por usuário (dados pessoais do app).
 export const stateRouter = Router();
@@ -53,7 +53,11 @@ async function recalcularXp(usuarioId) {
   // Ajustes administrativos podem ser positivos ou negativos; o usuário não
   // consegue editar esta chave pelas rotas públicas.
   if (Number.isFinite(bonus)) xp += Math.floor(bonus);
-  await prisma.usuario.update({ where: { id: usuarioId }, data: { xp: Math.max(0, Math.floor(xp)) } });
+  const xpFinal = Math.max(0, Math.floor(xp));
+  await prisma.usuario.update({ where: { id: usuarioId }, data: { xp: xpFinal } });
+  emitToUser(usuarioId, 'profile:changed', { usuario: { xp: xpFinal }, src: null });
+  emitRanking();
+  return xpFinal;
 }
 
 // Todos os blobs do usuário de uma vez → { chave: valor, ... }
@@ -97,10 +101,10 @@ stateRouter.put('/:chave', async (req, res) => {
   if(!atual||JSON.stringify(atual.valor)!==JSON.stringify(valor)){
     await prisma.stateHistory.create({data:{usuarioId:req.userId,chave:req.params.chave,valor}}).catch(()=>{});
   }
-  if(['treino:logs','estudo:logs','alim:agua'].includes(req.params.chave)) await recalcularXp(req.userId);
+  const xpAtual=['treino:logs','estudo:logs','alim:agua'].includes(req.params.chave) ? await recalcularXp(req.userId) : null;
   // sync ao vivo: avisa os OUTROS aparelhos do mesmo usuário (src = quem escreveu, pra não ecoar nele)
   emitToUser(req.userId, 'state:changed', { chave: req.params.chave, valor, versao:Number(versaoRecebida), src: req.body?.clientId || null });
-  res.json({ ok: true, valor, versao:Number(versaoRecebida) });
+  res.json({ ok: true, valor, versao:Number(versaoRecebida), ...(xpAtual!==null?{xp:xpAtual}:{}) });
 });
 
 stateRouter.delete('/:chave', async (req, res) => {

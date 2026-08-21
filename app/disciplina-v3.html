@@ -706,7 +706,7 @@ setInterval(()=>{ if(authToken&&offQueue().length&&navigator.onLine) flushQueue(
 
 /* id único DESTE aparelho/aba — usado pra não ecoar de volta a própria escrita no sync ao vivo */
 const CLIENT_ID = (Math.random().toString(36).slice(2)+'-'+Date.now().toString(36));
-const APP_BUILD = 'redzone-v85';
+const APP_BUILD = 'redzone-v86';
 // evita re-render que rouba o foco enquanto a pessoa digita (o dado já foi aplicado em S de qualquer forma)
 function _syncPodeRender(){ const a=document.activeElement; return !(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||'')); }
 // ANTI-LOOP: ao aplicar uma mudança que VEIO do servidor, um re-render pode disparar escritas de
@@ -722,7 +722,7 @@ const Store = {
     const versao=novaVersao(key);
     try{ localStorage.setItem(userStorageKey('local:'+key), JSON.stringify(val)); }catch{}   // espelho local
     if(_syncBusy()) return true;   // veio do servidor agora → não reescreve (anti-loop)
-    try{ const r=await api('/state/'+encodeURIComponent(key),{method:'PUT',body:{valor:val,versao,clientId:CLIENT_ID}}); if(r?.ignorada){ applyRemoteState(key,r.valor,r.versao); } else if(key==='rotina:dias'&&r?.valor){ S.rotinaDias=r.valor; try{ localStorage.setItem(userStorageKey('local:'+key),JSON.stringify(r.valor)); }catch{} } return true; }
+    try{ const r=await api('/state/'+encodeURIComponent(key),{method:'PUT',body:{valor:val,versao,clientId:CLIENT_ID}}); if(Number.isFinite(r?.xp))S.profile.xp=r.xp; if(r?.ignorada){ applyRemoteState(key,r.valor,r.versao); } else if(key==='rotina:dias'&&r?.valor){ S.rotinaDias=r.valor; try{ localStorage.setItem(userStorageKey('local:'+key),JSON.stringify(r.valor)); }catch{} } return true; }
     catch(e){
       const q=offQueue().filter(i=>i.chave!==key); q.push({chave:key, valor:val}); setQueue(q);  // enfileira (última escrita vence)
       return true;
@@ -1010,7 +1010,7 @@ async function loadUserData(){
   const g = (k,d)=> st[k]!==undefined && st[k]!==null ? st[k] : d;
   S = {
     profile: { id:u.id, nome:u.nomeGuerra, username:u.username, email:u.email, foto:u.fotoUrl, genero:u.genero,
-               idade:u.idade, dataNasc:(u.dataNasc?String(u.dataNasc).slice(0,10):null), peso:u.pesoKg, altura:u.alturaCm, metaAgua:u.metaAgua, tema:u.tema, privado:u.privado, isAdmin:!!u.isAdmin, xpBonus:g('xp:bonus',0) },
+               idade:u.idade, dataNasc:(u.dataNasc?String(u.dataNasc).slice(0,10):null), peso:u.pesoKg, altura:u.alturaCm, metaAgua:u.metaAgua, tema:u.tema, privado:u.privado, isAdmin:!!u.isAdmin, xp:Number(me.xp??u.xp??0), xpBonus:g('xp:bonus',0) },
     treinoTemplate: g('treino:tpl', DEFAULT_TREINO_TEMPLATE()),
     treinoWeeks:    g('treino:weeks', null),
     treinoLogs:     g('treino:logs', []),
@@ -1054,6 +1054,7 @@ function applyRemoteProfile(u){
   S.profile.peso=u.pesoKg ?? S.profile.peso;
   S.profile.altura=u.alturaCm ?? S.profile.altura;
   S.profile.metaAgua=u.metaAgua ?? S.profile.metaAgua;
+  if(Number.isFinite(Number(u.xp)))S.profile.xp=Number(u.xp);
   S.profile.privado=(u.privado!==undefined)?u.privado:S.profile.privado;
   if(JSON.stringify(S.profile)===before) return;   // nada mudou de verdade
   applyTheme(S.profile.tema||'red');
@@ -1066,6 +1067,7 @@ function cameMap(k){ return ({'xp:bonus':'xpBonus','treino:tpl':'treinoTemplate'
 
 /* XP total do usuário = soma de logs + bônus, menos punições. Recalcula. */
 function computeXP(){
+  if(Number.isFinite(Number(S?.profile?.xp))) return Math.max(0,Math.floor(Number(S.profile.xp)));
   let xp=0;
   S.treinoLogs.forEach(l=> xp += Math.floor((l.ativoMs||0)/60000) );          // 1 xp / min treino
   S.estudoLogs.forEach(l=> xp += Math.floor((l.ativoMs||0)/60000)*2 );         // 2 xp / min estudo
@@ -4045,6 +4047,7 @@ function connectSocket(){
     // SYNC AO VIVO ponta a ponta: mudou num aparelho → reflete nos outros na hora (sem F5)
     _socket.on('state:changed', (d)=>{ if(!d || d.src===CLIENT_ID) return; applyRemoteState(d.chave, d.valor,d.versao); });
     _socket.on('profile:changed', (d)=>{ if(!d || d.src===CLIENT_ID) return; applyRemoteProfile(d.usuario); });
+    _socket.on('ranking:mudou',()=>{ if(activeTab==='batalha'&&_syncPodeRender()) renderBatalha(); });
     // AUTOUPDATE ao vivo: desenvolvedor subiu versão nova → recarrega na hora (HTML é network-first, pega o novo)
     _socket.on('app:update', solicitarAtualizacaoApp);
     _socket.on('dm:nova', (m)=>{
