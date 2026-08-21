@@ -11,7 +11,9 @@
 > ainda é `app/disciplina-v3.html`; logo `redzone-logo.png`. Conta de teste:
 > `felipeestudos220807@gmail.com` / `felipe220807@` (pergunta de segurança: time = Flamengo).
 
-> 🟢 **v84 PUBLICADA:** detalhes da semana exibem foto ou vídeo de comprovação, inclusive pela memória vinculada ao treino, com abertura correta da mídia.
+> 🟢 **v85 PUBLICADA:** recordes e histórico em listas padronizadas, nome à esquerda e valor à direita; melhor marca diferencia métricas em que menor ou maior é melhor.
+>
+> 🟢 **v84:** detalhes da semana exibem foto ou vídeo de comprovação, inclusive pela memória vinculada ao treino, com abertura correta da mídia.
 >
 > 🟢 **v83:** recordes compactos + painel único de evolução no padrão do relatório de horas, sem barra gigante quando existe só uma marca.
 >
@@ -19,7 +21,7 @@
 >
 > 🟢 **v81:** autoupdate resistente a reinícios sem F5, restauração de aba/posição e relógio de Brasília sincronizado pelo servidor em todos os dispositivos.
 >
-> 🟢 **VERSÃO PUBLICADA: SW `redzone-v84`.** App/back no ar. Sync ao vivo ponta a ponta
+> 🟢 **VERSÃO PUBLICADA: SW `redzone-v85`.** App/back no ar. Sync ao vivo ponta a ponta
 > (mudou num aparelho → aparece nos outros em ms) + autoupdate ao vivo (deploy → conectados recarregam em ms)
 > JÁ FUNCIONAM. Deploy = `scp app/* server/src/**` pra VM (chave `Chaves/oracle_vm`, user `ubuntu`,
 > `redsystems.ddns.net:/opt/disciplina/`) + `systemctl restart disciplina` se mexeu no `server/` + **bump do SW**.

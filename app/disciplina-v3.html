@@ -232,7 +232,7 @@ textarea.auto{resize:none; overflow:hidden; min-height:48px;}
 .week-history-row .wh-status{width:38px;height:38px;display:grid;place-items:center;border-radius:12px;background:color-mix(in srgb,var(--accent) 12%,var(--surface));font-weight:900}.week-history-row.perfect .wh-status{background:color-mix(in srgb,var(--ok) 20%,var(--surface));color:var(--ok)}.week-history-row .wh-copy{flex:1;min-width:0}.week-history-row .wh-copy b,.week-history-row .wh-copy span{display:block}.week-history-row .wh-copy span{font-size:12px;color:var(--text-dim);margin-top:3px}.week-history-row .wh-score{font-weight:900;color:var(--text-dim)}
 .proof-source-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:12px 0}.proof-source-grid button{min-height:76px;padding:10px 7px}.proof-source-grid button span{display:block;font-size:23px;margin-bottom:5px}.proof-source-grid button small{display:block;white-space:normal;line-height:1.2}
 .week-session-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:10px 0 14px}.week-session-summary>div{padding:13px;border:1px solid var(--line);border-radius:14px;background:var(--surface2);text-align:center}.week-session-summary b{display:block;font-size:18px;margin-top:4px}.week-proof-grid{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}.week-proof-grid .rec-cell{width:58px;height:58px;flex:0 0 58px}
-.record-list{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:12px}.record-list .card{margin:0}.record-chart{margin-top:14px}.record-chart-tabs{display:flex;gap:8px;overflow-x:auto;padding-bottom:5px;scrollbar-width:none}.record-chart-tabs::-webkit-scrollbar{display:none}.record-chart-tabs button{flex:1 0 150px;border:1px solid var(--line);border-radius:14px;padding:12px;background:var(--surface2);color:var(--text-dim);font-weight:800}.record-chart-tabs button.on{color:#fff;border-color:transparent;background:linear-gradient(135deg,var(--accent),var(--accent2))}.record-chart-bars{display:flex;align-items:flex-end;justify-content:center;gap:8px;height:180px;padding:34px 4px 26px;margin-top:12px;border-bottom:1px solid var(--line)}.record-chart-bars .bar{flex:1 1 110px;max-width:190px;min-width:36px;background:linear-gradient(180deg,var(--accent2),var(--accent));border-radius:10px 10px 0 0;position:relative;min-height:8px}.record-chart-bars .bar b{position:absolute;top:-25px;left:0;right:0;text-align:center;font-size:12px;color:var(--text)}.record-chart-bars .bar span{position:absolute;bottom:-22px;left:0;right:0;text-align:center;font-size:11px;color:var(--text-dim)}
+.record-table{padding:4px 18px}.record-line{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:14px;min-height:62px;border-bottom:1px solid var(--line)}.record-line:last-child{border-bottom:0}.record-line .record-name{font-size:17px}.record-line .record-value{text-align:right;font-size:20px;font-weight:900;color:var(--ok);white-space:nowrap}.record-line .record-value small{font-size:12px;color:var(--text-dim);font-weight:700;margin-left:4px}.record-actions{display:flex;gap:5px}.record-history-title{margin:22px 2px 10px}.record-history{padding:0 18px}.record-history details{border-bottom:1px solid var(--line)}.record-history details:last-child{border-bottom:0}.record-history summary{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:14px;min-height:62px;cursor:pointer;list-style:none}.record-history summary::-webkit-details-marker{display:none}.record-history summary b:last-child{color:var(--text-dim)}.record-history-rows{padding:0 0 10px 18px}.record-history-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;padding:10px 0;border-top:1px solid var(--line);color:var(--text-dim)}.record-history-row strong{color:var(--text)}
 @media(min-width:900px){.section-title{font-size:20px}.rowitem{padding:17px}.rowitem .txt .t{font-size:17px}.week-head h3{font-size:18px}.proof-source-grid button{font-size:15px}}
 @media(min-width:1500px){#app:not(.admin-mode){max-width:1420px}.screen{padding-left:54px;padding-right:54px}.card,.week{border-radius:20px}.rowitem .txt .t{font-size:18px}}
 @media(max-width:520px){.proof-source-grid{grid-template-columns:1fr}.proof-source-grid button{min-height:58px;display:flex;align-items:center;justify-content:flex-start;gap:10px;text-align:left;padding:10px 14px}.proof-source-grid button span{margin:0}.week-session-summary{grid-template-columns:1fr 1fr}}
@@ -706,7 +706,7 @@ setInterval(()=>{ if(authToken&&offQueue().length&&navigator.onLine) flushQueue(
 
 /* id único DESTE aparelho/aba — usado pra não ecoar de volta a própria escrita no sync ao vivo */
 const CLIENT_ID = (Math.random().toString(36).slice(2)+'-'+Date.now().toString(36));
-const APP_BUILD = 'redzone-v84';
+const APP_BUILD = 'redzone-v85';
 // evita re-render que rouba o foco enquanto a pessoa digita (o dado já foi aplicado em S de qualquer forma)
 function _syncPodeRender(){ const a=document.activeElement; return !(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||'')); }
 // ANTI-LOOP: ao aplicar uma mudança que VEIO do servidor, um re-render pode disparar escritas de
@@ -1842,37 +1842,40 @@ function renderTreinos(){
   $('#addRec').onclick=()=>editRecordeSheet(null);
   renderTreinoDia(); renderTreinoWeeks(); renderRecordes(); renderRelatorio('treinoRelatorio','treino');
 }
-let recordeGrafSel=null;
 function recordeNumero(v){if(typeof v==='number')return Number.isFinite(v)?v:0;const s=String(v??'').replace(',','.');if(/^\d{1,3}:\d{2}$/.test(s)){const [m,seg]=s.split(':').map(Number);return m+seg/60}return Number(s)||0}
+function regraRecorde(rec){
+  if(rec.regra==='menor'||rec.regra==='maior')return rec.regra;
+  const nome=String(rec.nome||'').toLowerCase(),un=String(rec.unidade||'').toLowerCase();
+  const duracao=/(^|\s)(min|minuto|minutos|seg|segundo|segundos|tempo|pace)(\s|$)/.test(un)||/tempo|pace/.test(nome)||String(rec.valor||'').includes(':');
+  return duracao&&!/sono/.test(nome)?'menor':'maior';
+}
+function melhorRecorde(rec){const hist=(rec.hist||[]).length?rec.hist:[{valor:rec.valor}];return hist.reduce((melhor,h)=>regraRecorde(rec)==='menor'?(recordeNumero(h.valor)<recordeNumero(melhor.valor)?h:melhor):(recordeNumero(h.valor)>recordeNumero(melhor.valor)?h:melhor),hist[0]).valor}
 function renderRecordes(){
   const list=S.recordes||[];
   if(!list.length){$('#treinoRecordes').innerHTML='<p class="muted small">Sem recordes ainda. Ex: máximo de flexões, tempo dos 5km, barra fixa…</p>';return}
-  if(!recordeGrafSel||!list.some(r=>r.id===recordeGrafSel))recordeGrafSel=list[0].id;
-  const cards=list.map(rec=>{const hist=rec.hist||[];const melhor=hist.length?hist.reduce((a,h)=>recordeNumero(h.valor)>recordeNumero(a)?h.valor:a,hist[0].valor):rec.valor;return `<div class="card"><div class="h">${esc(rec.nome)}<span><button class="pencil" data-edrec="${rec.id}">✏️</button><button class="pencil" data-delrec="${rec.id}">🗑️</button></span></div><div style="display:flex;align-items:baseline;gap:14px"><div><div class="muted small">Atual</div><div style="font-weight:800;font-size:26px">${rec.valor} <span class="muted" style="font-size:14px">${esc(rec.unidade||'')}</span></div></div><div><div class="muted small">Melhor</div><div style="font-weight:800;font-size:20px;color:var(--ok)">${melhor}</div></div></div></div>`}).join('');
-  const sel=list.find(r=>r.id===recordeGrafSel),hist=(sel.hist||[]).slice(-8),max=Math.max(1,...hist.map(h=>recordeNumero(h.valor)));
-  const tabs=list.map(r=>`<button class="${r.id===recordeGrafSel?'on':''}" data-recchart="${r.id}">${esc(r.nome)}</button>`).join('');
-  const barras=hist.length?`<div class="record-chart-bars">${hist.map(h=>`<div class="bar" style="height:${Math.max(8,Math.round(recordeNumero(h.valor)/max*125))}px"><b>${esc(h.valor)}</b><span>${new Date(h.dateISO+'T00:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'})}</span></div>`).join('')}</div>`:'<p class="muted small">Atualize este recorde para começar a evolução.</p>';
-  $('#treinoRecordes').innerHTML=`<div class="record-list">${cards}</div><div class="card record-chart"><div class="h">Evolução dos recordes</div><div class="record-chart-tabs">${tabs}</div>${barras}<p class="small muted" style="margin-top:24px">Mostrando as últimas ${hist.length} marca(s) reais de ${esc(sel.nome)}.</p></div>`;
+  const linhas=list.map(rec=>`<div class="record-line"><div class="record-name">${esc(rec.nome)}</div><div class="record-value">${esc(melhorRecorde(rec))}<small>${esc(rec.unidade||'')}</small></div><div class="record-actions"><button class="pencil" data-edrec="${rec.id}" aria-label="Editar">✏️</button><button class="pencil" data-delrec="${rec.id}" aria-label="Excluir">🗑️</button></div></div>`).join('');
+  const historico=list.map(rec=>{const hist=[...(rec.hist||[])].reverse();return `<details><summary><b>${esc(rec.nome)}</b><b>${hist.length} registro${hist.length===1?'':'s'} ›</b></summary><div class="record-history-rows">${hist.map(h=>`<div class="record-history-row"><span>${new Date(h.dateISO+'T00:00:00').toLocaleDateString('pt-BR')}</span><strong>${esc(h.valor)} ${esc(rec.unidade||'')}</strong></div>`).join('')||'<div class="record-history-row"><span>Sem histórico</span></div>'}</div></details>`}).join('');
+  $('#treinoRecordes').innerHTML=`<div class="card record-table">${linhas}</div><h2 class="section-title record-history-title">Histórico dos recordes</h2><div class="card record-history">${historico}</div>`;
   $$('#treinoRecordes [data-edrec]').forEach(b=>b.onclick=()=>editRecordeSheet(b.dataset.edrec));
   $$('#treinoRecordes [data-delrec]').forEach(b=>b.onclick=()=>{S.recordes=S.recordes.filter(x=>x.id!==b.dataset.delrec);save('treino:recordes');renderRecordes()});
-  $$('#treinoRecordes [data-recchart]').forEach(b=>b.onclick=()=>{recordeGrafSel=b.dataset.recchart;renderRecordes()});
 }
 function editRecordeSheet(id){
   const rec = id ? S.recordes.find(x=>x.id===id) : {nome:'',unidade:'reps',valor:''};
   openSheet(`<h3>${id?'Atualizar':'Novo'} recorde</h3>
     <div class="field"><label>O que</label><input id="recNome" value="${esc(rec.nome)}" placeholder="Ex: Máximo de flexões"></div>
     <div class="grid2">
-      <div class="field"><label>Marca atual</label><input id="recValor" type="number" inputmode="decimal" step="0.01" value="${rec.valor??''}" placeholder="ex: 45"></div>
+      <div class="field"><label>Marca atual</label><input id="recValor" inputmode="decimal" value="${rec.valor??''}" placeholder="45 ou 24:30"></div>
       <div class="field"><label>Unidade</label><input id="recUnidade" value="${esc(rec.unidade||'')}" placeholder="reps, kg, min"></div>
     </div>
-    <p class="small muted">Cada atualização guarda o histórico pra montar o gráfico de evolução.</p>
+    <div class="field"><label>O que significa melhorar?</label><select id="recRegra"><option value="auto" ${!rec.regra?'selected':''}>Reconhecer automaticamente</option><option value="maior" ${rec.regra==='maior'?'selected':''}>Quanto maior, melhor</option><option value="menor" ${rec.regra==='menor'?'selected':''}>Quanto menor, melhor</option></select></div>
+    <p class="small muted">Ex.: flexões usam maior; tempo de corrida usa menor. Cada atualização fica guardada no histórico.</p>
     <button class="btn" id="recSave" style="margin-top:8px">Salvar</button>`);
   $('#recSave').onclick=()=>{
-    const nome=$('#recNome').value.trim(); const valor=+$('#recValor').value;
-    if(!nome) return toast('O que é o recorde?'); if(!valor && valor!==0) return toast('Coloque a marca.');
-    const unidade=$('#recUnidade').value.trim();
-    if(id){ rec.nome=nome; rec.unidade=unidade; if(valor!==rec.valor){ rec.hist=rec.hist||[]; rec.hist.push({dateISO:todayISO(),valor}); } rec.valor=valor; }
-    else S.recordes.push({id:uid(), nome, unidade, valor, hist:[{dateISO:todayISO(),valor}]});
+    const nome=$('#recNome').value.trim(),valor=$('#recValor').value.trim().replace(',','.'),n=recordeNumero(valor);
+    if(!nome) return toast('O que é o recorde?'); if(!valor||!Number.isFinite(n)||n<=0) return toast('Coloque uma marca válida.');
+    const unidade=$('#recUnidade').value.trim(),regra=$('#recRegra').value==='auto'?null:$('#recRegra').value;
+    if(id){ rec.nome=nome; rec.unidade=unidade; rec.regra=regra; if(String(valor)!==String(rec.valor)){ rec.hist=rec.hist||[]; rec.hist.push({dateISO:todayISO(),valor}); } rec.valor=valor; }
+    else S.recordes.push({id:uid(), nome, unidade, valor, regra, hist:[{dateISO:todayISO(),valor}]});
     save('treino:recordes'); closeSheet(); renderRecordes();
   };
 }
