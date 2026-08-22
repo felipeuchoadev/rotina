@@ -23,7 +23,7 @@
 >
 > 🟢 **v81:** autoupdate resistente a reinícios sem F5, restauração de aba/posição e relógio de Brasília sincronizado pelo servidor em todos os dispositivos.
 >
-> 🟢 **VERSÃO PUBLICADA: SW `redzone-v96`.** App/back no ar. Fora do dia atual, treino, estudo, alimentação e rotina ficam bloqueados com alerta Try Hard; registros passados são consultados somente no histórico.
+> 🟢 **VERSÃO PUBLICADA: SW `redzone-v97`.** Histórico reorganizado por área e categoria, com registros reais, detalhes legíveis, data e horário; campos técnicos internos não são mais exibidos ao usuário.
 > (mudou num aparelho → aparece nos outros em ms) + autoupdate ao vivo (deploy → conectados recarregam em ms)
 > JÁ FUNCIONAM. Deploy = `scp app/* server/src/**` pra VM (chave `Chaves/oracle_vm`, user `ubuntu`,
 > `redsystems.ddns.net:/opt/disciplina/`) + `systemctl restart disciplina` se mexeu no `server/` + **bump do SW**.
