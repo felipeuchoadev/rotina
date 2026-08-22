@@ -710,7 +710,7 @@ setInterval(()=>{ if(authToken&&offQueue().length&&navigator.onLine) flushQueue(
 
 /* id único DESTE aparelho/aba — usado pra não ecoar de volta a própria escrita no sync ao vivo */
 const CLIENT_ID = (Math.random().toString(36).slice(2)+'-'+Date.now().toString(36));
-const APP_BUILD = 'redzone-v94';
+const APP_BUILD = 'redzone-v95';
 // evita re-render que rouba o foco enquanto a pessoa digita (o dado já foi aplicado em S de qualquer forma)
 function _syncPodeRender(){ const a=document.activeElement; return !(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||'')); }
 // ANTI-LOOP: ao aplicar uma mudança que VEIO do servidor, um re-render pode disparar escritas de
@@ -1817,7 +1817,7 @@ function editToggleHint(){ return S.config.editMode ? `<button class="chip" oncl
 /* =========================================================================
    TREINOS
 ========================================================================= */
-let treinoDiaSel = DIAS[(new Date().getDay()+6)%7];
+let treinoDiaSel = hojeDia();
 // segunda-feira (ISO) da semana que contém `iso` — as semanas de treino são Seg→Dom
 function mondayOfISO(iso){ const d=new Date(iso+'T00:00:00'); const dow=(d.getDay()+6)%7; d.setDate(d.getDate()-dow); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 function addDiasISO(iso,n){ const d=new Date(iso+'T00:00:00'); d.setDate(d.getDate()+n); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
@@ -1865,7 +1865,7 @@ function renderTreinos(){
     <div id="treinoRelatorio"></div>
   `;
   $('#scr-treinos').innerHTML=html;
-  $$('#treinoDays .day').forEach(c=> c.onclick=()=>{ treinoDiaSel=c.dataset.d; renderTreinoDia(); $$('#treinoDays .day').forEach(x=>x.classList.toggle('sel',x.dataset.d===treinoDiaSel)); });
+  $$('#treinoDays .day').forEach(c=> c.onclick=()=>{ treinoDiaSel=c.dataset.d; if(treinoDiaSel!==hojeDia()) podeExecutarDia(treinoDiaSel); renderTreinoDia(); $$('#treinoDays .day').forEach(x=>x.classList.toggle('sel',x.dataset.d===treinoDiaSel)); });
   if(edit) $('#addWeek').onclick=addTreinoWeek;
   $('#addRec').onclick=()=>editRecordeSheet(null);
   renderTreinoDia(); renderTreinoWeeks(); renderRecordes(); renderRelatorio('treinoRelatorio','treino');
@@ -1909,6 +1909,17 @@ function editRecordeSheet(id){
 }
 function dayChip(d, sel){ const today=hojeDia();
   return `<div class="day ${d===sel?'sel':''} ${d===today?'today':''}" data-d="${d}"><div class="dn">${DIAS_AB[d]}</div><div class="dd">${d===today?'hoje':''}</div></div>`; }
+function mensagemDiaBloqueado(dia){
+  const alvo=DIAS.indexOf(dia), atual=DIAS.indexOf(hojeDia());
+  return alvo<atual
+    ? '⛔ ACORDA, RECRUTA: esse dia já passou. Resultado atrasado não vale — cumpra a missão de HOJE.'
+    : '⛔ SEM ROUBAR ETAPA: esse dia ainda não chegou. Missão só conta no dia certo.';
+}
+function podeExecutarDia(dia, avisar=true){
+  const ok=dia===hojeDia();
+  if(!ok&&avisar) toast(mensagemDiaBloqueado(dia));
+  return ok;
+}
 
 function renderTreinoDia(){
   const edit=S.config.editMode; const d=treinoDiaSel;
@@ -1927,7 +1938,7 @@ function renderTreinoDia(){
         ${ex.videoUrl?`<video src="${ex.videoUrl}" controls playsinline style="border-radius:10px;margin-top:8px;max-height:200px;width:100%"></video>`:''}
       </div>${miniaturaRegistro(logMidia)}
       ${edit ? `<button class="pencil" data-edex="${ex.id}">✏️</button><button class="pencil" data-delex="${ex.id}">🗑️</button>`
-             : (feito ? '' : `<button class="btn sm" data-startex="${ex.id}">▶</button>`)}
+             : (feito ? '' : `<button class="btn sm" data-startex="${ex.id}" ${d===hojeDia()?'':'aria-disabled="true"'}>▶</button>`)}
     </div>`;
   });
   h+=`</div>`;
@@ -1937,7 +1948,7 @@ function renderTreinoDia(){
     $$('#treinoDia [data-edex]').forEach(b=>b.onclick=()=>editExecSheet(d,b.dataset.edex));
     $$('#treinoDia [data-delex]').forEach(b=>b.onclick=()=>{ S.treinoTemplate[d]=S.treinoTemplate[d].filter(x=>x.id!==b.dataset.delex); save('treino:tpl'); renderTreinoDia(); });
   } else {
-    $$('#treinoDia [data-startex]').forEach(b=>b.onclick=()=>startSession('treino', d, b.dataset.startex));
+    $$('#treinoDia [data-startex]').forEach(b=>b.onclick=()=>{ if(!podeExecutarDia(d)) return; startSession('treino', d, b.dataset.startex); });
   }
 }
 function editExecSheet(dia, exId){
@@ -2099,6 +2110,7 @@ function updateCountdowns(){ $$('[data-cd]').forEach(el=>{ const secs=Math.max(0
 let timerSession = null; // {tipo, dia, refId, startedAt, elapsedMs, pausedMs, pausedAt, running}
 let timerRAF=null;
 function startSession(tipo, dia, refId){
+  if(!podeExecutarDia(dia)) return;
   timerSession = { tipo, dia, refId, startedAt:Date.now(), elapsedMs:0, pausedMs:0, pausedAt:null, running:true };
   const nome = tipo==='treino' ? (S.treinoTemplate[dia].find(x=>x.id===refId)?.nome||'Treino')
                                : (S.materias.find(m=>m.id===refId)?.nome||'Estudo');
@@ -2129,6 +2141,10 @@ $('#timerPauseBtn').addEventListener('click', ()=>{
 $('#timerFinishBtn').addEventListener('click', finishSession);
 function finishSession(){
   if(!timerSession) return;
+  if(!podeExecutarDia(timerSession.dia)){
+    cancelAnimationFrame(timerRAF); clearInterval(window._tauntTimer);
+    $('#timer').classList.remove('show'); timerSession=null; return;
+  }
   if(!timerSession.running && timerSession.pausedAt){ timerSession.pausedMs+=Date.now()-timerSession.pausedAt; timerSession.pausedAt=null; }
   const ativoMs = Math.max(0, (timerSession.running? Date.now()-timerSession.startedAt-timerSession.pausedMs : timerSession.elapsedMs));
   const sess = {...timerSession, ativoMs};
@@ -2155,6 +2171,7 @@ function posTreino(sess){
   const nomeEx=S.treinoTemplate[sess.dia]?.find(x=>x.id===sess.refId)?.nome||'Treino';
   renderProvaPicker($('#provaArea'), (dataUrl,kind)=>{ prova={dataUrl,kind}; });
   $('#finTreino').onclick=()=>{
+    if(!podeExecutarDia(sess.dia)) return closeSheet();
     const legenda=$('#finLeg')?.value.trim()||'';
     S.treinoLogs.push({ exId:sess.refId, nome:nomeEx, dia:sess.dia, dateISO:todayISO(), ativoMs:sess.ativoMs, pausaMs:sess.pausedMs, prova:prova?.dataUrl, provaTipo:prova?.kind, legenda });
     save('treino:logs'); reportXP();
@@ -2196,7 +2213,7 @@ function renderProvaPicker(container, onReady){
 /* =========================================================================
    ESTUDOS  (matérias + conteúdos; dia da semana mostra próximo conteúdo)
 ========================================================================= */
-let estudoDiaSel = DIAS[(new Date().getDay()+6)%7];
+let estudoDiaSel = hojeDia();
 function renderEstudos(){
   const edit=S.config.editMode;
   $('#scr-estudos').innerHTML = `
@@ -2214,7 +2231,7 @@ function renderEstudos(){
     <h2 class="section-title">Relatório</h2>
     <div id="estRelatorio"></div>
   `;
-  $$('#estDays .day').forEach(c=>c.onclick=()=>{ estudoDiaSel=c.dataset.d; $$('#estDays .day').forEach(x=>x.classList.toggle('sel',x.dataset.d===estudoDiaSel)); renderEstudoDia(); });
+  $$('#estDays .day').forEach(c=>c.onclick=()=>{ estudoDiaSel=c.dataset.d; if(estudoDiaSel!==hojeDia()) podeExecutarDia(estudoDiaSel); $$('#estDays .day').forEach(x=>x.classList.toggle('sel',x.dataset.d===estudoDiaSel)); renderEstudoDia(); });
   if(edit) $('#addMateria').onclick=()=>editMateriaSheet(null);
   renderEstudoDia(); renderPrevisaoEstudo(); renderMaterias(); renderRelatorio('estRelatorio','estudo');
 }
@@ -2286,15 +2303,15 @@ function renderEstudoDia(){
         <div class="s">${prox?('Próximo: '+esc(prox.nome)):'✅ Tudo concluído'} — ${m.conteudos.filter(c=>c.done).length}/${m.conteudos.length}</div>
         ${feito?`<div class="s" style="color:var(--ok)">✅ Estudado hoje · ${mins} min</div>`:''}</div>${miniaturaRegistro(logMidia)}
       ${edit ? `<button class="pencil" data-redomat="${m.id}">↻</button>`
-             : (feito ? '' : `<button class="btn sm" data-startmat="${m.id}">▶ Estudar</button>`)}
+             : (feito ? '' : `<button class="btn sm" data-startmat="${m.id}" ${d===hojeDia()?'':'aria-disabled="true"'}>▶ Estudar</button>`)}
     </div>`;
   });
   h+=`</div>`;
   $('#estDia').innerHTML=h;
   ativarMiniaturasRegistro($('#estDia'));
   if(edit){ $('#setDayMat').onclick=()=>setDayMateriasSheet(d);
-    $$('#estDia [data-redomat]').forEach(b=>b.onclick=()=>startSession('estudo', d, b.dataset.redomat)); }
-  $$('#estDia [data-startmat]').forEach(b=>b.onclick=()=>startSession('estudo', d, b.dataset.startmat));
+    $$('#estDia [data-redomat]').forEach(b=>b.onclick=()=>{ if(!podeExecutarDia(d)) return; startSession('estudo', d, b.dataset.redomat); }); }
+  $$('#estDia [data-startmat]').forEach(b=>b.onclick=()=>{ if(!podeExecutarDia(d)) return; startSession('estudo', d, b.dataset.startmat); });
 }
 function setDayMateriasSheet(d){
   openSheet(`<h3>Matérias de ${DIAS_NOME[d]}</h3>
@@ -2369,6 +2386,7 @@ function posEstudo(sess){
   let prova=null;
   renderProvaPicker($('#estProva'), (url,tipo)=>{ prova={url,tipo}; });
   $('#finEstudo').onclick=()=>{
+    if(!podeExecutarDia(sess.dia)) return closeSheet();
     const marcados=$$('#sheet [data-cid]').filter(c=>c.checked).map(c=>c.dataset.cid);
     if(m){
       const fatia = marcados.length ? Math.round(sess.ativoMs/marcados.length) : 0;
@@ -2536,7 +2554,7 @@ function renderAlimentacao(){
     <h2 class="section-title">Relatório crítico alimentar</h2>
     <div id="alimRel"></div>
   `;
-  $$('#alimDays .day').forEach(c=>c.onclick=()=>{ alimDiaSel=c.dataset.d; $$('#alimDays .day').forEach(x=>x.classList.toggle('sel',x.dataset.d===alimDiaSel)); renderAlimDia(); });
+  $$('#alimDays .day').forEach(c=>c.onclick=()=>{ alimDiaSel=c.dataset.d; if(alimDiaSel!==hojeDia()) podeExecutarDia(alimDiaSel); $$('#alimDays .day').forEach(x=>x.classList.toggle('sel',x.dataset.d===alimDiaSel)); renderAlimDia(); });
   const setAgua=(v)=>{ const k=todayISO(); v=Math.max(0,Math.round(v)); if(v===0) delete S.agua[k]; else S.agua[k]=v; save('alim:agua'); renderAlimentacao(); };
   const cur=()=>S.agua[todayISO()]||0;
   const qtd=()=>numBR($('#aguaQtd').value);
@@ -2580,9 +2598,10 @@ function renderAlimDia(){
   });
   h+=`</div>`;
   $('#alimDia').innerHTML=h;
-  $$('#alimDia [data-toggleref]').forEach(b=>b.onclick=()=>{ const r=S.alimSemana[d].find(x=>x.id===b.dataset.toggleref); r.done = r.done===todayISO()?null:todayISO(); save('alim:semana'); renderAlimDia(); renderAlimAnalise(); });
+  $$('#alimDia [data-toggleref]').forEach(b=>b.onclick=()=>{ if(!podeExecutarDia(d)) return; const r=S.alimSemana[d].find(x=>x.id===b.dataset.toggleref); r.done = r.done===todayISO()?null:todayISO(); save('alim:semana'); renderAlimDia(); renderAlimAnalise(); });
   $$('#alimDia [data-vermem]').forEach(b=>b.onclick=()=>verRecordacao(b.dataset.vermem));
   $$('#alimDia [data-fotoref]').forEach(b=>b.onclick=async()=>{
+    if(!podeExecutarDia(d)) return;
     const r=S.alimSemana[d].find(x=>x.id===b.dataset.fotoref); if(!r) return;
     escolherFonteMidia('Registrar refeição',async f=>{ if(!f) return; toast('Comprimindo e enviando…');
       try{ const up=await uploadMedia(f); addRecordacao({tipo:'alim', url:up.url, midiaTipo:up.tipo||(f.type.startsWith('video')?'video':'image'), texto:r.nome}); toast('Refeição registrada 📸'); renderAlimDia(); }
@@ -2784,9 +2803,9 @@ function renderCalendarioRotina(){
   $('#rotNext').onclick=()=>{ rotCalM++; if(rotCalM>11){ rotCalM=0; rotCalY++; } renderCalendarioRotina(); };
   $$('#rotinaCal [data-caldia]').forEach(c=>c.onclick=()=>{
     const iso=c.dataset.caldia;
-    if(rotClearMode){ if(rotClearSel.has(iso)) rotClearSel.delete(iso); else rotClearSel.add(iso); renderCalendarioRotina(); }
-    else if(rotAddMode){ if(rotAddSel.has(iso)) rotAddSel.delete(iso); else rotAddSel.add(iso); renderCalendarioRotina(); }
-    else diaRotinaSheet(iso);
+    if(rotClearMode){ if(iso!==hoje) return toast(iso<hoje?'⛔ O passado está fechado. Você só limpa o dia de hoje.':'⛔ Dia futuro não é missão cumprida. Só o hoje pode ser alterado.'); if(rotClearSel.has(iso)) rotClearSel.delete(iso); else rotClearSel.add(iso); renderCalendarioRotina(); }
+    else if(rotAddMode){ if(iso<hoje) return toast('⛔ O passado acabou, recruta. Planejamento começa hoje, não ontem.'); if(rotAddSel.has(iso)) rotAddSel.delete(iso); else rotAddSel.add(iso); renderCalendarioRotina(); }
+    else { if(iso!==hoje) toast(iso<hoje?'⛔ O passado já fechou. Olhe o histórico, mas não tente refazer a missão.':'⛔ Essa missão ainda não chegou. Planeje se quiser, mas cumprir só no dia certo.'); diaRotinaSheet(iso); }
   });
   if(rotAddMode && $('#rotAddConfirm')) $('#rotAddConfirm').onclick=()=>adicionarAtividadeDiasSheet([...rotAddSel]);
   if(rotClearMode && $('#rotLimparConfirm')) $('#rotLimparConfirm').onclick=async()=>{
@@ -2798,7 +2817,8 @@ function renderCalendarioRotina(){
   };
 }
 function adicionarAtividadeDiasSheet(dias){
-  dias=[...new Set(dias)].sort();
+  const hoje=todayISO();
+  dias=[...new Set(dias)].filter(iso=>iso>=hoje).sort();
   if(!dias.length) return toast('Selecione pelo menos um dia no calendário.');
   openSheet(`<h3>Adicionar em ${dias.length} dia(s)</h3>
     <p class="small muted">A atividade será incluída somente nos dias selecionados.</p>
@@ -2836,7 +2856,7 @@ function ativarCampoHorario(id){
 function diaRotinaSheet(iso){
   const hoje=todayISO();
   const past=iso<hoje, isToday=iso===hoje;
-  const editable=S.config.editMode;
+  const editable=S.config.editMode&&!past;
   if(!S.rotinaDias) S.rotinaDias={};
   const acts=[...(S.rotinaDias[iso]||[])].sort((a,b)=>(a.hora||'~').localeCompare(b.hora||'~'));
   const dObj=new Date(iso+'T00:00:00');

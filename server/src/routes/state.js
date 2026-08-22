@@ -21,6 +21,75 @@ function mergeRotinaDias(atual, recebido) {
   return out;
 }
 
+const hojeBrasilia = () => new Intl.DateTimeFormat('en-CA', {
+  timeZone:'America/Sao_Paulo', year:'numeric', month:'2-digit', day:'2-digit',
+}).format(new Date());
+
+// Dados antigos continuam legíveis, mas uma gravação nova só pode declarar
+// execução no dia corrente. Isso impede adulteração por outro cliente/API.
+function protegerExecucaoPorData(chave, atual, recebido) {
+  const hoje=hojeBrasilia();
+  if (chave==='treino:logs'||chave==='estudo:logs') {
+    const antigos=Array.isArray(atual)?atual:[];
+    const permitidos=Array.isArray(recebido)?recebido:[];
+    return permitidos.filter(log=>log?.dateISO===hoje||antigos.some(a=>JSON.stringify(a)===JSON.stringify(log)));
+  }
+  if (chave==='alim:semana' && recebido && typeof recebido==='object') {
+    const out=structuredClone(recebido);
+    for (const [dia, refs] of Object.entries(out)) {
+      if (!Array.isArray(refs)) continue;
+      const antigos=new Map((Array.isArray(atual?.[dia])?atual[dia]:[]).map(r=>[r.id,r]));
+      refs.forEach(r=>{ if(r?.done&&r.done!==hoje) r.done=antigos.get(r.id)?.done||null; });
+    }
+    return out;
+  }
+  if (chave==='alim:agua' && recebido && typeof recebido==='object') {
+    const out={};
+    const antigo=atual&&typeof atual==='object'?atual:{};
+    for (const [dia, valor] of Object.entries(recebido)) {
+      if (dia===hoje) out[dia]=valor;
+      else if (Object.prototype.hasOwnProperty.call(antigo,dia)) out[dia]=antigo[dia];
+    }
+    for (const [dia, valor] of Object.entries(antigo)) if (dia!==hoje) out[dia]=valor;
+    return out;
+  }
+  if (chave==='alim:pesos' && Array.isArray(recebido)) {
+    const antigos=Array.isArray(atual)?atual:[];
+    return recebido.filter(reg=>reg?.dateISO===hoje||antigos.some(a=>JSON.stringify(a)===JSON.stringify(reg)));
+  }
+  if (chave==='treino:weeks' && Array.isArray(recebido)) {
+    const antigos=new Map((Array.isArray(atual)?atual:[]).map(w=>[w.id,w]));
+    const ordem=['seg','ter','qua','qui','sex','sab','dom'];
+    return structuredClone(recebido).map(semana=>{
+      const exec=semana?.exec&&typeof semana.exec==='object'?semana.exec:{};
+      const execAntigo=antigos.get(semana.id)?.exec||{};
+      for (const [dia, valor] of Object.entries(exec)) {
+        const idx=ordem.indexOf(dia), base=new Date(`${semana.startISO}T12:00:00Z`);
+        if (idx<0||Number.isNaN(base.getTime())) { delete exec[dia]; continue; }
+        base.setUTCDate(base.getUTCDate()+idx);
+        const iso=base.toISOString().slice(0,10);
+        if (iso!==hoje) {
+          if (Object.prototype.hasOwnProperty.call(execAntigo,dia)) exec[dia]=execAntigo[dia];
+          else delete exec[dia];
+        }
+      }
+      for (const [dia, valor] of Object.entries(execAntigo)) if (!Object.prototype.hasOwnProperty.call(exec,dia)) exec[dia]=valor;
+      semana.exec=exec;
+      return semana;
+    });
+  }
+  if (chave==='rotina:dias' && recebido && typeof recebido==='object') {
+    const out=structuredClone(recebido);
+    for (const [iso, atividades] of Object.entries(out)) {
+      if (!Array.isArray(atividades)||iso===hoje) continue;
+      const antigos=new Map((Array.isArray(atual?.[iso])?atual[iso]:[]).map(a=>[a.id,a]));
+      atividades.forEach(a=>{ a.done=!!antigos.get(a.id)?.done; });
+    }
+    return out;
+  }
+  return recebido;
+}
+
 async function recalcularXp(usuarioId) {
   const rows = await prisma.userState.findMany({
     where: { usuarioId, chave: { in: ['treino:logs', 'estudo:logs', 'alim:agua', 'rotina:dias', 'xp:bonus'] } },
@@ -103,6 +172,7 @@ stateRouter.put('/:chave', async (req, res) => {
   if (req.params.chave === 'rotina:dias') {
     valor = mergeRotinaDias(atual?.valor, valor);
   }
+  valor = protegerExecucaoPorData(req.params.chave, atual?.valor, valor);
   await prisma.userState.upsert({
     where: { usuarioId_chave: { usuarioId: req.userId, chave: req.params.chave } },
     update: { valor, versao: versaoRecebida },
