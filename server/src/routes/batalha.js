@@ -9,7 +9,7 @@ import { enviarPush } from '../lib/push.js';
 export const batalhaRouter = Router();
 batalhaRouter.use(exigirAuth);
 
-const pubSel = { id: true, username: true, nomeGuerra: true, fotoUrl: true, genero: true, privado: true, xp: true, isAdmin:true };
+const pubSel = { id: true, username: true, nomeGuerra: true, bio:true, fotoUrl: true, genero: true, privado: true, xp: true, isAdmin:true };
 
 async function notificar(usuarioId, tipo, texto, deUsername, alvoPostId, alvoCommentId = null) {
   if (!usuarioId) return;
@@ -251,7 +251,7 @@ batalhaRouter.get('/perfil/:username', async (req, res) => {
     include: { usuario: { select: pubSel }, likes: { select: { usuarioId: true } }, _count: { select: { comentarios: true } } },
   }) : [];
   res.json({
-    usuario: { id: u.id, username: u.username, nomeGuerra: u.nomeGuerra, fotoUrl: u.fotoUrl, genero: u.genero, privado: u.privado, idade: u.idade, pesoKg: u.pesoKg, alturaCm: u.alturaCm, xp: u.xp, patente: rankOf(u.xp).id, patenteNome: rankOf(u.xp).name, recordes: null },
+    usuario: { id: u.id, username: u.username, nomeGuerra: u.nomeGuerra, bio:u.bio, fotoUrl: u.fotoUrl, genero: u.genero, privado: u.privado, idade: u.idade, pesoKg: u.pesoKg, alturaCm: u.alturaCm, xp: u.xp, patente: rankOf(u.xp).id, patenteNome: rankOf(u.xp).name, recordes: null },
     seguidores, seguindo, isEu, isSeguindo: !!sigoEu, euBloqueei: !!blkEu, meBloqueou, podeVer: podeVer && !meBloqueou, posts,
   });
 });

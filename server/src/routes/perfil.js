@@ -11,6 +11,7 @@ perfilRouter.use(exigirAuth);
 
 const editSchema = z.object({
   nomeGuerra: z.string().trim().min(1).max(40).optional(),
+  bio: z.string().trim().max(160).nullable().optional(),
   username: z.string().regex(/^[a-z0-9_]{3,20}$/).optional(),
   idade: z.number().int().min(5).max(100).optional(),
   dataNasc: z.string().nullable().optional(),

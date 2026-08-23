@@ -1,6 +1,6 @@
 # REDZONE (ex-DISCIPLINA) — Status atual e roadmap (ponto de retomada)
 
-**Versão no ar: v104** — seleção de mensagens por toque prolongado estabilizada; Voltar do celular agora age como Esc e fecha uma camada por vez.
+**Versão no ar: v105** — contraste e espaçamento revisados, semanas vazias removidas do histórico, bio pública e sons separados por categoria; feed sincroniza sem botão Atualizar.
 
 > Documento vivo pra QUALQUER sessão continuar sem perder contexto. Se o chat
 > zerar, leia isto + `docs/07`, `08`, `09` e os arquivos de memória.

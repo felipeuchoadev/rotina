@@ -19,6 +19,7 @@ model Usuario {
   senhaHash  String
   username   String   @unique
   nomeGuerra String
+  bio        String?  @db.VarChar(160)
   fotoUrl    String?  // dataURL ou URL de upload
   idade      Int?
   dataNasc   DateTime?

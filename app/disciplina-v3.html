@@ -123,7 +123,7 @@ a{color:var(--accent2);}
 /* Cards */
 .card{background:var(--surface); border:1px solid var(--line); border-radius:18px; padding:16px; margin:12px 0; box-shadow:0 12px 28px -22px rgba(0,0,0,.6);}
 .card h2{font-weight:800; font-size:18px;}
-.section-title{font-weight:800; font-size:15px; color:var(--text-dim); margin:22px 2px 12px; letter-spacing:.01em;}
+.section-title{font-weight:800; font-size:15px; color:var(--text); margin:24px 2px 14px; letter-spacing:.01em;line-height:1.35}
 .card .h{font-size:12.5px; color:var(--text-dim); font-weight:700; margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;}
 .muted{color:var(--text-dim);}
 .small{font-size:14px;}
@@ -168,13 +168,15 @@ textarea.auto{resize:none; overflow:hidden; min-height:48px;}
 .err{color:var(--danger); font-size:13.5px; margin-top:6px; min-height:1px;}
 
 /* Planilha / linhas com check */
-.rowitem{display:flex; align-items:center; gap:13px; padding:14px; border:1px solid var(--line); border-radius:16px; margin:10px 0; background:var(--surface);}
+.rowitem{display:flex; align-items:center; gap:13px; padding:14px; border:1px solid var(--line); border-radius:16px; margin:10px 0; background:var(--surface); color:var(--text); line-height:1.4;}
+button.rowitem{width:100%;text-align:left;font:inherit}
 .rowitem .chk{width:30px; height:30px; border-radius:10px; border:2px solid var(--line); flex:0 0 30px; display:flex; align-items:center; justify-content:center; font-size:17px; color:#fff;}
 .rowitem.done{border-color:var(--ok); background:color-mix(in srgb,var(--ok) 8%, var(--surface));}
 .rowitem.done .chk{background:var(--ok); border-color:var(--ok);}
 .rowitem .txt{flex:1; min-width:0;}
-.rowitem .txt .t{font-weight:700; font-size:15.5px;}
-.rowitem .txt .s{font-size:13px; color:var(--text-dim);}
+.rowitem .txt .t{font-weight:700; font-size:15.5px; color:var(--text); line-height:1.35;}
+.rowitem .txt .s{font-size:13px; color:var(--text-dim); line-height:1.45; margin-top:3px;}
+.profile-bio{margin:12px 2px;color:var(--text);line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
 .pencil{opacity:.8; font-size:16px; padding:6px 9px; border-radius:10px; background:rgba(255,255,255,.05); border:1px solid var(--line);}
 
 /* Dias da semana */
@@ -230,7 +232,7 @@ textarea.auto{resize:none; overflow:hidden; min-height:48px;}
 .week-history summary::-webkit-details-marker{display:none}.week-history summary .hist-ico{font-size:23px}.week-history summary .hist-count{margin-left:auto;color:var(--text-dim);font-size:13px}.week-history summary::after{content:'⌄';font-size:20px;transition:transform .2s}.week-history[open] summary::after{transform:rotate(180deg)}
 .week-history-list{padding:0 12px 12px}.week-history-row{display:flex;align-items:center;gap:12px;width:100%;padding:13px;border:1px solid var(--line);border-radius:14px;background:var(--surface2);color:var(--text);text-align:left;margin-top:8px;cursor:pointer}.week-history-row:hover{border-color:var(--accent)}
 .week-history-row .wh-status{width:38px;height:38px;display:grid;place-items:center;border-radius:12px;background:color-mix(in srgb,var(--accent) 12%,var(--surface));font-weight:900}.week-history-row.perfect .wh-status{background:color-mix(in srgb,var(--ok) 20%,var(--surface));color:var(--ok)}.week-history-row .wh-copy{flex:1;min-width:0}.week-history-row .wh-copy b,.week-history-row .wh-copy span{display:block}.week-history-row .wh-copy span{font-size:12px;color:var(--text-dim);margin-top:3px}.week-history-row .wh-score{font-weight:900;color:var(--text-dim)}
-.proof-source-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:12px 0}.proof-source-grid button{min-height:76px;padding:10px 7px}.proof-source-grid button span{display:block;font-size:23px;margin-bottom:5px}.proof-source-grid button small{display:block;white-space:normal;line-height:1.2}
+.proof-source-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:12px 0}.proof-source-grid button{min-height:76px;padding:10px 7px;color:var(--text)}.proof-source-grid button span{display:block;font-size:23px;margin-bottom:5px}.proof-source-grid button small{display:block;white-space:normal;line-height:1.35;color:var(--text-dim)}
 .week-session-summary{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin:10px 0 14px}.week-session-summary>div{padding:13px;border:1px solid var(--line);border-radius:14px;background:var(--surface2);text-align:center}.week-session-summary b{display:block;font-size:18px;margin-top:4px}.week-proof-grid{display:flex;gap:7px;flex-wrap:wrap;margin-top:8px}.week-proof-grid .rec-cell{width:58px;height:58px;flex:0 0 58px}
 .record-table{padding:4px 18px}.record-line{display:grid;grid-template-columns:minmax(0,1fr) auto auto;align-items:center;gap:14px;min-height:62px;border-bottom:1px solid var(--line)}.record-line:last-child{border-bottom:0}.record-line .record-name{font-size:17px}.record-line .record-value{text-align:right;font-size:20px;font-weight:900;color:var(--ok);white-space:nowrap}.record-line .record-value small{font-size:12px;color:var(--text-dim);font-weight:700;margin-left:4px}.record-actions{display:flex;gap:5px}.record-history-title{margin:22px 2px 10px}.record-history{padding:0 18px}.record-history details{border-bottom:1px solid var(--line)}.record-history details:last-child{border-bottom:0}.record-history summary{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:14px;min-height:62px;cursor:pointer;list-style:none}.record-history summary::-webkit-details-marker{display:none}.record-history summary b:last-child{color:var(--text-dim)}.record-history-rows{padding:0 0 10px 18px}.record-history-row{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:12px;padding:10px 0;border-top:1px solid var(--line);color:var(--text-dim)}.record-history-row strong{color:var(--text)}
 @media(min-width:900px){.section-title{font-size:20px}.rowitem{padding:17px}.rowitem .txt .t{font-size:17px}.week-head h3{font-size:18px}.proof-source-grid button{font-size:15px}}
@@ -713,7 +715,7 @@ setInterval(()=>{ if(authToken&&offQueue().length&&navigator.onLine) flushQueue(
 
 /* id único DESTE aparelho/aba — usado pra não ecoar de volta a própria escrita no sync ao vivo */
 const CLIENT_ID = (Math.random().toString(36).slice(2)+'-'+Date.now().toString(36));
-const APP_BUILD = 'redzone-v104';
+const APP_BUILD = 'redzone-v105';
 // evita re-render que rouba o foco enquanto a pessoa digita (o dado já foi aplicado em S de qualquer forma)
 function _syncPodeRender(){ const a=document.activeElement; return !(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||'')); }
 // ANTI-LOOP: ao aplicar uma mudança que VEIO do servidor, um re-render pode disparar escritas de
@@ -1049,7 +1051,7 @@ async function saveProfile(){
   if(_syncBusy()) return;   // veio do servidor agora → não reescreve (anti-loop)
   const p=S.profile;
   try{ await api('/perfil',{method:'PATCH',body:{ nomeGuerra:p.nome, username:p.username, idade:p.idade,
-    pesoKg:p.peso, alturaCm:p.altura, fotoUrl:p.foto, tema:p.tema, metaAgua:p.metaAgua, xp:computeXP(), clientId:CLIENT_ID }}); }
+    pesoKg:p.peso, alturaCm:p.altura, fotoUrl:p.foto, bio:p.bio||'', tema:p.tema, metaAgua:p.metaAgua, xp:computeXP(), clientId:CLIENT_ID }}); }
   catch(e){ console.error(e); }
   await Store.set('perfil:dados',{nome:p.nome,username:p.username,peso:p.peso,altura:p.altura});
 }
@@ -1059,6 +1061,7 @@ function applyRemoteProfile(u){
   const before=JSON.stringify(S.profile);
   S.profile.nome=u.nomeGuerra ?? S.profile.nome;
   S.profile.username=u.username ?? S.profile.username;
+  S.profile.bio=u.bio ?? S.profile.bio ?? '';
   S.profile.foto=(u.fotoUrl!==undefined)?u.fotoUrl:S.profile.foto;
   S.profile.genero=u.genero ?? S.profile.genero;
   S.profile.tema=u.tema ?? S.profile.tema;
@@ -2066,7 +2069,7 @@ function renderTreinoWeeks(){
     const concluida = !locked && done>=7;            // ✅ SÓ quando treinou os 7 dias
     const encerrada = !locked && !concluida && end<=now;   // janela passou mas NÃO fez tudo
     const meta={w,i,start,end,locked,diasFeitos,done,concluida,encerrada};
-    if(locked) futuras.push(meta); else if(end<=now) passadas.push(meta); else atuais.push(meta);
+    if(locked) futuras.push(meta); else if(end<=now){ if(done>0) passadas.push(meta); } else atuais.push(meta);
   });
   let h='';
   atuais.forEach(({w,i,diasFeitos,done})=>{
@@ -3213,13 +3216,12 @@ async function renderBatalha(){
         <div class="who"><div class="n">${esc(e.nomeGuerra)}</div><div class="u">@${esc(e.username)} • ${r.name}</div></div>
         <div class="xp">${(e.xp||0).toLocaleString('pt-BR')}</div></div>`;
     }).join(''):'<p class="muted small">Sem soldados no ranking ainda.</p>'}</div>
-    <div class="section-title" style="display:flex;align-items:center;justify-content:space-between">Feed <button class="btn sm ghost" id="refreshFeed" style="padding:6px 12px">↻ Atualizar</button></div>
+    <div class="section-title">Feed</div>
     <div id="feed" data-top="${feed[0]?.id||0}" data-count="${feed.length}">${feed.length?feed.map(feedPostHTML).join(''):'<p class="muted small">Sem publicações. Seja o primeiro a mostrar serviço.</p>'}</div>
     ${feed.length>=feedLote()?'<button class="btn ghost" id="maisFeed">Carregar mais publicações</button>':''}
   `;
   $('#novoPost').onclick=()=>composePost();
   $('#genPost').onclick=gerarPublicacaoDoDia;
-  $('#refreshFeed').onclick=pullRefreshFeed;
   $('#sinoBtn').onclick=abrirNotificacoes;
   $('#dmBtn').onclick=abrirDMs;
   $('#abrirBusca').onclick=buscarPessoasSheet;
@@ -3233,6 +3235,18 @@ async function carregarMaisFeed(){
   const box=$('#feed'), btn=$('#maisFeed'); if(!box||!btn)return; const offset=+(box.dataset.count||0); btn.disabled=true; btn.textContent='Carregando…';
   try{ const novos=await api(`/batalha/feed?limite=${feedLote()}&offset=${offset}`); if(novos.length){ box.insertAdjacentHTML('beforeend',novos.map(feedPostHTML).join('')); box.dataset.count=offset+novos.length; bindFeedActions(); bindFeedVideos(); } if(novos.length<feedLote()) btn.remove(); else {btn.disabled=false;btn.textContent='Carregar mais publicações';} }
   catch{ btn.disabled=false;btn.textContent='Tentar carregar novamente'; toast('Não foi possível carregar mais.'); }
+}
+async function atualizarFeedAoVivo(){
+  if(activeTab!=='batalha'||!$('#feed')) return;
+  const y=window.scrollY;
+  try{
+    const feed=await api(`/batalha/feed?limite=${feedLote()}`);
+    const box=$('#feed'); if(!box) return;
+    box.innerHTML=feed.length?feed.map(feedPostHTML).join(''):'<p class="muted small">Sem publicações. Seja o primeiro a mostrar serviço.</p>';
+    box.dataset.top=feed[0]?.id||0; box.dataset.count=feed.length;
+    bindFeedActions(); bindFeedVideos();
+    requestAnimationFrame(()=>window.scrollTo({top:y,behavior:'instant'}));
+  }catch{}
 }
 async function abrirDMs(){
   openSheet('<button class="sheet-close" onclick="closeSheet()">×</button><p class="muted" style="padding:20px 0">Carregando…</p>');
@@ -3497,6 +3511,7 @@ async function abrirPerfil(username){
         <div style="display:flex;align-items:center;gap:8px;margin-top:5px">${insignia(r.id,'insignia sm')}<span class="patente-name" style="font-size:15px">${r.name}</span></div>
       </div>
     </div>
+    ${u.bio?`<div class="profile-bio">${esc(u.bio)}</div>`:''}
     <div style="display:flex;gap:20px;margin:12px 2px">
       <div><b style="font-weight:800;font-size:17px">${d.posts.length}</b> <span class="muted small">posts</span></div>
       <button class="social-count" data-social-list="seguidores" style="border:0;background:none;color:var(--text);padding:0;cursor:pointer"><b style="font-weight:800;font-size:17px">${d.seguidores}</b> <span class="muted small">seguidores</span></button>
@@ -3838,6 +3853,7 @@ function renderPerfilConta(){
       <div class="h">Dados pessoais <button id="trocarFoto" style="background:color-mix(in srgb,var(--accent) 20%, transparent); color:var(--accent2); border:1px solid color-mix(in srgb,var(--accent) 50%, transparent); border-radius:10px; padding:7px 13px; font-weight:800; font-size:13px; cursor:pointer">✏️ Foto</button></div>
       <div class="field"><label>Nome de guerra</label><input id="pfNome" value="${esc(p.nome)}"></div>
       <div class="field"><label>Username (único)</label><input id="pfUser" value="${esc(p.username)}"></div>
+      <div class="field"><label>Bio do perfil</label><textarea id="pfBio" maxlength="160" placeholder="Conte um pouco sobre você…">${esc(p.bio||'')}</textarea><div class="small muted" style="text-align:right;margin-top:4px"><span id="pfBioCount">${String(p.bio||'').length}</span>/160</div></div>
       <div class="field"><label>E-mail</label><input value="${esc(p.email)}" disabled></div>
       <div class="field"><label>Data de nascimento</label><input id="pfNasc" type="date" value="${esc(p.dataNasc||'')}"></div>
       <div class="field"><label>Gênero</label><select id="pfGenero"><option value="m" ${p.genero==='f'?'':'selected'}>Masculino</option><option value="f" ${p.genero==='f'?'selected':''}>Feminino</option></select></div>
@@ -3849,10 +3865,11 @@ function renderPerfilConta(){
       <button class="btn" id="pfSave">Salvar alterações</button>
     </div>`;
   $('#trocarFoto').onclick=fotoSheet;
+  $('#pfBio').oninput=e=>$('#pfBioCount').textContent=e.target.value.length;
   $('#pfSave').onclick=async()=>{
     const err=$('#pfErr'); const nome=$('#pfNome').value.trim();
     const username=$('#pfUser').value.trim().toLowerCase().replace(/\s+/g,'_');
-    const dataNasc=$('#pfNasc').value; const idade=idadeDe(dataNasc); const peso=parsePeso($('#pfPeso').value); const altura=parseAltura($('#pfAltura').value);
+    const bio=$('#pfBio').value.trim(); const dataNasc=$('#pfNasc').value; const idade=idadeDe(dataNasc); const peso=parsePeso($('#pfPeso').value); const altura=parseAltura($('#pfAltura').value);
     const genero=$('#pfGenero')?.value||p.genero||'m';
     if(!nome) return err.textContent='Nome de guerra vazio.';
     if(!/^[a-z0-9_]{3,20}$/.test(username)) return err.textContent='Username inválido.';
@@ -3860,8 +3877,8 @@ function renderPerfilConta(){
     if(!(peso>0)) return err.textContent='Peso inválido (ex: 89,50).';
     if(!(altura>0)) return err.textContent='Altura inválida (ex: 176 ou 1,76).';
     const salvar=async(senhaConfirmacao=null)=>{ try{
-      await api('/perfil',{method:'PATCH',body:{ nomeGuerra:nome, username, idade, dataNasc, genero, pesoKg:peso, alturaCm:altura, metaAgua:Math.round(peso*35), senhaConfirmacao }});
-      p.nome=nome; p.username=username; p.idade=idade; p.dataNasc=dataNasc; p.genero=genero; p.peso=peso; p.altura=altura; p.metaAgua=Math.round(peso*35); currentUser=username;
+      await api('/perfil',{method:'PATCH',body:{ nomeGuerra:nome, username, bio, idade, dataNasc, genero, pesoKg:peso, alturaCm:altura, metaAgua:Math.round(peso*35), senhaConfirmacao }});
+      p.nome=nome; p.username=username; p.bio=bio; p.idade=idade; p.dataNasc=dataNasc; p.genero=genero; p.peso=peso; p.altura=altura; p.metaAgua=Math.round(peso*35); currentUser=username;
       err.textContent=''; closeSheet(); toast('Identidade e dados atualizados. 🪖'); renderPerfil();
     }catch(e){ const msg=e.data?.erro||'Falha ao salvar.'; if($('#idErr')) $('#idErr').textContent=msg; else err.textContent=msg; } };
     const mudouIdentidade=nome.toLowerCase()!==String(p.nome||'').toLowerCase()||username!==p.username;
@@ -3884,7 +3901,7 @@ function renderPerfilConfig(){
       <div class="h">Notificações & Modo Try Hard</div>
       <label class="rowitem"><input type="checkbox" id="cfNotif" ${c.notif?'checked':''} style="width:24px;height:24px"><div class="txt"><div class="t">Permitir notificações</div><div class="s">Lembretes no horário dos hábitos.</div></div></label>
       <label class="rowitem"><input type="checkbox" id="cfTry" ${c.tryHard?'checked':''} style="width:24px;height:24px"><div class="txt"><div class="t">Modo Try Hard 🔥</div><div class="s">Aqui o bicho pega: o app floda notificação e alarme SEM PARAR até você cumprir. Desligado, ele ainda cobra — só que na metade da intensidade.</div></div></label>
-      <div class="rowitem" id="cfSomNotif" style="cursor:pointer"><div class="txt"><div class="t">🔔 Som das notificações</div><div class="s">Use o som padrão ou envie o seu próprio áudio.</div></div><span class="muted" style="font-size:20px">›</span></div>
+      <div class="rowitem" id="cfSomNotif" style="cursor:pointer"><div class="txt"><div class="t">🔔 Sons das notificações</div><div class="s">Escolha sons diferentes para mensagens, lembretes, interações e avisos.</div></div><span class="muted" style="font-size:20px">›</span></div>
       <div class="rowitem" id="cfTryOpts" style="cursor:pointer"><div class="txt"><div class="t">⚙️ Opções do Try Hard</div><div class="s">Sirene do alarme, vibração e intervalo das cobranças.</div></div><span class="muted" style="font-size:20px">›</span></div>
     </div>
     <div class="card">
@@ -3988,8 +4005,10 @@ function renderPerfilTemas(){
 ========================================================================= */
 function notify(title,body,alvo,comSom){ if(!S?.config?.notif) return; if(comSom) tocarSomNotif(); if('Notification' in window && Notification.permission==='granted'){ try{ const n=new Notification(title,{body, icon:'icon-192.png'}); n.onclick=()=>{ try{ window.focus(); }catch(e){} try{ if(alvo){ if(alvo[0]==='#'){ location.hash=alvo; if(typeof handleDeepLink==='function') handleDeepLink(); } else go(alvo); } }catch(e){} n.close(); }; }catch(e){} } }
 function tryOpts(){ if(!S.config.tryOpts) S.config.tryOpts={som:'alarme', vibrar:true, intervaloS:20, treguaS:60, somNotif:true}; return S.config.tryOpts; }
+const NOTIF_CATS=[['mensagens','Mensagens'],['lembretes','Lembretes'],['social','Curtidas e comentários'],['sistema','Avisos do REDZONE']];
+function sonsNotif(){const o=tryOpts();if(!o.sonsNotif){o.sonsNotif={};NOTIF_CATS.forEach(([k])=>o.sonsNotif[k]={ativo:o.somNotif!==false,url:o.somNotifCustom||null});}return o.sonsNotif;}
 // som que toca em CADA notificação do app (personalizável pela pessoa)
-function tocarSomNotif(){ const o=tryOpts(); if(o.somNotif===false) return; if(o.somNotifCustom){ try{ const a=new Audio(o.somNotifCustom); a.volume=1; a.play().catch(()=>{}); }catch(e){} } else { tocarSom('sino'); } }
+function tocarSomNotif(tipo='lembretes'){ const o=tryOpts(),c=sonsNotif()[tipo]||sonsNotif().lembretes; if(o.somNotif===false||c?.ativo===false)return; if(c?.url){try{const a=new Audio(c.url);a.volume=1;a.play().catch(()=>{});}catch(e){}}else tocarSom('sino'); }
 // motor de som (WebAudio) — sons diferentes; 'alarme' é a sirene chata do Try Hard
 let _actx=null; function audioCtx(){ try{ _actx=_actx||new (window.AudioContext||window.webkitAudioContext)(); if(_actx.state==='suspended') _actx.resume(); return _actx; }catch(e){ return null; } }
 function tocarSom(tipo){
@@ -4088,29 +4107,10 @@ function startTryHard(){
 }
 // Som das notificações — a pessoa escolhe o padrão ou envia o próprio áudio
 function somNotificacaoSheet(){
-  const o=tryOpts();
-  openSheet(`<h3>🔔 Som das notificações</h3>
-    <p class="small muted">O som que toca em cada aviso do app (horário de hábito, mensagem, etc.).</p>
-    <label class="rowitem" style="cursor:pointer"><input type="checkbox" id="snLigado" ${o.somNotif!==false?'checked':''} style="width:22px;height:22px"><div class="txt"><div class="t">Tocar som nas notificações</div></div></label>
-    <div class="field"><label>Áudio atual</label>
-      <div style="display:flex;gap:8px;align-items:center">
-        <div class="txt" style="flex:1"><div class="t" id="snNome">${o.somNotifCustom?'Seu áudio personalizado':'Sino (padrão)'}</div></div>
-        <button class="btn sm ghost" id="snTest">▶ testar</button>
-        <button class="btn sm ghost" id="snStop">⏹</button>
-      </div>
-      <div style="display:flex;gap:8px;margin-top:8px">
-        <button class="btn sm ghost" id="snUpload" style="flex:1">🎵 Enviar meu áudio</button>
-        ${o.somNotifCustom?`<button class="btn sm ghost" id="snPadrao" style="flex:1">↩️ Voltar pro padrão</button>`:''}
-      </div>
-      <p class="s muted" style="font-size:12px;margin-top:6px">Aceita MP3, WAV, etc. (o som toca com o app aberto).</p></div>
-    <button class="btn" id="snSalvar">Salvar</button>`);
-  let custom=o.somNotifCustom||null;
-  const testA=()=>{ const a=new Audio(custom||'siren.mp3'); if(!custom){ a.src=''; a.remove?.(); tocarSom('sino'); return; } a.volume=1; a.play().catch(()=>{}); window._snTest=a; };
-  $('#snTest').onclick=(e)=>{ e.preventDefault(); if(window._snTest){try{window._snTest.pause();}catch(x){}} if(custom){ const a=new Audio(custom); a.volume=1; a.play().catch(()=>{}); window._snTest=a; } else tocarSom('sino'); };
-  $('#snStop').onclick=(e)=>{ e.preventDefault(); if(window._snTest){try{window._snTest.pause();window._snTest.currentTime=0;}catch(x){}} };
-  $('#snUpload').onclick=async(e)=>{ e.preventDefault(); const f=await escolherMidia('audio/*'); if(!f) return; toast('Enviando áudio…'); try{ const up=await uploadMedia(f); custom=up.url; $('#snNome').textContent='Seu áudio personalizado'; toast('Áudio carregado. Toque em ▶ testar.'); }catch(err){ toast('Falha ao enviar o áudio.'); } };
-  if($('#snPadrao')) $('#snPadrao').onclick=(e)=>{ e.preventDefault(); custom=null; $('#snNome').textContent='Sino (padrão)'; toast('Voltou pro som padrão.'); };
-  $('#snSalvar').onclick=()=>{ const o2=tryOpts(); o2.somNotif=$('#snLigado').checked; o2.somNotifCustom=custom; save('config'); closeSheet(); toast('Som das notificações salvo.'); };
+  const sons=JSON.parse(JSON.stringify(sonsNotif()));
+  openSheet(`<h3>🔔 Sons das notificações</h3><p class="small muted">Personalize cada tipo de aviso. Sem áudio escolhido, toca o sino padrão.</p>${NOTIF_CATS.map(([k,n])=>`<div class="rowitem" data-som-cat="${k}"><input type="checkbox" data-som-on ${sons[k]?.ativo!==false?'checked':''} style="width:22px;height:22px"><div class="txt"><div class="t">${n}</div><div class="s" data-som-nome>${sons[k]?.url?'Áudio personalizado':'Sino padrão'}</div></div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end"><button class="btn sm ghost" data-som-test>▶</button><button class="btn sm ghost" data-som-upload>Escolher</button><button class="btn sm ghost" data-som-reset>Redefinir</button></div></div>`).join('')}<button class="btn" id="snSalvar">Salvar sons</button>`);
+  $$('#sheet [data-som-cat]').forEach(row=>{const k=row.dataset.somCat;$('[data-som-test]',row).onclick=()=>{if(sons[k]?.url){const a=new Audio(sons[k].url);a.volume=1;a.play().catch(()=>{});}else tocarSom('sino');};$('[data-som-upload]',row).onclick=async()=>{const f=await escolherMidia('audio/*');if(!f)return;toast('Comprimindo e enviando áudio…');try{const up=await uploadMedia(f);sons[k].url=up.url;$('[data-som-nome]',row).textContent='Áudio personalizado';toast('Som escolhido.');}catch{toast('Não foi possível enviar este áudio.');}};$('[data-som-reset]',row).onclick=()=>{sons[k].url=null;$('[data-som-nome]',row).textContent='Sino padrão';};});
+  $('#snSalvar').onclick=()=>{const o=tryOpts();$$('#sheet [data-som-cat]').forEach(row=>sons[row.dataset.somCat].ativo=$('[data-som-on]',row).checked);o.sonsNotif=sons;o.somNotif=true;save('config');closeSheet();toast('Sons salvos por categoria.');};
 }
 function tryHardOpcoesSheet(){
   const o=tryOpts();
@@ -4138,7 +4138,7 @@ function tryHardOpcoesSheet(){
   $('#thPararTest').onclick=(e)=>{ e.preventDefault(); if(window._thTest){try{window._thTest.pause();window._thTest.currentTime=0;}catch(x){}} };
   $('#thUpload').onclick=async(e)=>{ e.preventDefault(); const f=await escolherMidia('audio/*'); if(!f) return; toast('Enviando som…'); try{ const up=await uploadMedia(f); somCustom=up.url; $('#thSomNome').textContent='Som personalizado'; toast('Som carregado. Toque em ▶ testar.'); }catch(err){ toast('Falha ao enviar o som.'); } };
   if($('#thPadrao')) $('#thPadrao').onclick=(e)=>{ e.preventDefault(); somCustom=null; $('#thSomNome').textContent='Sirene de polícia (padrão)'; toast('Voltou pro som padrão.'); };
-  $('#thSalvar').onclick=()=>{ sirenStop(); S.config.tryOpts={ som:o.som||'alarme', somCustom, vibrar:$('#thVibrar').checked, somNotif:$('#thSomNotif').checked, intervaloS:+$('#thInt').value, treguaS:0 }; save('config'); _siren=null; _sirenSrc=null; startTryHard(); closeSheet(); toast('Opções salvas.'); };
+  $('#thSalvar').onclick=()=>{ sirenStop(); S.config.tryOpts={ ...o, som:o.som||'alarme', somCustom, vibrar:$('#thVibrar').checked, somNotif:$('#thSomNotif').checked, intervaloS:+$('#thInt').value, treguaS:0 }; save('config'); _siren=null; _sirenSrc=null; startTryHard(); closeSheet(); toast('Opções salvas.'); };
 }
 
 /* =========================================================================
@@ -4238,11 +4238,11 @@ function connectSocket(){
       window.addEventListener('pagehide',()=>_socket?.emit('presence:inactive'));
       window.addEventListener('pageshow',atualizarMinhaPresenca);
     }
-    _socket.on('post:novo',()=>{ if(activeTab==='batalha') toast('Nova publicação no feed. Toque em ↻ Atualizar quando quiser ver.'); });
+    _socket.on('post:novo',()=>{ if(activeTab==='batalha') atualizarFeedAoVivo(); });
     _socket.on('post:like',d=>{ if(!d)return; $$(`[data-post="${d.postId}"] [data-like]`).forEach(el=>{ const n=$('b',el); if(n)n.textContent=d.total; }); });
     _socket.on('post:comentario',d=>{ if(!d||d.total==null)return; $$(`[data-post="${d.postId}"] [data-comment]`).forEach(el=>{ const n=$('b',el); if(n)n.textContent=d.total; }); });
-    _socket.on('notif:nova',()=>{ const btn=$('#sinoBtn'); if(!btn)return; let b=$('.notif-badge',btn); if(!b){b=document.createElement('span');b.className='notif-badge';btn.appendChild(b);} const n=Math.min(99,(parseInt(b.textContent)||0)+1); b.textContent=n>9?'9+':n; });
-    _socket.on('aviso:novo',()=>checarAvisosAdmin());
+    _socket.on('notif:nova',()=>{ tocarSomNotif('social'); const btn=$('#sinoBtn'); if(!btn)return; let b=$('.notif-badge',btn); if(!b){b=document.createElement('span');b.className='notif-badge';btn.appendChild(b);} const n=Math.min(99,(parseInt(b.textContent)||0)+1); b.textContent=n>9?'9+':n; });
+    _socket.on('aviso:novo',()=>{tocarSomNotif('sistema');checarAvisosAdmin();});
     // SYNC AO VIVO ponta a ponta: mudou num aparelho → reflete nos outros na hora (sem F5)
     _socket.on('state:changed', (d)=>{ if(!d || d.src===CLIENT_ID) return; applyRemoteState(d.chave, d.valor,d.versao); });
     _socket.on('profile:changed', (d)=>{ if(!d || d.src===CLIENT_ID) return; applyRemoteProfile(d.usuario); });
@@ -4258,6 +4258,7 @@ function connectSocket(){
         $('#chatMsgs').scrollTop=$('#chatMsgs').scrollHeight;
         api('/dm/'+encodeURIComponent(_chatUser)).then(atualizarBadgeDM).catch(()=>{}); limparNotifDM(_chatUser);
       } else {
+        tocarSomNotif('mensagens');
         toast('💬 '+nome+': '+(m.texto||'Enviou uma mídia').slice(0,40));
         atualizarBadgeDM();
       }

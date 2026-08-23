@@ -206,7 +206,7 @@ authRouter.get('/me', exigirAuth, async (req, res) => {
 // Remove o hash de senha antes de mandar pro cliente
 function publico(u) {
   return {
-    id: u.id, email: u.email, username: u.username, nomeGuerra: u.nomeGuerra,
+    id: u.id, email: u.email, username: u.username, nomeGuerra: u.nomeGuerra, bio: u.bio,
     fotoUrl: u.fotoUrl, idade: u.idade, dataNasc: u.dataNasc, genero: u.genero, pesoKg: u.pesoKg, alturaCm: u.alturaCm,
     metaAgua: u.metaAgua, tema: u.tema, xp: u.xp, privado: u.privado, criadoEm: u.criadoEm,
     isAdmin: !!u.isAdmin,
