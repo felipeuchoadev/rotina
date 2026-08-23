@@ -1,6 +1,6 @@
 # REDZONE (ex-DISCIPLINA) — Status atual e roadmap (ponto de retomada)
 
-**Versão no ar: v106** — toque fora fecha camadas como Esc; inscrições push são renovadas e lembretes da rotina passam a ser enviados pelo servidor mesmo com o app fechado.
+**Versão no ar: v107** — atualizações automáticas agora são silenciosas, rápidas e preservam aba, rolagem e rascunho, sem avisos na tela.
 
 > Documento vivo pra QUALQUER sessão continuar sem perder contexto. Se o chat
 > zerar, leia isto + `docs/07`, `08`, `09` e os arquivos de memória.

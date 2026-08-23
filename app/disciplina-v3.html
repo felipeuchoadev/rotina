@@ -715,7 +715,7 @@ setInterval(()=>{ if(authToken&&offQueue().length&&navigator.onLine) flushQueue(
 
 /* id único DESTE aparelho/aba — usado pra não ecoar de volta a própria escrita no sync ao vivo */
 const CLIENT_ID = (Math.random().toString(36).slice(2)+'-'+Date.now().toString(36));
-const APP_BUILD = 'redzone-v106';
+const APP_BUILD = 'redzone-v107';
 // evita re-render que rouba o foco enquanto a pessoa digita (o dado já foi aplicado em S de qualquer forma)
 function _syncPodeRender(){ const a=document.activeElement; return !(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||'')); }
 // ANTI-LOOP: ao aplicar uma mudança que VEIO do servidor, um re-render pode disparar escritas de
@@ -4174,12 +4174,12 @@ function closeSheet(fromPop=false){ $$('#sheet video').forEach(v=>{try{v.pause()
 function executarAtualizacaoApp(){
   if(window.__appReloading)return;window.__appReloading=true;salvarPosicaoAtual();
   try{sessionStorage.setItem('rz:reloadAt',String(Date.now()));if(_chatUser){sessionStorage.setItem('rz:dm:draft:'+_chatUser,$('#chatTxt')?.value||'');location.hash='dm='+encodeURIComponent(_chatUser);}}catch(e){}
-  try{toast('🔄 REDZONE atualizado. Mantendo você no mesmo lugar…');}catch(e){}
-  setTimeout(()=>location.reload(),350);
+  // Atualização deliberadamente silenciosa: mantém aba, rolagem e rascunho sem interromper o usuário.
+  setTimeout(()=>location.reload(),60);
 }
 function solicitarAtualizacaoApp(){
   if(window.__appReloading)return;
-  if($('#overlay')?.classList.contains('show')){window.__appUpdatePending=true;try{toast('🔄 Atualização pronta — será aplicada ao fechar esta janela.');}catch(e){}return;}
+  if($('#overlay')?.classList.contains('show')){window.__appUpdatePending=true;return;}
   executarAtualizacaoApp();
 }
 
