@@ -713,7 +713,7 @@ setInterval(()=>{ if(authToken&&offQueue().length&&navigator.onLine) flushQueue(
 
 /* id único DESTE aparelho/aba — usado pra não ecoar de volta a própria escrita no sync ao vivo */
 const CLIENT_ID = (Math.random().toString(36).slice(2)+'-'+Date.now().toString(36));
-const APP_BUILD = 'redzone-v102';
+const APP_BUILD = 'redzone-v103';
 // evita re-render que rouba o foco enquanto a pessoa digita (o dado já foi aplicado em S de qualquer forma)
 function _syncPodeRender(){ const a=document.activeElement; return !(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||'')); }
 // ANTI-LOOP: ao aplicar uma mudança que VEIO do servidor, um re-render pode disparar escritas de
@@ -1355,6 +1355,44 @@ function go(tab, isBack, restaurarSalvo=false){
   requestAnimationFrame(()=>requestAnimationFrame(()=>window.scrollTo(0,Math.max(0,destino))));
 }
 
+function chavePermissoesIniciais(){ return `rz:permissions:v1:${currentUser||S?.profile?.username||'usuario'}`; }
+function permissoesIniciaisConcluidas(){ try{return !!localStorage.getItem(chavePermissoesIniciais())}catch(e){return false} }
+async function solicitarPermissoesIniciais(){
+  if(!S||S.profile.isAdmin||permissoesIniciaisConcluidas()) return;
+  openSheet(`<div class="permission-onboarding">
+    <div style="font-size:44px;margin-bottom:8px">🛡️</div>
+    <h3>Preparar o REDZONE</h3>
+    <p class="muted">Autorize uma única vez os recursos usados pelo aplicativo. Depois desta etapa, o REDZONE não volta a interromper você com este pedido.</p>
+    <div class="rowitem"><div style="font-size:25px">🔔</div><div class="txt"><div class="t">Notificações</div><div class="s">Lembretes, mensagens e avisos importantes.</div></div></div>
+    <div class="rowitem"><div style="font-size:25px">📷</div><div class="txt"><div class="t">Câmera</div><div class="s">Fotos e vídeos feitos dentro do aplicativo.</div></div></div>
+    <div class="rowitem"><div style="font-size:25px">🎙️</div><div class="txt"><div class="t">Microfone</div><div class="s">Áudios e gravações de vídeo com som.</div></div></div>
+    <p class="small muted">O navegador ainda pode mostrar as confirmações oficiais de segurança. Se uma permissão for negada, ela só poderá ser liberada depois nas configurações do navegador.</p>
+    <button class="btn" id="permitirRecursos" style="width:100%">Continuar e permitir</button>
+  </div>`);
+  const fechar=$('.sheet-close',$('#sheet')); if(fechar) fechar.style.display='none';
+  $('#permitirRecursos').onclick=async()=>{
+    const btn=$('#permitirRecursos'); btn.disabled=true; btn.textContent='Solicitando permissões…';
+    const resultado={notificacoes:'indisponivel',camera:'indisponivel',microfone:'indisponivel',em:new Date().toISOString()};
+    try{
+      if(navigator.mediaDevices?.getUserMedia){
+        const stream=await navigator.mediaDevices.getUserMedia({video:true,audio:true});
+        resultado.camera='permitida'; resultado.microfone='permitida';
+        stream.getTracks().forEach(t=>t.stop());
+      }
+    }catch(e){ resultado.camera='negada'; resultado.microfone='negada'; }
+    try{
+      if('Notification' in window){
+        const p=Notification.permission==='default'?await Notification.requestPermission():Notification.permission;
+        resultado.notificacoes=p;
+        if(p==='granted'){ S.config.notif=true; await save('config'); subscribePush(); }
+      }
+    }catch(e){ resultado.notificacoes='negada'; }
+    try{localStorage.setItem(chavePermissoesIniciais(),JSON.stringify(resultado))}catch(e){}
+    closeSheet();
+    toast(resultado.notificacoes==='granted'&&resultado.camera==='permitida'?'REDZONE pronto. Permissões configuradas. ✅':'Permissões registradas. Você pode alterá-las nas configurações do navegador.');
+  };
+}
+
 async function enterApp(){
   await sincronizarRelogioBrasilia();
   await loadUserData();
@@ -1369,10 +1407,7 @@ async function enterApp(){
   startClock(); startTryHard(); connectSocket(); reportXP(); flushQueue();
   startSyncWatchdog();
   if(S.config.notif) subscribePush();
-  // pede permissão de notificação logo ao entrar (uma vez); se aceitar, liga notificações + push
-  if('Notification' in window && Notification.permission==='default'){
-    setTimeout(async()=>{ try{ const p=await Notification.requestPermission(); if(p==='granted'){ S.config.notif=true; save('config'); subscribePush(); toast('Notificações ligadas. 🔔'); } }catch(e){} }, 1500);
-  }
+  setTimeout(solicitarPermissoesIniciais,650);
   handleDeepLink();
   setTimeout(checarAvisosAdmin,700);
   if(!window._dlBound){ window._dlBound=true; window.addEventListener('hashchange', handleDeepLink); }
