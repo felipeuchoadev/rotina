@@ -4,6 +4,11 @@
 
 > Documento vivo pra QUALQUER sessão continuar sem perder contexto. Se o chat
 > zerar, leia isto + `docs/07`, `08`, `09` e os arquivos de memória.
+>
+> 📱 **PLAY STORE DOCUMENTADA:** viabilidade, tamanho, atualização, custos,
+> requisitos, privacidade e plano de publicação estão preservados em
+> `docs/11-PLAY-STORE-PLANO-ANDROID.md`. Decisão recomendada: primeira versão
+> Android por TWA, mantendo o PWA como fonte única.
 
 > ⚠️ **ATENÇÃO (leia antes de "começar da onda 1"):** a lista original inteira
 > (ondas 1–8) JÁ ESTÁ FEITA E NO AR há tempo, mais o rebrand **REDZONE**, a
