@@ -23,7 +23,7 @@
 >
 > 🟢 **v81:** autoupdate resistente a reinícios sem F5, restauração de aba/posição e relógio de Brasília sincronizado pelo servidor em todos os dispositivos.
 >
-> 🟢 **VERSÃO PUBLICADA: SW `redzone-v101`.** Presença das mensagens agora acompanha a atividade real em conversas e na lista: sair, fechar ou colocar o app em segundo plano atualiza o “visto por último”, com expiração automática de segurança.
+> 🟢 **VERSÃO PUBLICADA: SW `redzone-v102`.** Mensagens agora têm seletor de emojis leve e categorizado, histórico de usados recentemente, reações sincronizadas e encaminhamento de várias mensagens; presença continua acompanhando a atividade real em conversas e na lista.
 > (mudou num aparelho → aparece nos outros em ms) + autoupdate ao vivo (deploy → conectados recarregam em ms)
 > JÁ FUNCIONAM. Deploy = `scp app/* server/src/**` pra VM (chave `Chaves/oracle_vm`, user `ubuntu`,
 > `redsystems.ddns.net:/opt/disciplina/`) + `systemctl restart disciplina` se mexeu no `server/` + **bump do SW**.

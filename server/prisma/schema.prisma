@@ -124,6 +124,7 @@ model Mensagem {
   respostaTexto String?
   respostaTipo String?
   respostaMeu Boolean?
+  reacoes Json @default("{}")
   criadoEm DateTime @default(now())
 
   @@index([deId, paraId])

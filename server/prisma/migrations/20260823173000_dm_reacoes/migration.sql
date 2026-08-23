@@ -1,0 +1,1 @@
+ALTER TABLE "mensagens" ADD COLUMN "reacoes" JSONB NOT NULL DEFAULT '{}';

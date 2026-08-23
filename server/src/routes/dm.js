@@ -68,7 +68,25 @@ dmRouter.get('/:username', async (req, res) => {
   });
   const marcadas = await prisma.mensagem.updateMany({ where: { deId: outro.id, paraId: req.userId, lida: false }, data: { entregue: true, lida: true } });
   if (marcadas.count) emitToUser(outro.id, 'dm:lida', { por: req.userId });
-  res.json({ usuario: outro, mensagens: msgs.map(m => ({ id: m.id, texto: m.texto, midiaUrl: m.midiaUrl, midiaTipo: m.midiaTipo, apagadaTodos:m.apagadaTodos, respostaAId:m.respostaAId, respostaTexto:m.respostaTexto, respostaTipo:m.respostaTipo, respostaMeu:m.respostaMeu == null ? null : (m.deId===req.userId ? m.respostaMeu : !m.respostaMeu), entregue: m.deId===req.userId ? m.entregue : true, lida: m.deId===req.userId ? m.lida : true, criadoEm: m.criadoEm, meu: m.deId === req.userId })) });
+  res.json({ usuario: outro, mensagens: msgs.map(m => ({ id: m.id, texto: m.texto, midiaUrl: m.midiaUrl, midiaTipo: m.midiaTipo, apagadaTodos:m.apagadaTodos, respostaAId:m.respostaAId, respostaTexto:m.respostaTexto, respostaTipo:m.respostaTipo, respostaMeu:m.respostaMeu == null ? null : (m.deId===req.userId ? m.respostaMeu : !m.respostaMeu), reacoes:m.reacoes||{}, entregue: m.deId===req.userId ? m.entregue : true, lida: m.deId===req.userId ? m.lida : true, criadoEm: m.criadoEm, meu: m.deId === req.userId })) });
+});
+
+// Encaminha um lote para outra conversa, mantendo texto e mídia originais.
+dmRouter.post('/encaminhar', async (req, res) => {
+  const username = String(req.body.paraUsername || '').toLowerCase();
+  const ids = [...new Set((Array.isArray(req.body.mensagens) ? req.body.mensagens : []).map(Number).filter(Number.isInteger))].slice(0, 30);
+  if (!username || !ids.length) return res.status(400).json({ erro: 'Escolha mensagens e um destinatário.' });
+  const outro = await prisma.usuario.findUnique({ where: { username }, select: pub });
+  if (!outro) return res.status(404).json({ erro: 'Usuário não encontrado.' });
+  if (outro.id === req.userId || await bloqueioEntre(req.userId, outro.id)) return res.status(403).json({ erro: 'Não é possível encaminhar para este usuário.' });
+  const originais = await prisma.mensagem.findMany({ where: { id: { in: ids }, apagadaTodos:false, OR:[{deId:req.userId},{paraId:req.userId}] }, orderBy:{criadoEm:'asc'} });
+  if (!originais.length) return res.status(404).json({ erro: 'Mensagens não encontradas.' });
+  const entregue = isUserOnline(outro.id), me = await prisma.usuario.findUnique({ where:{id:req.userId}, select:pub });
+  const criadas = [];
+  for (const original of originais) criadas.push(await prisma.mensagem.create({ data:{ deId:req.userId, paraId:outro.id, texto:original.texto, midiaUrl:original.midiaUrl, midiaTipo:original.midiaTipo, entregue } }));
+  for (const m of criadas) emitToUser(outro.id,'dm:nova',{id:m.id,texto:m.texto,midiaUrl:m.midiaUrl,midiaTipo:m.midiaTipo,reacoes:{},entregue,lida:false,criadoEm:m.criadoEm,de:me});
+  if (!isViewingChat(outro.id, req.userId)) enviarPush(outro.id,{title:'Mensagem de '+me.nomeGuerra,body:criadas.length>1?`${criadas.length} mensagens encaminhadas`:(criadas[0].texto||'Mídia encaminhada'),tag:'dm-'+me.username,url:'/rotina/#dm='+encodeURIComponent(me.username)});
+  res.status(201).json({ok:true,quantidade:criadas.length});
 });
 
 // Enviar mensagem
@@ -95,7 +113,21 @@ dmRouter.post('/:username', async (req, res) => {
   emitToUser(outro.id, 'dm:nova', payload);
   const descricaoMidia = midiaTipo==='video'?'Enviou um vídeo':midiaTipo==='audio'?'Enviou um áudio':'Enviou uma foto';
   if (!isViewingChat(outro.id, req.userId)) enviarPush(outro.id, { title: 'Mensagem de ' + me.nomeGuerra, body: texto || descricaoMidia, tag: 'dm-'+me.username, url: '/rotina/#dm=' + encodeURIComponent(me.username) });
-  res.status(201).json({ id: m.id, texto: m.texto, midiaUrl:m.midiaUrl, midiaTipo:m.midiaTipo, ...respostaPayload, entregue, lida:false, criadoEm: m.criadoEm, meu: true });
+  res.status(201).json({ id: m.id, texto: m.texto, midiaUrl:m.midiaUrl, midiaTipo:m.midiaTipo, ...respostaPayload, reacoes:{}, entregue, lida:false, criadoEm: m.criadoEm, meu: true });
+});
+
+dmRouter.post('/mensagem/:id/reacao', async (req, res) => {
+  const id=Number(req.params.id), emoji=String(req.body.emoji||'').trim();
+  if (!Number.isInteger(id) || !emoji || emoji.length>16) return res.status(400).json({erro:'Reação inválida.'});
+  const m=await prisma.mensagem.findUnique({where:{id}});
+  if(!m || m.apagadaTodos || (m.deId!==req.userId&&m.paraId!==req.userId)) return res.status(404).json({erro:'Mensagem não encontrada.'});
+  const reacoes=m.reacoes&&typeof m.reacoes==='object'&&!Array.isArray(m.reacoes)?{...m.reacoes}:{};
+  for(const [e,usuarios] of Object.entries(reacoes)){if(!Array.isArray(usuarios))delete reacoes[e];else{reacoes[e]=usuarios.filter(x=>x!==req.userId);if(!reacoes[e].length)delete reacoes[e];}}
+  const ja=(Array.isArray(m.reacoes?.[emoji])&&m.reacoes[emoji].includes(req.userId));
+  if(!ja)reacoes[emoji]=[...(reacoes[emoji]||[]),req.userId];
+  await prisma.mensagem.update({where:{id},data:{reacoes}});
+  const payload={id,reacoes};emitToUser(m.deId,'dm:reacao',payload);emitToUser(m.paraId,'dm:reacao',payload);
+  res.json(payload);
 });
 
 // Apaga somente da própria visualização ou, para o remetente, de todos os aparelhos.
