@@ -1,6 +1,6 @@
 # REDZONE (ex-DISCIPLINA) — Status atual e roadmap (ponto de retomada)
 
-**Versão no ar: v105** — contraste e espaçamento revisados, semanas vazias removidas do histórico, bio pública e sons separados por categoria; feed sincroniza sem botão Atualizar.
+**Versão no ar: v106** — toque fora fecha camadas como Esc; inscrições push são renovadas e lembretes da rotina passam a ser enviados pelo servidor mesmo com o app fechado.
 
 > Documento vivo pra QUALQUER sessão continuar sem perder contexto. Se o chat
 > zerar, leia isto + `docs/07`, `08`, `09` e os arquivos de memória.

@@ -715,7 +715,7 @@ setInterval(()=>{ if(authToken&&offQueue().length&&navigator.onLine) flushQueue(
 
 /* id único DESTE aparelho/aba — usado pra não ecoar de volta a própria escrita no sync ao vivo */
 const CLIENT_ID = (Math.random().toString(36).slice(2)+'-'+Date.now().toString(36));
-const APP_BUILD = 'redzone-v105';
+const APP_BUILD = 'redzone-v106';
 // evita re-render que rouba o foco enquanto a pessoa digita (o dado já foi aplicado em S de qualquer forma)
 function _syncPodeRender(){ const a=document.activeElement; return !(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||'')); }
 // ANTI-LOOP: ao aplicar uma mudança que VEIO do servidor, um re-render pode disparar escritas de
@@ -781,6 +781,18 @@ document.addEventListener('click',e=>{
   const i=$('#chatTxt'); if(!i)return; const ini=i.selectionStart??i.value.length, fim=i.selectionEnd??ini, emoji=b.dataset.emoji;
   i.value=i.value.slice(0,ini)+emoji+i.value.slice(fim);guardarEmojiRecente(emoji);if(!matchMedia('(pointer:coarse)').matches)i.focus();try{i.setSelectionRange(ini+emoji.length,ini+emoji.length)}catch{}i.dispatchEvent(new Event('input'));
 });
+
+// Um toque no fundo fecha a camada transitória aberta, como o Esc/Voltar.
+// Os conteúdos internos continuam interativos e gravações nunca são canceladas
+// por um toque acidental fora dos controles.
+document.addEventListener('pointerdown',e=>{
+  const alvo=e.target;
+  if(!alvo||alvo.closest('#sheet,.camera-overlay,.story-viewers-box,.system-notice-card,.media-preview-box')) return;
+  if(alvo.matches('.media-lightbox,.chat-viewer,.story-viewers-panel,.system-notice,.media-preview-overlay')){
+    e.preventDefault();
+    fecharCamadaTransitória();
+  }
+},true);
 function toast(m,ms=3000){ const t=$('#toast'); t.textContent=m; t.classList.add('show'); clearTimeout(window._tt); window._tt=setTimeout(()=>t.classList.remove('show'),ms); }
 function uid(){ return Math.random().toString(36).slice(2,9)+Date.now().toString(36).slice(-4); }
 function esc(s){ const d=document.createElement('div'); d.textContent=s==null?'':String(s); return d.innerHTML; }
@@ -4290,6 +4302,14 @@ async function subscribePush(){
     await api('/push/subscribe',{method:'POST',body:sub.toJSON()});
   }catch(e){ console.warn('push', e); }
 }
+let _pushRefreshAt=0;
+function renovarPushEmSegundoPlano(){
+  if(!authToken||!S?.config?.notif||document.visibilityState!=='visible'||Date.now()-_pushRefreshAt<60000)return;
+  _pushRefreshAt=Date.now();subscribePush();
+}
+window.addEventListener('online',renovarPushEmSegundoPlano);
+window.addEventListener('pageshow',renovarPushEmSegundoPlano);
+document.addEventListener('visibilitychange',renovarPushEmSegundoPlano);
 
 /* =========================================================================
    BOOT
@@ -4304,7 +4324,11 @@ async function subscribePush(){
   try{ const h=location.hash||''; if(h.includes('reset=')){ const t=new URLSearchParams(h.slice(1)).get('reset'); if(t) resetarSenhaSheet(t); } }catch(e){}
   // registra service worker (só funciona em https/host real; ignora falha local)
   if('serviceWorker' in navigator){
-    navigator.serviceWorker.addEventListener('message',e=>{ if(e.data?.type!=='OPEN_DEEP_LINK'||!e.data.url)return; try{ const u=new URL(e.data.url,location.origin); if(u.origin===location.origin&&u.pathname===location.pathname){location.hash=u.hash;handleDeepLink();}else location.assign(u.href); }catch(_){} });
+    navigator.serviceWorker.addEventListener('message',e=>{
+      if(e.data?.type==='PUSH_SUBSCRIPTION_CHANGED'){_pushRefreshAt=0;renovarPushEmSegundoPlano();return;}
+      if(e.data?.type!=='OPEN_DEEP_LINK'||!e.data.url)return;
+      try{ const u=new URL(e.data.url,location.origin); if(u.origin===location.origin&&u.pathname===location.pathname){location.hash=u.hash;handleDeepLink();}else location.assign(u.href); }catch(_){}
+    });
     // autoupdate: quando uma versão nova assume, recarrega sozinho (sem F5)
     let _reloaded=false;
     navigator.serviceWorker.addEventListener('controllerchange', ()=>{

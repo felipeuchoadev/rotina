@@ -115,10 +115,45 @@ export async function rodarAgenda() {
   return { enviados };
 }
 
+// Lembretes da rotina são calculados no servidor: continuam chegando quando a
+// página/PWA está fechada. O KV torna cada disparo idempotente por tarefa e slot.
+export async function rodarLembretesRotina() {
+  const agora=brasiliaAgora(), iso=isoDe(agora);
+  const minutoAgora=agora.getHours()*60+agora.getMinutes();
+  const estados=await prisma.userState.findMany({where:{chave:{in:['rotinaDias','config']}}}).catch(()=>[]);
+  const porUsuario=new Map();
+  for(const row of estados){const x=porUsuario.get(row.usuarioId)||{};x[row.chave]=row.valor;porUsuario.set(row.usuarioId,x);}
+  let enviados=0;
+  for(const [usuarioId,estado] of porUsuario){
+    const config=estado.config||{};if(config.notif!==true)continue;
+    const tarefas=Array.isArray(estado.rotinaDias?.[iso])?estado.rotinaDias[iso]:[];
+    for(const tarefa of tarefas){
+      if(tarefa?.done||!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(String(tarefa?.hora||'')))continue;
+      const [h,m]=tarefa.hora.split(':').map(Number), devido=h*60+m, atraso=minutoAgora-devido;
+      if(atraso<0)continue;
+      const tryHard=config.tryHard===true;
+      const intervalo=Math.max(1,Math.ceil(Number(config.tryOpts?.intervaloS||60)/60));
+      if(!tryHard&&atraso>1)continue;
+      const slot=tryHard?Math.floor(atraso/intervalo):0;
+      if(tryHard&&atraso%intervalo>1)continue;
+      const id=String(tarefa.id||`${tarefa.hora}-${tarefa.nome||'atividade'}`).replace(/[^a-zA-Z0-9_-]/g,'').slice(0,60);
+      const dedupe=`rotina-push:${iso}:${usuarioId}:${id}:${slot}`;
+      if(await jaEnviado(dedupe))continue;
+      const nome=String(tarefa.nome||'atividade').slice(0,160);
+      await enviarPush(usuarioId,{title:tryHard?'🔥 MODO TRY HARD':'REDZONE',body:tryHard?`PASSOU DO HORÁRIO: ${nome}. CUMPRA AGORA!`:`Hora de ${nome}.`,tag:`rotina-${usuarioId}-${id}`,url:'/rotina/#tab=rotina',requireInteraction:tryHard});
+      await marcarEnviado(dedupe);enviados++;
+    }
+  }
+  return {enviados};
+}
+
 export function iniciarAgenda() {
   const agendarMeiaNoite=()=>{
     const agora=brasiliaAgora(),proxima=new Date(agora);proxima.setDate(proxima.getDate()+1);proxima.setHours(0,0,0,0);
     setTimeout(async()=>{await rodarAgenda().catch((e)=>console.error('agenda:',e));agendarMeiaNoite();},Math.max(1000,proxima-agora));
   };
   agendarMeiaNoite();
+  // Acorda no servidor; não depende da aba aberta nem do aparelho desbloqueado.
+  const tick=()=>rodarLembretesRotina().catch(e=>console.error('lembretes rotina:',e));
+  setTimeout(tick,3000);setInterval(tick,30000);
 }

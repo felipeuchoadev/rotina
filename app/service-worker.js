@@ -3,7 +3,7 @@
    Sempre que você subir código novo no host, muda a versão do CACHE abaixo
    (ou a lógica de fetch pega o novo do servidor). O app se atualiza sozinho
    na próxima abertura. */
-const CACHE = 'redzone-v105';
+const CACHE = 'redzone-v106';
 
 // ---- Web Push: recebe notificação mesmo com o app fechado ----
 self.addEventListener('push', (e) => {
@@ -33,6 +33,13 @@ self.addEventListener('notificationclick', (e) => {
     }
     if (clients.openWindow) return clients.openWindow(target);
   }));
+});
+self.addEventListener('pushsubscriptionchange', (e) => {
+  // O app renova e reenvia a inscrição assim que voltar a ficar visível.
+  // Manter este evento garante que o SW acorde corretamente após a troca.
+  e.waitUntil(self.clients.matchAll({ type:'window', includeUncontrolled:true }).then(list =>
+    Promise.all(list.map(c => c.postMessage({type:'PUSH_SUBSCRIPTION_CHANGED'})))
+  ));
 });
 self.addEventListener('message',(e)=>{
   if(e.data?.type==='CLEAR_NOTIFICATION'&&e.data.tag){
