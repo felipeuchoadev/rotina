@@ -9,6 +9,11 @@
 > requisitos, privacidade e plano de publicação estão preservados em
 > `docs/11-PLAY-STORE-PLANO-ANDROID.md`. Decisão recomendada: primeira versão
 > Android por TWA, mantendo o PWA como fonte única.
+>
+> 📦 **TRANSIÇÃO PARA OUTRA IA/EQUIPE:** leia `PACOTE-REDZONE-LEIA-PRIMEIRO.md`,
+> `docs/12-PACOTE-DE-TRANSICAO.md` e
+> `docs/13-ACESSOS-E-SEGREDOS-NAO-INCLUIDOS.md`. O pacote exportado inclui
+> snapshot e histórico Git, mas nunca segredos, banco ou mídias privadas.
 
 > ⚠️ **ATENÇÃO (leia antes de "começar da onda 1"):** a lista original inteira
 > (ondas 1–8) JÁ ESTÁ FEITA E NO AR há tempo, mais o rebrand **REDZONE**, a
