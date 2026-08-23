@@ -1,6 +1,6 @@
 # REDZONE (ex-DISCIPLINA) — Status atual e roadmap (ponto de retomada)
 
-**Versão no ar: v107** — atualizações automáticas agora são silenciosas, rápidas e preservam aba, rolagem e rascunho, sem avisos na tela.
+**Versão no ar: v108** — a interface não dispara mais seleção de texto/pesquisa do Android por toque prolongado acidental; campos e conteúdos copiáveis continuam selecionáveis.
 
 > Documento vivo pra QUALQUER sessão continuar sem perder contexto. Se o chat
 > zerar, leia isto + `docs/07`, `08`, `09` e os arquivos de memória.

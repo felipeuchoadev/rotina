@@ -39,6 +39,17 @@ body{
   background-color:var(--bg2);
   min-height:100vh; min-height:100dvh; font-size:16.5px; line-height:1.5;
   -webkit-font-smoothing:antialiased;
+  /* A interface é um app, não uma página de texto: evita seleção acidental e
+     a pesquisa do Android ao segurar títulos, botões, cartões ou navegação. */
+  -webkit-user-select:none;
+  user-select:none;
+  -webkit-touch-callout:none;
+}
+/* Conteúdo que pode ser digitado ou copiado continua selecionável. */
+input,textarea,select,[contenteditable="true"],.post-body,.comment-text,.profile-bio{
+  -webkit-user-select:text;
+  user-select:text;
+  -webkit-touch-callout:default;
 }
 .display{font-family:'Inter',sans-serif; font-weight:800; letter-spacing:-.01em;}
 .mono{font-family:'JetBrains Mono',ui-monospace,monospace; font-variant-numeric:tabular-nums;}
@@ -715,7 +726,7 @@ setInterval(()=>{ if(authToken&&offQueue().length&&navigator.onLine) flushQueue(
 
 /* id único DESTE aparelho/aba — usado pra não ecoar de volta a própria escrita no sync ao vivo */
 const CLIENT_ID = (Math.random().toString(36).slice(2)+'-'+Date.now().toString(36));
-const APP_BUILD = 'redzone-v107';
+const APP_BUILD = 'redzone-v108';
 // evita re-render que rouba o foco enquanto a pessoa digita (o dado já foi aplicado em S de qualquer forma)
 function _syncPodeRender(){ const a=document.activeElement; return !(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||'')); }
 // ANTI-LOOP: ao aplicar uma mudança que VEIO do servidor, um re-render pode disparar escritas de
