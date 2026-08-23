@@ -8,3 +8,6 @@ Chaves/
 id_rsa*
 id_ed25519*
 oracle_vm*
+
+# Pacotes locais de transição/exportação (podem ser grandes)
+exports/
