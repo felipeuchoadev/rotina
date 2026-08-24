@@ -1,6 +1,6 @@
 # REDZONE (ex-DISCIPLINA) — Status atual e roadmap (ponto de retomada)
 
-**Versão no ar: v112** — reset de conta invalida cache/fila offline e o servidor bloqueia gravações de aparelhos desatualizados, impedindo dados apagados de reaparecerem.
+**Versão no ar: v113** — despertador reorganizado com biblioteca/teste de sons, áudio próprio, intensidade deslizante e repetição por dias; avisos fechados não reaparecem; data de criação da conta disponível no perfil.
 
 > Documento vivo pra QUALQUER sessão continuar sem perder contexto. Se o chat
 > zerar, leia isto + `docs/07`, `08`, `09` e os arquivos de memória.
@@ -20,8 +20,9 @@
 > reformulação da **Rotina**, o **menu gaveta** no celular e a **alimentação
 > semanal**. NÃO refazer nada disso. O que REALMENTE falta está em
 > **"PENDENTE DE VERDADE (hoje)"** mais abaixo. App = `redzone`; nome do arquivo
-> ainda é `app/disciplina-v3.html`; logo `redzone-logo.png`. Conta de teste:
-> `felipeestudos220807@gmail.com` / `felipe220807@` (pergunta de segurança: time = Flamengo).
+> ainda é `app/disciplina-v3.html`; logo `redzone-logo.png`. A antiga conta de
+> teste `felipeestudos220807@gmail.com` foi excluída integralmente em 24/08/2026
+> para ser recriada pelo usuário como uma conta nova.
 
 > 🟢 **v86 PUBLICADA:** XP/patente têm o servidor como fonte única; Início, Perfil, Feed e Batalha mostram sempre a mesma patente e sincronizam após cada registro.
 >
