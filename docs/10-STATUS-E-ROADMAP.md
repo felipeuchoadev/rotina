@@ -1,6 +1,6 @@
 # REDZONE (ex-DISCIPLINA) — Status atual e roadmap (ponto de retomada)
 
-**Versão no ar: v110** — identidade RZ padronizada em favicon, instalação, atalhos e notificações; alarmes ganharam escolha entre sirene original, grave e rápida.
+**Versão no ar: v112** — reset de conta invalida cache/fila offline e o servidor bloqueia gravações de aparelhos desatualizados, impedindo dados apagados de reaparecerem.
 
 > Documento vivo pra QUALQUER sessão continuar sem perder contexto. Se o chat
 > zerar, leia isto + `docs/07`, `08`, `09` e os arquivos de memória.

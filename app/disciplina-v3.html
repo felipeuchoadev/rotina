@@ -714,12 +714,13 @@ async function reportXP(){ if(_syncBusy()) return; const xp=computeXP(); if(xp==
 function offQueue(){ try{ return JSON.parse(localStorage.getItem(userStorageKey('queue'))||'[]'); }catch{ return []; } }
 function setQueue(q){ try{ localStorage.setItem(userStorageKey('queue'), JSON.stringify(q)); }catch{} }
 const _stateVersoes={};
+let _accountResetId=null;
 function novaVersao(chave){ const v=Math.max(Date.now(),Number(_stateVersoes[chave]||0)+1); _stateVersoes[chave]=v; return v; }
 let _flushando=false;
 async function flushQueue(){
   if(_flushando || !authToken) return; _flushando=true;
   let q=offQueue(); const rest=[]; let ok=0;
-  for(const it of q){ try{ await api('/state/'+encodeURIComponent(it.chave),{method:'PUT',body:{valor:it.valor,versao:it.versao||novaVersao(it.chave),clientId:CLIENT_ID}}); ok++; }catch(e){ rest.push(it); } }
+  for(const it of q){ try{ await api('/state/'+encodeURIComponent(it.chave),{method:'PUT',body:{valor:it.valor,versao:it.versao||novaVersao(it.chave),clientId:CLIENT_ID,resetId:_accountResetId}}); ok++; }catch(e){ if(e?.status===409&&e?.data?.reset){ setQueue([]); location.reload(); break; } rest.push(it); } }
   setQueue(rest); _flushando=false;
   return rest.length===0;
 }
@@ -728,7 +729,7 @@ setInterval(()=>{ if(authToken&&offQueue().length&&navigator.onLine) flushQueue(
 
 /* id único DESTE aparelho/aba — usado pra não ecoar de volta a própria escrita no sync ao vivo */
 const CLIENT_ID = (Math.random().toString(36).slice(2)+'-'+Date.now().toString(36));
-const APP_BUILD = 'redzone-v110';
+const APP_BUILD = 'redzone-v112';
 // evita re-render que rouba o foco enquanto a pessoa digita (o dado já foi aplicado em S de qualquer forma)
 function _syncPodeRender(){ const a=document.activeElement; return !(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||'')); }
 // ANTI-LOOP: ao aplicar uma mudança que VEIO do servidor, um re-render pode disparar escritas de
@@ -744,8 +745,9 @@ const Store = {
     const versao=novaVersao(key);
     try{ localStorage.setItem(userStorageKey('local:'+key), JSON.stringify(val)); }catch{}   // espelho local
     if(_syncBusy()) return true;   // veio do servidor agora → não reescreve (anti-loop)
-    try{ const r=await api('/state/'+encodeURIComponent(key),{method:'PUT',body:{valor:val,versao,clientId:CLIENT_ID}}); if(Number.isFinite(r?.xp))S.profile.xp=r.xp; if(r?.ignorada){ applyRemoteState(key,r.valor,r.versao); } else if(key==='rotina:dias'&&r?.valor){ S.rotinaDias=r.valor; try{ localStorage.setItem(userStorageKey('local:'+key),JSON.stringify(r.valor)); }catch{} } return true; }
+    try{ const r=await api('/state/'+encodeURIComponent(key),{method:'PUT',body:{valor:val,versao,clientId:CLIENT_ID,resetId:_accountResetId}}); if(Number.isFinite(r?.xp))S.profile.xp=r.xp; if(r?.ignorada){ applyRemoteState(key,r.valor,r.versao); } else if(key==='rotina:dias'&&r?.valor){ S.rotinaDias=r.valor; try{ localStorage.setItem(userStorageKey('local:'+key),JSON.stringify(r.valor)); }catch{} } return true; }
     catch(e){
+      if(e?.status===409&&e?.data?.reset){ setQueue([]); location.reload(); return false; }
       const q=offQueue().filter(i=>i.chave!==key); q.push({chave:key, valor:val}); setQueue(q);  // enfileira (última escrita vence)
       return true;
     }
@@ -1040,6 +1042,20 @@ async function loadUserData(){
     const cme=localStorage.getItem(userStorageKey('cache:me')), cst=localStorage.getItem(userStorageKey('cache:st'));
     if(cme && cst){ me=JSON.parse(cme); st=JSON.parse(cst); }
     else throw e;   // sem cache e sem internet: não dá pra entrar
+  }
+  // Reset administrativo é fonte da verdade: elimina cache/fila antigos deste
+  // aparelho antes que uma escrita offline consiga ressuscitar dados apagados.
+  const resetId=st?.['system:reset']?.id;
+  if(resetId){
+    _accountResetId=String(resetId);
+    const resetKey=userStorageKey('reset:id');
+    if(localStorage.getItem(resetKey)!==String(resetId)){
+      const dono=tokenOwner(); limparLocalDoUsuario(dono);
+      localStorage.setItem(resetKey,String(resetId));
+      localStorage.setItem(userStorageKey('cache:me'),JSON.stringify(me));
+      localStorage.setItem(userStorageKey('cache:st'),JSON.stringify(st));
+    }
+    delete st['system:reset'];
   }
   // aplica escritas offline pendentes por cima do que veio do servidor
   offQueue().forEach(it=>{ st[it.chave]=it.valor; });

@@ -41,9 +41,16 @@ try {
     await tx.mensagem.deleteMany({ where: { OR: [{ deId: user.id }, { paraId: user.id }] } });
     await tx.stateHistory.deleteMany({ where: { usuarioId: user.id } });
     await tx.userState.deleteMany({ where: { usuarioId: user.id } });
+    const resetId = `${Date.now()}-${crypto.randomUUID()}`;
+    await tx.userState.create({
+      data: { usuarioId: user.id, chave: 'system:reset', valor: { id: resetId, at: new Date().toISOString() }, versao: BigInt(Date.now()) },
+    });
     return tx.usuario.update({
       where: { id: user.id },
-      data: { xp: 0, bio: null, fotoUrl: null, pesoKg: null, alturaCm: null, metaAgua: 2500, tema: 'red', privado: false, bloqueado: false },
+      // ultimoAcesso nulo também funciona como um marco de sessão limpa. O
+      // cliente usa o estado vazio do servidor como fonte da verdade após o
+      // reset, em vez de restaurar blobs antigos guardados no aparelho.
+      data: { xp: 0, bio: null, fotoUrl: null, pesoKg: null, alturaCm: null, metaAgua: 2500, tema: 'red', privado: false, bloqueado: false, ultimoAcesso: null },
       select: { id: true, email: true, username: true, nomeGuerra: true, xp: true, isAdmin: true }
     });
   });

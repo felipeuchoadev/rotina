@@ -165,6 +165,16 @@ stateRouter.get('/:chave', async (req, res) => {
 // Grava (upsert) um blob
 stateRouter.put('/:chave', async (req, res) => {
   if(req.params.chave==='xp:bonus') return res.status(403).json({erro:'Ajuste de XP é reservado ao sistema.'});
+  // Depois de uma limpeza administrativa, somente clientes que já receberam o
+  // marcador novo podem gravar. Impede abas/aparelhos antigos de restaurarem
+  // silenciosamente dados que acabaram de ser apagados.
+  if(req.params.chave!=='system:reset'){
+    const reset=await prisma.userState.findUnique({where:{usuarioId_chave:{usuarioId:req.userId,chave:'system:reset'}}});
+    const resetId=reset?.valor?.id;
+    if(resetId && String(req.body?.resetId||'')!==String(resetId)){
+      return res.status(409).json({erro:'A conta foi reiniciada. Atualizando os dados deste aparelho.',reset:true,resetId:String(resetId)});
+    }
+  }
   let valor = req.body?.valor;
   const versaoRecebida = BigInt(Math.max(0, Number(req.body?.versao || Date.now())));
   const atual = await prisma.userState.findUnique({ where: { usuarioId_chave: { usuarioId: req.userId, chave: req.params.chave } } });
