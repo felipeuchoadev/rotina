@@ -1,6 +1,6 @@
 # REDZONE (ex-DISCIPLINA) — Status atual e roadmap (ponto de retomada)
 
-**Versão no ar: v108** — a interface não dispara mais seleção de texto/pesquisa do Android por toque prolongado acidental; campos e conteúdos copiáveis continuam selecionáveis.
+**Versão no ar: v109** — conta beta limpa para uso real, alarmes na Rotina e histórico de XP detalhado; lembretes da rotina agora usam a chave canônica correta no servidor.
 
 > Documento vivo pra QUALQUER sessão continuar sem perder contexto. Se o chat
 > zerar, leia isto + `docs/07`, `08`, `09` e os arquivos de memória.
@@ -41,6 +41,8 @@
 > `redsystems.ddns.net:/opt/disciplina/`) + `systemctl restart disciplina` se mexeu no `server/` + **bump do SW**.
 
 > 🛡️ **v76/v77:** painel administrativo protegido, responsividade de tablet/TV e comunicados do proprietário para todos ou para usuário específico.
+>
+> 🟢 **v109 PUBLICADA (24/08/2026):** a conta `felipeestudos220807@gmail.com` foi zerada com backup transacional, preservando identidade, login, senha e pergunta de segurança. A Rotina ganhou alarmes configuráveis com toque contínuo enquanto o app está aberto e push persistente quando fechado. O Histórico de XP mostra ganhos e perdas válidos com data, motivo e valor. Limite técnico documentado: navegador/PWA não pode elevar o volume acima do sistema nem garantir sirene contínua com o processo totalmente encerrado; garantia idêntica ao app Relógio exige versão Android nativa.
 
 ## PRÓXIMA SESSÃO (combinado p/ amanhã, 2026-08-11) ⭐
 **REDESIGN a partir de mockup do ChatGPT.** O Felipe gera a estética no ChatGPT e **manda a imagem**; eu
@@ -54,8 +56,6 @@ fontes/cores; manter wordmark transparente (`redzone-wordmark.png`) e emblema ca
 2. **Domínio pro e-mail** (~R$40/ano): sem domínio o Resend só entrega pro dono; recuperação por **pergunta de
    segurança** já cobre todos. Quando houver domínio, configurar SPF/DKIM no Resend e trocar `MAIL_FROM`.
 3. **Landing**: falta screenshots reais (o Felipe pode mandar prints ou exibir o painel Browser pra eu capturar).
-4. Oferta pendente aceita? **Limpar dados fictícios** da conta de teste (6 matérias, 40 logs de treino, refeições
-   de amostra) pra começar do zero — o Felipe ainda não confirmou; perguntar.
 
 ## ONDA 8 — no ar (feedback intenso do Felipe, SW v9→v22) ✅
 - **Cadastro mobile (tela branca)**: `html{background:var(--bg2)}` (fallback escuro) resolveu a faixa branca.

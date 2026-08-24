@@ -120,13 +120,13 @@ export async function rodarAgenda() {
 export async function rodarLembretesRotina() {
   const agora=brasiliaAgora(), iso=isoDe(agora);
   const minutoAgora=agora.getHours()*60+agora.getMinutes();
-  const estados=await prisma.userState.findMany({where:{chave:{in:['rotinaDias','config']}}}).catch(()=>[]);
+  const estados=await prisma.userState.findMany({where:{chave:{in:['rotina:dias','config']}}}).catch(()=>[]);
   const porUsuario=new Map();
   for(const row of estados){const x=porUsuario.get(row.usuarioId)||{};x[row.chave]=row.valor;porUsuario.set(row.usuarioId,x);}
   let enviados=0;
   for(const [usuarioId,estado] of porUsuario){
     const config=estado.config||{};if(config.notif!==true)continue;
-    const tarefas=Array.isArray(estado.rotinaDias?.[iso])?estado.rotinaDias[iso]:[];
+    const tarefas=Array.isArray(estado['rotina:dias']?.[iso])?estado['rotina:dias'][iso]:[];
     for(const tarefa of tarefas){
       if(tarefa?.done||!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(String(tarefa?.hora||'')))continue;
       const [h,m]=tarefa.hora.split(':').map(Number), devido=h*60+m, atraso=minutoAgora-devido;
@@ -147,6 +147,31 @@ export async function rodarLembretesRotina() {
   return {enviados};
 }
 
+// Alarmes persistentes: o servidor envia o chamado mesmo sem uma aba aberta.
+// Ao abrir o REDZONE, o toque contínuo assume até a pessoa pressionar DESLIGAR.
+export async function rodarAlarmes() {
+  const agora=brasiliaAgora(), iso=isoDe(agora), minutoAgora=agora.getHours()*60+agora.getMinutes();
+  const estados=await prisma.userState.findMany({where:{chave:'rotina:alarmes'}}).catch(()=>[]);
+  let enviados=0;
+  for(const row of estados){
+    const alarmes=Array.isArray(row.valor)?row.valor:[];
+    for(const alarme of alarmes){
+      if(alarme?.ativo===false||!/^(?:[01]\d|2[0-3]):[0-5]\d$/.test(String(alarme?.hora||'')))continue;
+      const dias=Array.isArray(alarme.dias)?alarme.dias:[];
+      if(dias.length&&!dias.includes(agora.getDay()))continue;
+      const [h,m]=alarme.hora.split(':').map(Number), atraso=minutoAgora-(h*60+m);
+      if(atraso<0||atraso>1)continue;
+      const id=String(alarme.id||alarme.hora).replace(/[^a-zA-Z0-9_-]/g,'').slice(0,60);
+      const dedupe=`alarme:${iso}:${row.usuarioId}:${id}`;
+      if(await jaEnviado(dedupe))continue;
+      const nome=String(alarme.nome||'Alarme').slice(0,120);
+      await enviarPush(row.usuarioId,{title:`⏰ ${nome}`,body:'Abra o REDZONE e toque em DESLIGAR ALARME.',tag:`alarme-${row.usuarioId}-${id}`,url:`/rotina/#tab=rotina&alarm=${encodeURIComponent(id)}`,requireInteraction:true});
+      await marcarEnviado(dedupe);enviados++;
+    }
+  }
+  return {enviados};
+}
+
 export function iniciarAgenda() {
   const agendarMeiaNoite=()=>{
     const agora=brasiliaAgora(),proxima=new Date(agora);proxima.setDate(proxima.getDate()+1);proxima.setHours(0,0,0,0);
@@ -154,6 +179,9 @@ export function iniciarAgenda() {
   };
   agendarMeiaNoite();
   // Acorda no servidor; não depende da aba aberta nem do aparelho desbloqueado.
-  const tick=()=>rodarLembretesRotina().catch(e=>console.error('lembretes rotina:',e));
+  const tick=()=>Promise.all([
+    rodarLembretesRotina().catch(e=>console.error('lembretes rotina:',e)),
+    rodarAlarmes().catch(e=>console.error('alarmes:',e)),
+  ]);
   setTimeout(tick,3000);setInterval(tick,30000);
 }

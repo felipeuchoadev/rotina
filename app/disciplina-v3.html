@@ -341,6 +341,7 @@ html.chat-open,body.chat-open{overflow:hidden!important;overscroll-behavior:none
 .comment-focus{animation:commentFocus 1.8s ease}@keyframes commentFocus{0%,45%{background:color-mix(in srgb,var(--accent) 22%,transparent)}100%{background:transparent}}
 .sheet h3{font-weight:800; font-size:20px; margin-bottom:6px;}
 .sheet-close{float:right; background:rgba(255,255,255,.06); border:none; color:var(--text-dim); font-size:19px; line-height:1; width:32px; height:32px; border-radius:50%;}
+.alarm-list{display:grid;gap:10px}.alarm-card{display:grid;grid-template-columns:auto 1fr auto;gap:14px;align-items:center;padding:16px;border:1px solid var(--line);border-radius:18px;background:var(--surface)}.alarm-time{font:800 28px/1 'JetBrains Mono',monospace}.alarm-days{color:var(--text-dim);font-size:12px;margin-top:5px}.alarm-switch{width:48px;height:28px;border:0;border-radius:20px;background:var(--surface2);position:relative}.alarm-switch:after{content:'';position:absolute;width:20px;height:20px;left:4px;top:4px;border-radius:50%;background:var(--text-dim);transition:.18s}.alarm-switch.on{background:var(--accent)}.alarm-switch.on:after{left:24px;background:#fff}.alarm-overlay{position:fixed;inset:0;z-index:99999;display:none;place-items:center;padding:20px;background:radial-gradient(circle at center,color-mix(in srgb,var(--accent) 45%,#050509),#050509 72%);color:#fff;text-align:center}.alarm-overlay.show{display:grid}.alarm-overlay .alarm-clock{font:900 clamp(56px,16vw,118px)/1 'JetBrains Mono',monospace}.alarm-overlay h2{font-size:clamp(28px,7vw,54px);margin:18px 0 8px}.alarm-stop{margin-top:34px;width:min(520px,92vw);min-height:78px;border:2px solid #fff;border-radius:22px;background:#fff;color:#111;font-weight:900;font-size:24px}.alarm-levels{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.alarm-levels label{padding:12px 5px;border:1px solid var(--line);border-radius:14px;text-align:center}.alarm-levels input{display:block;margin:0 auto 7px}
 
 /* CRONÔMETRO FULLSCREEN dedicado */
 #timer{position:fixed; inset:0; z-index:80; background:radial-gradient(120% 70% at 50% 0, #14171d, #0a0b0e); display:none; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:24px;}
@@ -666,6 +667,7 @@ body.th-shake{animation:thshake .55s;}
 </div>
 
 <div class="th-flash" id="thFlash"></div>
+<div class="alarm-overlay" id="alarmOverlay" role="alertdialog" aria-modal="true"><div><div class="alarm-clock" id="alarmClock">00:00</div><h2 id="alarmTitle">ALARME</h2><p>O alarme continuará tocando até você desligar.</p><button class="alarm-stop" id="alarmStop">DESLIGAR ALARME</button></div></div>
 <div id="toast"></div>
 
 <!-- inputs de mídia escondidos -->
@@ -726,7 +728,7 @@ setInterval(()=>{ if(authToken&&offQueue().length&&navigator.onLine) flushQueue(
 
 /* id único DESTE aparelho/aba — usado pra não ecoar de volta a própria escrita no sync ao vivo */
 const CLIENT_ID = (Math.random().toString(36).slice(2)+'-'+Date.now().toString(36));
-const APP_BUILD = 'redzone-v108';
+const APP_BUILD = 'redzone-v109';
 // evita re-render que rouba o foco enquanto a pessoa digita (o dado já foi aplicado em S de qualquer forma)
 function _syncPodeRender(){ const a=document.activeElement; return !(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||'')); }
 // ANTI-LOOP: ao aplicar uma mudança que VEIO do servidor, um re-render pode disparar escritas de
@@ -1061,6 +1063,7 @@ async function loadUserData(){
     rotinaHist:     g('rotina:hist', {}),
     rotinaPlano:    g('rotina:plano', {dias:{}, padrao:''}),   // (legado) plano por dia em texto
     rotinaDias:     g('rotina:dias', {}),   // atividades por dia: {iso:[{id,nome,hora,done}]}
+    alarmes:        g('rotina:alarmes', []),
     config:         g('config', {editMode:false, tryHard:false, notif:false}),
     datas:          g('datas', []),   // aniversários + datas importantes
     recordacoes:    g('recordacoes', []),   // memórias: mídia por data (treino/alim/estudo)
@@ -1100,7 +1103,7 @@ function applyRemoteProfile(u){
   if(activeTab && _syncPodeRender()){ try{ go(activeTab); }catch(e){} }
 }
 async function save(k){ await Store.set(k, S[cameMap(k)]); }
-function cameMap(k){ return ({'xp:bonus':'xpBonus','treino:tpl':'treinoTemplate','treino:weeks':'treinoWeeks','treino:logs':'treinoLogs','treino:recordes':'recordes','estudo:materias':'materias','estudo:semana':'estudoSemana','estudo:logs':'estudoLogs','alim:semana':'alimSemana','alim:pesos':'pesos','alim:agua':'agua','alim:hist':'alimHist','rotina':'rotina','rotina:hist':'rotinaHist','rotina:plano':'rotinaPlano','rotina:dias':'rotinaDias','config':'config','datas':'datas','recordacoes':'recordacoes'})[k]; }
+function cameMap(k){ return ({'xp:bonus':'xpBonus','treino:tpl':'treinoTemplate','treino:weeks':'treinoWeeks','treino:logs':'treinoLogs','treino:recordes':'recordes','estudo:materias':'materias','estudo:semana':'estudoSemana','estudo:logs':'estudoLogs','alim:semana':'alimSemana','alim:pesos':'pesos','alim:agua':'agua','alim:hist':'alimHist','rotina':'rotina','rotina:hist':'rotinaHist','rotina:plano':'rotinaPlano','rotina:dias':'rotinaDias','rotina:alarmes':'alarmes','config':'config','datas':'datas','recordacoes':'recordacoes'})[k]; }
 
 /* XP total do usuário = soma de logs + bônus, menos punições. Recalcula. */
 function computeXP(){
@@ -1431,7 +1434,7 @@ async function enterApp(){
   activeTab=abaSalva; renderNav(); go(abaSalva,true,true);
   renderSupportBanner();
   try{ history.replaceState({rzTab:abaSalva},'',location.href); }catch(e){}
-  startClock(); startTryHard(); connectSocket(); reportXP(); flushQueue();
+  startClock(); startTryHard(); startAlarmes(); connectSocket(); reportXP(); flushQueue();
   startSyncWatchdog();
   if(S.config.notif) subscribePush();
   setTimeout(solicitarPermissoesIniciais,650);
@@ -1577,16 +1580,20 @@ function pesoRelatorioSheet(){
 // clicar na patente/XP → histórico de pontos recebidos e descontados
 function xpHistoricoSheet(){
   const itens=[];
-  S.treinoLogs.forEach(l=>{ const m=Math.floor((l.ativoMs||0)/60000); if(m>0) itens.push({dateISO:l.dateISO, xp:m, txt:`Treino · ${m} min`}); });
-  S.estudoLogs.forEach(l=>{ const m=Math.floor((l.ativoMs||0)/60000)*2; if(m>0) itens.push({dateISO:l.dateISO, xp:m, txt:`Estudo · ${Math.round(m/2)} min`});
-    const c=(l.conteudos?.length||0)*40; if(c>0) itens.push({dateISO:l.dateISO, xp:c, txt:`${l.conteudos.length} conteúdo(s) concluído(s)`}); });
-  Object.entries(S.agua||{}).forEach(([iso,v])=>{ const ml=Number(v); if(/^\d{4}-\d{2}-\d{2}$/.test(iso)&&iso<=todayISO()&&Number.isFinite(ml)&&ml>0&&ml<=20000&&ml>=(S.profile.metaAgua||2500)) itens.push({dateISO:iso, xp:15, txt:'Meta de água batida'}); });
+  const hoje=todayISO(), dataOk=iso=>/^\d{4}-\d{2}-\d{2}$/.test(iso)&&iso<=hoje;
+  (S.treinoLogs||[]).forEach(l=>{ const ms=Number(l.ativoMs||0),m=Math.floor(ms/60000); if(dataOk(l.dateISO)&&ms>=60000&&ms<=86400000) itens.push({dateISO:l.dateISO, at:l.updatedAt||0,xp:m,txt:`Treino: ${l.nome||'sessão'} · ${m} min ativo(s)`}); });
+  (S.estudoLogs||[]).forEach(l=>{ const ms=Number(l.ativoMs||0),m=Math.floor(ms/60000); if(!(dataOk(l.dateISO)&&ms>=60000&&ms<=86400000&&m>0)) return; itens.push({dateISO:l.dateISO,at:l.updatedAt||0,xp:m*2,txt:`Estudo: ${l.materia||'matéria'} · ${m} min × 2 XP`});
+    [...new Set(l.conteudos||[])].forEach(cid=>{ const mat=(S.materias||[]).find(x=>x.id===l.materiaId),conteudo=mat?.conteudos?.find(x=>x.id===cid); itens.push({dateISO:l.dateISO,at:l.updatedAt||0,xp:40,txt:`Conteúdo concluído: ${conteudo?.nome||cid}`}); }); });
+  Object.entries(S.agua||{}).forEach(([iso,v])=>{ const ml=Number(v),meta=Number(S.profile.metaAgua||2500); if(dataOk(iso)&&Number.isFinite(ml)&&ml>0&&ml<=20000&&ml>=meta) itens.push({dateISO:iso,xp:15,txt:`Meta de água: ${ml.toLocaleString('pt-BR')} de ${meta.toLocaleString('pt-BR')} ml`}); });
+  Object.entries(S.rotinaDias||{}).forEach(([iso,acts])=>{ if(!dataOk(iso)||!Array.isArray(acts))return; acts.forEach(a=>itens.push({dateISO:iso,at:a.updatedAt||0,xp:a.done?10:(iso<hoje?-10:0),txt:a.done?`Rotina cumprida: ${a.nome}${a.hora?` (${a.hora})`:''}`:`Rotina não cumprida: ${a.nome}${a.hora?` (${a.hora})`:''}`})); });
+  for(let i=itens.length-1;i>=0;i--)if(!itens[i].xp)itens.splice(i,1);
   if(S.profile.xpBonus) itens.push({dateISO:todayISO(), xp:S.profile.xpBonus, txt:'Bônus/ajuste'});
-  itens.sort((a,b)=>String(b.dateISO).localeCompare(String(a.dateISO)));
+  itens.sort((a,b)=>String(b.dateISO).localeCompare(String(a.dateISO))||(b.at||0)-(a.at||0));
   const total=computeXP();
+  const ganhos=itens.filter(i=>i.xp>0).reduce((s,i)=>s+i.xp,0), perdas=itens.filter(i=>i.xp<0).reduce((s,i)=>s+i.xp,0);
   const linhas = itens.length ? itens.slice(0,60).map(i=>`<div class="rowitem"><div class="txt"><div class="t">${esc(i.txt)}</div><div class="s mono">${i.dateISO?new Date(i.dateISO+'T00:00:00').toLocaleDateString('pt-BR'):''}</div></div><div style="font-weight:800;color:${i.xp<0?'var(--accent2)':'var(--ok)'}">${i.xp>0?'+':''}${i.xp.toLocaleString('pt-BR')}</div></div>`).join('') : '<p class="muted small">Sem pontos ainda. Treine, estude e cumpra metas pra pontuar.</p>';
   openSheet(`<h3>Histórico de XP</h3>
-    <p class="small muted">Total atual: <b>${total.toLocaleString('pt-BR')} XP</b>. Cada treino, estudo, conteúdo e meta de água vira ponto.</p>
+    <p class="small muted">Total atual: <b>${total.toLocaleString('pt-BR')} XP</b> · ganhos listados: <b style="color:var(--ok)">+${ganhos.toLocaleString('pt-BR')}</b> · perdas: <b style="color:var(--accent2)">${perdas.toLocaleString('pt-BR')}</b>. Cada linha informa exatamente a origem.</p>
     ${linhas}`);
 }
 
@@ -2821,12 +2828,36 @@ function renderRotina(){
         <p class="small muted" style="margin:0 2px 8px">${rotClearMode?'Selecione os dias que quer remover e confirme abaixo.':rotAddMode?'Selecione um ou vários dias e confirme abaixo para adicionar a atividade.':edit?'Toque num dia para editar ou use “＋ adicionar nos dias” para selecionar vários.':'Toque num dia pra ver o que tem planejado.'}</p>
         <div id="rotinaCal"></div>
       </div>
-    </div>`;
+    </div>
+    <div class="section-title" style="margin-top:24px"><span>⏰ Alarmes</span><button class="btn sm" id="novoAlarme">＋ Novo alarme</button></div>
+    <p class="small muted">No aplicativo aberto, toca continuamente até você desligar. Fechado, envia aviso persistente no aparelho.</p>
+    <div id="alarmList" class="alarm-list"></div>`;
   if(edit) $('#addHabito').onclick=()=>editHabitoSheet(null);
   if($('#rotAdicionarDias')) $('#rotAdicionarDias').onclick=()=>{ rotAddMode=!rotAddMode; rotAddSel=new Set(); rotClearMode=false; rotClearSel=new Set(); renderRotina(); };
   if($('#rotLimpar')) $('#rotLimpar').onclick=()=>{ rotClearMode=!rotClearMode; rotClearSel=new Set(); rotAddMode=false; rotAddSel=new Set(); renderRotina(); };
-  renderRotinaList(); renderCalendarioRotina();
+  $('#novoAlarme').onclick=()=>alarmeSheet();
+  renderRotinaList(); renderCalendarioRotina(); renderAlarmes();
 }
+
+const ALARM_DIAS=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
+let _alarmAudio=null,_alarmActive=null,_alarmWake=null,_alarmVib=null;
+function renderAlarmes(){
+  const box=$('#alarmList');if(!box)return;const lista=Array.isArray(S.alarmes)?S.alarmes:[];
+  box.innerHTML=lista.length?lista.slice().sort((a,b)=>String(a.hora).localeCompare(String(b.hora))).map(a=>`<div class="alarm-card"><button class="alarm-switch ${a.ativo!==false?'on':''}" data-alarm-toggle="${a.id}"></button><div data-alarm-edit="${a.id}" style="cursor:pointer"><div class="alarm-time">${esc(a.hora||'00:00')}</div><b>${esc(a.nome||'Alarme')}</b><div class="alarm-days">${(a.dias||[]).length===7||(a.dias||[]).length===0?'Todos os dias':(a.dias||[]).map(d=>ALARM_DIAS[d]).join(' · ')} · volume ${a.volume==='maximo'?'máximo':a.volume||'alto'}</div></div><button class="pencil" data-alarm-del="${a.id}">🗑️</button></div>`).join(''):'<p class="muted small">Nenhum alarme criado.</p>';
+  $$('[data-alarm-toggle]',box).forEach(b=>b.onclick=async()=>{const a=lista.find(x=>x.id===b.dataset.alarmToggle);if(a){a.ativo=a.ativo===false;await save('rotina:alarmes');renderAlarmes();}});$$('[data-alarm-edit]',box).forEach(b=>b.onclick=()=>alarmeSheet(b.dataset.alarmEdit));$$('[data-alarm-del]',box).forEach(b=>b.onclick=async()=>{S.alarmes=lista.filter(x=>x.id!==b.dataset.alarmDel);await save('rotina:alarmes');renderAlarmes();});
+}
+function alarmeSheet(id){
+  const a=(S.alarmes||[]).find(x=>x.id===id)||{id:uid(),nome:'Alarme',hora:'07:00',dias:[0,1,2,3,4,5,6],ativo:true,volume:'maximo'};
+  openSheet(`<h3>${id?'Editar':'Novo'} alarme</h3><div class="field"><label>Nome</label><input id="alNome" value="${esc(a.nome)}" maxlength="80"></div><div class="field"><label>Horário</label><input id="alHora" type="time" value="${esc(a.hora)}"></div><div class="field"><label>Dias</label><div class="alarm-levels">${ALARM_DIAS.map((d,i)=>`<label><input type="checkbox" data-al-dia="${i}" ${(a.dias||[]).includes(i)?'checked':''}>${d}</label>`).join('')}</div></div><div class="field"><label>Intensidade</label><div class="alarm-levels">${[['normal','Normal'],['alto','Alto'],['maximo','Máximo']].map(([v,n])=>`<label><input type="radio" name="alVol" value="${v}" ${a.volume===v?'checked':''}>${n}</label>`).join('')}</div><p class="small muted">O máximo respeita o volume definido no aparelho.</p></div><button class="btn" id="alSalvar">Salvar alarme</button>`);
+  $('#alSalvar').onclick=async()=>{const nome=$('#alNome').value.trim(),hora=$('#alHora').value,diasMarcados=$$('#sheet [data-al-dia]:checked').map(x=>+x.dataset.alDia),dias=diasMarcados.length?diasMarcados:[0,1,2,3,4,5,6],volume=$('#sheet [name="alVol"]:checked')?.value||'alto';if(!nome||!/^([01]\d|2[0-3]):[0-5]\d$/.test(hora))return toast('Preencha nome e horário corretamente.');Object.assign(a,{nome,hora,dias,volume,ativo:a.ativo!==false,lastFired:null});if(!id)(S.alarmes||(S.alarmes=[])).push(a);await save('rotina:alarmes');closeSheet();renderAlarmes();toast('Alarme salvo.');};
+}
+function alarmOccurrence(a){return `${todayISO()}:${a.hora}`;}
+async function dispararAlarme(a){if(_alarmActive)return;_alarmActive=a;a.lastFired=alarmOccurrence(a);save('rotina:alarmes');$('#alarmClock').textContent=a.hora;$('#alarmTitle').textContent=a.nome||'ALARME';$('#alarmOverlay').classList.add('show');try{_alarmAudio=new Audio('siren.mp3');_alarmAudio.loop=true;_alarmAudio.volume=a.volume==='normal'?.55:a.volume==='alto'?.82:1;await _alarmAudio.play();}catch(e){toast('Toque em DESLIGAR para confirmar o alarme.');}if(navigator.vibrate)_alarmVib=setInterval(()=>navigator.vibrate([900,200,900]),2200);try{_alarmWake=await navigator.wakeLock?.request('screen');}catch(e){}}
+function pararAlarme(){if(!_alarmActive)return;try{_alarmAudio?.pause();if(_alarmAudio)_alarmAudio.currentTime=0;}catch(e){}clearInterval(_alarmVib);navigator.vibrate?.(0);try{_alarmWake?.release();}catch(e){}$('#alarmOverlay').classList.remove('show');_alarmAudio=null;_alarmActive=null;_alarmWake=null;}
+$('#alarmStop').onclick=pararAlarme;
+$('#alarmOverlay').addEventListener('pointerdown',async()=>{if(_alarmActive&&_alarmAudio?.paused){try{await _alarmAudio.play();}catch(e){}}});
+function checkAlarmes(){if(!S||_alarmActive)return;const n=brasiliaNow(),min=n.getHours()*60+n.getMinutes();const a=(S.alarmes||[]).find(x=>{if(x.ativo===false||!/^([01]\d|2[0-3]):[0-5]\d$/.test(x.hora))return false;if((x.dias||[]).length&&!(x.dias||[]).includes(n.getDay()))return false;const [h,m]=x.hora.split(':').map(Number),late=min-(h*60+m);return late>=0&&late<=5&&x.lastFired!==alarmOccurrence(x);});if(a)dispararAlarme(a);}
+function startAlarmes(){clearInterval(window._alarmTimer);window._alarmTimer=setInterval(checkAlarmes,1000);checkAlarmes();}
 // status de um dia: sempre usa as mesmas atividades exibidas no calendário
 function diaStatusRotina(iso){
   const acts=(S.rotinaDias&&S.rotinaDias[iso])||[];
