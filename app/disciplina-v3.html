@@ -4,10 +4,10 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no, interactive-widget=resizes-content">
 <meta name="theme-color" content="#0a0a0d">
-<link rel="manifest" href="manifest.json?v=94">
-<link rel="icon" type="image/png" sizes="227x227" href="favicon-rz.png?v=94">
-<link rel="shortcut icon" type="image/png" href="favicon-rz.png?v=94">
-<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png?v=94">
+<link rel="manifest" href="manifest.json?v=110">
+<link rel="icon" type="image/png" sizes="227x227" href="favicon-rz.png?v=110">
+<link rel="shortcut icon" type="image/png" href="favicon-rz.png?v=110">
+<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png?v=110">
 <title>REDZONE</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -728,7 +728,7 @@ setInterval(()=>{ if(authToken&&offQueue().length&&navigator.onLine) flushQueue(
 
 /* id único DESTE aparelho/aba — usado pra não ecoar de volta a própria escrita no sync ao vivo */
 const CLIENT_ID = (Math.random().toString(36).slice(2)+'-'+Date.now().toString(36));
-const APP_BUILD = 'redzone-v109';
+const APP_BUILD = 'redzone-v110';
 // evita re-render que rouba o foco enquanto a pessoa digita (o dado já foi aplicado em S de qualquer forma)
 function _syncPodeRender(){ const a=document.activeElement; return !(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||'')); }
 // ANTI-LOOP: ao aplicar uma mudança que VEIO do servidor, um re-render pode disparar escritas de
@@ -2843,16 +2843,16 @@ const ALARM_DIAS=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
 let _alarmAudio=null,_alarmActive=null,_alarmWake=null,_alarmVib=null;
 function renderAlarmes(){
   const box=$('#alarmList');if(!box)return;const lista=Array.isArray(S.alarmes)?S.alarmes:[];
-  box.innerHTML=lista.length?lista.slice().sort((a,b)=>String(a.hora).localeCompare(String(b.hora))).map(a=>`<div class="alarm-card"><button class="alarm-switch ${a.ativo!==false?'on':''}" data-alarm-toggle="${a.id}"></button><div data-alarm-edit="${a.id}" style="cursor:pointer"><div class="alarm-time">${esc(a.hora||'00:00')}</div><b>${esc(a.nome||'Alarme')}</b><div class="alarm-days">${(a.dias||[]).length===7||(a.dias||[]).length===0?'Todos os dias':(a.dias||[]).map(d=>ALARM_DIAS[d]).join(' · ')} · volume ${a.volume==='maximo'?'máximo':a.volume||'alto'}</div></div><button class="pencil" data-alarm-del="${a.id}">🗑️</button></div>`).join(''):'<p class="muted small">Nenhum alarme criado.</p>';
+  box.innerHTML=lista.length?lista.slice().sort((a,b)=>String(a.hora).localeCompare(String(b.hora))).map(a=>`<div class="alarm-card"><button class="alarm-switch ${a.ativo!==false?'on':''}" data-alarm-toggle="${a.id}"></button><div data-alarm-edit="${a.id}" style="cursor:pointer"><div class="alarm-time">${esc(a.hora||'00:00')}</div><b>${esc(a.nome||'Alarme')}</b><div class="alarm-days">${(a.dias||[]).length===7||(a.dias||[]).length===0?'Todos os dias':(a.dias||[]).map(d=>ALARM_DIAS[d]).join(' · ')} · ${a.som==='grave'?'sirene grave':a.som==='rapida'?'sirene rápida':'sirene original'} · volume ${a.volume==='maximo'?'máximo':a.volume||'alto'}</div></div><button class="pencil" data-alarm-del="${a.id}">🗑️</button></div>`).join(''):'<p class="muted small">Nenhum alarme criado.</p>';
   $$('[data-alarm-toggle]',box).forEach(b=>b.onclick=async()=>{const a=lista.find(x=>x.id===b.dataset.alarmToggle);if(a){a.ativo=a.ativo===false;await save('rotina:alarmes');renderAlarmes();}});$$('[data-alarm-edit]',box).forEach(b=>b.onclick=()=>alarmeSheet(b.dataset.alarmEdit));$$('[data-alarm-del]',box).forEach(b=>b.onclick=async()=>{S.alarmes=lista.filter(x=>x.id!==b.dataset.alarmDel);await save('rotina:alarmes');renderAlarmes();});
 }
 function alarmeSheet(id){
-  const a=(S.alarmes||[]).find(x=>x.id===id)||{id:uid(),nome:'Alarme',hora:'07:00',dias:[0,1,2,3,4,5,6],ativo:true,volume:'maximo'};
-  openSheet(`<h3>${id?'Editar':'Novo'} alarme</h3><div class="field"><label>Nome</label><input id="alNome" value="${esc(a.nome)}" maxlength="80"></div><div class="field"><label>Horário</label><input id="alHora" type="time" value="${esc(a.hora)}"></div><div class="field"><label>Dias</label><div class="alarm-levels">${ALARM_DIAS.map((d,i)=>`<label><input type="checkbox" data-al-dia="${i}" ${(a.dias||[]).includes(i)?'checked':''}>${d}</label>`).join('')}</div></div><div class="field"><label>Intensidade</label><div class="alarm-levels">${[['normal','Normal'],['alto','Alto'],['maximo','Máximo']].map(([v,n])=>`<label><input type="radio" name="alVol" value="${v}" ${a.volume===v?'checked':''}>${n}</label>`).join('')}</div><p class="small muted">O máximo respeita o volume definido no aparelho.</p></div><button class="btn" id="alSalvar">Salvar alarme</button>`);
-  $('#alSalvar').onclick=async()=>{const nome=$('#alNome').value.trim(),hora=$('#alHora').value,diasMarcados=$$('#sheet [data-al-dia]:checked').map(x=>+x.dataset.alDia),dias=diasMarcados.length?diasMarcados:[0,1,2,3,4,5,6],volume=$('#sheet [name="alVol"]:checked')?.value||'alto';if(!nome||!/^([01]\d|2[0-3]):[0-5]\d$/.test(hora))return toast('Preencha nome e horário corretamente.');Object.assign(a,{nome,hora,dias,volume,ativo:a.ativo!==false,lastFired:null});if(!id)(S.alarmes||(S.alarmes=[])).push(a);await save('rotina:alarmes');closeSheet();renderAlarmes();toast('Alarme salvo.');};
+  const a=(S.alarmes||[]).find(x=>x.id===id)||{id:uid(),nome:'Alarme',hora:'07:00',dias:[0,1,2,3,4,5,6],ativo:true,volume:'maximo',som:'original'};
+  openSheet(`<h3>${id?'Editar':'Novo'} alarme</h3><div class="field"><label>Nome</label><input id="alNome" value="${esc(a.nome)}" maxlength="80"></div><div class="field"><label>Horário</label><input id="alHora" type="time" value="${esc(a.hora)}"></div><div class="field"><label>Dias</label><div class="alarm-levels">${ALARM_DIAS.map((d,i)=>`<label><input type="checkbox" data-al-dia="${i}" ${(a.dias||[]).includes(i)?'checked':''}>${d}</label>`).join('')}</div></div><div class="field"><label>Som</label><div class="alarm-levels">${[['original','Original'],['grave','Grave'],['rapida','Rápida']].map(([v,n])=>`<label><input type="radio" name="alSom" value="${v}" ${(a.som||'original')===v?'checked':''}>${n}</label>`).join('')}</div></div><div class="field"><label>Intensidade</label><div class="alarm-levels">${[['normal','Normal'],['alto','Alto'],['maximo','Máximo']].map(([v,n])=>`<label><input type="radio" name="alVol" value="${v}" ${a.volume===v?'checked':''}>${n}</label>`).join('')}</div><p class="small muted">O máximo respeita o volume definido no aparelho.</p></div><button class="btn" id="alSalvar">Salvar alarme</button>`);
+  $('#alSalvar').onclick=async()=>{const nome=$('#alNome').value.trim(),hora=$('#alHora').value,diasMarcados=$$('#sheet [data-al-dia]:checked').map(x=>+x.dataset.alDia),dias=diasMarcados.length?diasMarcados:[0,1,2,3,4,5,6],volume=$('#sheet [name="alVol"]:checked')?.value||'alto',som=$('#sheet [name="alSom"]:checked')?.value||'original';if(!nome||!/^([01]\d|2[0-3]):[0-5]\d$/.test(hora))return toast('Preencha nome e horário corretamente.');Object.assign(a,{nome,hora,dias,volume,som,ativo:a.ativo!==false,lastFired:null});if(!id)(S.alarmes||(S.alarmes=[])).push(a);await save('rotina:alarmes');closeSheet();renderAlarmes();toast('Alarme salvo.');};
 }
 function alarmOccurrence(a){return `${todayISO()}:${a.hora}`;}
-async function dispararAlarme(a){if(_alarmActive)return;_alarmActive=a;a.lastFired=alarmOccurrence(a);save('rotina:alarmes');$('#alarmClock').textContent=a.hora;$('#alarmTitle').textContent=a.nome||'ALARME';$('#alarmOverlay').classList.add('show');try{_alarmAudio=new Audio('siren.mp3');_alarmAudio.loop=true;_alarmAudio.volume=a.volume==='normal'?.55:a.volume==='alto'?.82:1;await _alarmAudio.play();}catch(e){toast('Toque em DESLIGAR para confirmar o alarme.');}if(navigator.vibrate)_alarmVib=setInterval(()=>navigator.vibrate([900,200,900]),2200);try{_alarmWake=await navigator.wakeLock?.request('screen');}catch(e){}}
+async function dispararAlarme(a){if(_alarmActive)return;_alarmActive=a;a.lastFired=alarmOccurrence(a);save('rotina:alarmes');$('#alarmClock').textContent=a.hora;$('#alarmTitle').textContent=a.nome||'ALARME';$('#alarmOverlay').classList.add('show');try{_alarmAudio=new Audio('siren.mp3');_alarmAudio.loop=true;_alarmAudio.playbackRate=a.som==='grave'?.78:a.som==='rapida'?1.22:1;_alarmAudio.preservesPitch=false;_alarmAudio.volume=a.volume==='normal'?.55:a.volume==='alto'?.82:1;await _alarmAudio.play();}catch(e){toast('Toque em DESLIGAR para confirmar o alarme.');}if(navigator.vibrate)_alarmVib=setInterval(()=>navigator.vibrate([900,200,900]),2200);try{_alarmWake=await navigator.wakeLock?.request('screen');}catch(e){}}
 function pararAlarme(){if(!_alarmActive)return;try{_alarmAudio?.pause();if(_alarmAudio)_alarmAudio.currentTime=0;}catch(e){}clearInterval(_alarmVib);navigator.vibrate?.(0);try{_alarmWake?.release();}catch(e){}$('#alarmOverlay').classList.remove('show');_alarmAudio=null;_alarmActive=null;_alarmWake=null;}
 $('#alarmStop').onclick=pararAlarme;
 $('#alarmOverlay').addEventListener('pointerdown',async()=>{if(_alarmActive&&_alarmAudio?.paused){try{await _alarmAudio.play();}catch(e){}}});
@@ -4057,7 +4057,7 @@ function renderPerfilTemas(){
 /* =========================================================================
    NOTIFICAÇÕES / TRY HARD
 ========================================================================= */
-function notify(title,body,alvo,comSom){ if(!S?.config?.notif) return; if(comSom) tocarSomNotif(); if('Notification' in window && Notification.permission==='granted'){ try{ const n=new Notification(title,{body, icon:'icon-192.png'}); n.onclick=()=>{ try{ window.focus(); }catch(e){} try{ if(alvo){ if(alvo[0]==='#'){ location.hash=alvo; if(typeof handleDeepLink==='function') handleDeepLink(); } else go(alvo); } }catch(e){} n.close(); }; }catch(e){} } }
+function notify(title,body,alvo,comSom){ if(!S?.config?.notif) return; if(comSom) tocarSomNotif(); if('Notification' in window && Notification.permission==='granted'){ try{ const n=new Notification(title,{body, icon:'icon-192.png?v=110',badge:'icon-192.png?v=110'}); n.onclick=()=>{ try{ window.focus(); }catch(e){} try{ if(alvo){ if(alvo[0]==='#'){ location.hash=alvo; if(typeof handleDeepLink==='function') handleDeepLink(); } else go(alvo); } }catch(e){} n.close(); }; }catch(e){} } }
 function tryOpts(){ if(!S.config.tryOpts) S.config.tryOpts={som:'alarme', vibrar:true, intervaloS:20, treguaS:60, somNotif:true}; return S.config.tryOpts; }
 const NOTIF_CATS=[['mensagens','Mensagens'],['lembretes','Lembretes'],['social','Curtidas e comentários'],['sistema','Avisos do REDZONE']];
 function sonsNotif(){const o=tryOpts();if(!o.sonsNotif){o.sonsNotif={};NOTIF_CATS.forEach(([k])=>o.sonsNotif[k]={ativo:o.somNotif!==false,url:o.somNotifCustom||null});}return o.sonsNotif;}

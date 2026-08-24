@@ -1,6 +1,6 @@
 # REDZONE (ex-DISCIPLINA) — Status atual e roadmap (ponto de retomada)
 
-**Versão no ar: v109** — conta beta limpa para uso real, alarmes na Rotina e histórico de XP detalhado; lembretes da rotina agora usam a chave canônica correta no servidor.
+**Versão no ar: v110** — identidade RZ padronizada em favicon, instalação, atalhos e notificações; alarmes ganharam escolha entre sirene original, grave e rápida.
 
 > Documento vivo pra QUALQUER sessão continuar sem perder contexto. Se o chat
 > zerar, leia isto + `docs/07`, `08`, `09` e os arquivos de memória.
@@ -43,6 +43,8 @@
 > 🛡️ **v76/v77:** painel administrativo protegido, responsividade de tablet/TV e comunicados do proprietário para todos ou para usuário específico.
 >
 > 🟢 **v109 PUBLICADA (24/08/2026):** a conta `felipeestudos220807@gmail.com` foi zerada com backup transacional, preservando identidade, login, senha e pergunta de segurança. A Rotina ganhou alarmes configuráveis com toque contínuo enquanto o app está aberto e push persistente quando fechado. O Histórico de XP mostra ganhos e perdas válidos com data, motivo e valor. Limite técnico documentado: navegador/PWA não pode elevar o volume acima do sistema nem garantir sirene contínua com o processo totalmente encerrado; garantia idêntica ao app Relógio exige versão Android nativa.
+>
+> 🟢 **v110:** todos os pontos de marca usam o emblema RZ (`favicon`, manifest, ícones instaláveis, Apple touch icon e notificações). Atalhos antigos do Android podem exigir remover e adicionar novamente uma única vez porque o launcher mantém o ícone anterior fora do controle do site.
 
 ## PRÓXIMA SESSÃO (combinado p/ amanhã, 2026-08-11) ⭐
 **REDESIGN a partir de mockup do ChatGPT.** O Felipe gera a estética no ChatGPT e **manda a imagem**; eu

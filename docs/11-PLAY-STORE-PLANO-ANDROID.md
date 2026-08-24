@@ -202,6 +202,22 @@ Não usar prints com informações privadas de usuários. Não prometer “zero 
 
 ## Alternativas consideradas
 
+### Módulo Android nativo para alarme exato
+
+O alarme para sono pesado não deve depender apenas da TWA/PWA. A implementação
+correta é uma camada Android nativa usando `AlarmManager`, permissão de alarme
+exato, `BroadcastReceiver`, serviço em primeiro plano, notificação de tela cheia,
+canal próprio de alarme e reagendamento após reiniciar o aparelho. O som deve
+repetir até o usuário tocar explicitamente em **Desligar**, com opções de sirene
+embutidas no aplicativo. O volume máximo continua limitado pelo sistema e pelo
+hardware; o app pode usar o canal de alarme, mas não deve alterar o volume do
+usuário silenciosamente.
+
+Essa camada exige gerar, instalar e testar um APK/AAB Android; uma atualização
+somente do site não consegue conceder essas garantias. Os alarmes criados no
+REDZONE web devem ser sincronizados com o módulo nativo quando o app Android
+estiver instalado, mantendo o backend e a interface atuais como fonte dos dados.
+
 ### Continuar somente como PWA
 
 Mais barato e já funciona. Não oferece descoberta/confiança da Play Store e a
