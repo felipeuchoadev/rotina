@@ -11,6 +11,20 @@ batalhaRouter.use(exigirAuth);
 
 const pubSel = { id: true, username: true, nomeGuerra: true, bio:true, fotoUrl: true, genero: true, privado: true, xp: true, isAdmin:true };
 
+batalhaRouter.post('/perfil/:username/visualizacao', async (req,res) => {
+  const tipo=req.body?.tipo==='foto'?'foto_vista':'perfil_visto';
+  const [alvo,me]=await Promise.all([
+    prisma.usuario.findUnique({where:{username:String(req.params.username||'').toLowerCase()},select:{id:true,username:true}}),
+    prisma.usuario.findUnique({where:{id:req.userId},select:{id:true,username:true,nomeGuerra:true,isAdmin:true}}),
+  ]);
+  if(!alvo)return res.status(404).json({erro:'Usuário não encontrado.'});
+  if(!me||alvo.id===me.id||me.isAdmin)return res.json({ok:true,ignorada:true});
+  const desde=new Date(Date.now()-10*60*1000);
+  const recente=await prisma.notificacao.findFirst({where:{usuarioId:alvo.id,tipo,deUsername:me.username,criadoEm:{gte:desde}},select:{id:true}});
+  if(!recente)await notificar(alvo.id,tipo,tipo==='foto_vista'?`${me.nomeGuerra} visualizou sua foto de perfil`:`${me.nomeGuerra} visualizou seu perfil`,me.username);
+  res.json({ok:true});
+});
+
 async function notificar(usuarioId, tipo, texto, deUsername, alvoPostId, alvoCommentId = null) {
   if (!usuarioId) return;
   try { await prisma.notificacao.create({ data: { usuarioId, tipo, texto, deUsername, alvoPostId: alvoPostId || null, alvoCommentId } }); } catch {}

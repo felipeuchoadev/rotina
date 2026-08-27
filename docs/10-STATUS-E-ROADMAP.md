@@ -1,6 +1,6 @@
 # REDZONE (ex-DISCIPLINA) — Status atual e roadmap (ponto de retomada)
 
-**Versão no ar: v115** — correção emergencial do ciclo de atualização: `APP_BUILD` e cache do service worker agora usam a mesma versão, encerrando o reload contínuo; checagem de contingência passou de 10 segundos para 15 minutos. Mantém o refinamento amplo da v114 baseado nas 26 capturas.
+**Versão no ar: v116** — revisão criteriosa das 26 capturas concluída sobre a base estável da v115. Corrigidos: atualização do feed atravessando chat/janelas, avisos e permissões indevidos durante modo suporte, retorno ao ADM, histórico de XP organizado por pastas/origem, respostas do chat, seletor de alarme por arraste, foto/perfil com registro real de visualização, favicon/manifest/SW sincronizados e proteção contra evento de atualização duplicado. Nenhum dado ou conta foi apagado.
 
 > Documento vivo pra QUALQUER sessão continuar sem perder contexto. Se o chat
 > zerar, leia isto + `docs/07`, `08`, `09` e os arquivos de memória.
@@ -55,7 +55,7 @@ Ver memória [[plano-redesign-login-download]] e [[assets-via-downloads]]. Pedir
 fontes/cores; manter wordmark transparente (`redzone-wordmark.png`) e emblema camuflado (`mix-blend-mode:screen`).
 
 ## PENDENTE DE VERDADE
-1. **Validação autenticada final da v114 em aparelhos reais**: fluxos internos foram validados por sintaxe, API, hashes e responsividade pública, mas ADM/chat/rotina exigem sessão do proprietário no dispositivo para uma última conferência manual das permissões e do push fechado.
+1. **Validação autenticada final da v116 em aparelhos reais**: sintaxe, manifesto, versão publicada, serviço, console público e responsividade 390×844 / 768×1024 / 1440×900 foram validados. ADM/chat/rotina, permissão do destinatário e push com o navegador fechado ainda exigem conferência manual com a conta atual no aparelho; não usar a conta antiga excluída. Um site/PWA não consegue impedir captura de tela pelo sistema operacional, apenas bloquear menu, arraste, download e zoom dentro do app.
 2. **Redesign login/landing/app** (item ⭐ acima) — aguarda novo mockup específico do Felipe; não refazer sem referência.
 3. **Domínio pro e-mail** (~R$40/ano): sem domínio o Resend só entrega pro dono; recuperação por **pergunta de
    segurança** já cobre todos. Quando houver domínio, configurar SPF/DKIM no Resend e trocar `MAIL_FROM`.
