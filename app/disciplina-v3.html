@@ -732,7 +732,7 @@ setInterval(()=>{ if(authToken&&offQueue().length&&navigator.onLine) flushQueue(
 
 /* id único DESTE aparelho/aba — usado pra não ecoar de volta a própria escrita no sync ao vivo */
 const CLIENT_ID = (Math.random().toString(36).slice(2)+'-'+Date.now().toString(36));
-const APP_BUILD = 'redzone-v113';
+const APP_BUILD = 'redzone-v115';
 // evita re-render que rouba o foco enquanto a pessoa digita (o dado já foi aplicado em S de qualquer forma)
 function _syncPodeRender(){ const a=document.activeElement; return !(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||'')); }
 // ANTI-LOOP: ao aplicar uma mudança que VEIO do servidor, um re-render pode disparar escritas de
@@ -4425,7 +4425,7 @@ document.addEventListener('visibilitychange',renovarPushEmSegundoPlano);
     // checa por atualização periodicamente (app aberto por muito tempo)
     // O socket entrega deploy em tempo real; esta checagem é só contingência e não deve gastar dados a cada 5s.
     const checarVersao=()=>{if(document.visibilityState==='visible')navigator.serviceWorker.getRegistration().then(r=>r&&r.update()).catch(()=>{});};
-    setInterval(checarVersao,10000);document.addEventListener('visibilitychange',()=>{checarVersao();if(document.visibilityState==='visible')sincronizarRelogioBrasilia();});
+    setInterval(checarVersao,900000);document.addEventListener('visibilitychange',()=>{checarVersao();if(document.visibilityState==='visible')sincronizarRelogioBrasilia();});
   }
 })();
 </script>

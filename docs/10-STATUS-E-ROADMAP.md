@@ -1,6 +1,6 @@
 # REDZONE (ex-DISCIPLINA) — Status atual e roadmap (ponto de retomada)
 
-**Versão no ar: v114** — refinamento amplo baseado em 26 capturas: marca/ícones com cache renovado, menu lateral temático, ADM responsivo e legível, busca de destinatários, avisos com conteúdo/destino/data, histórico de ações com nomes, retorno do modo suporte, notificações silenciadas no ADM/suporte, descrições e mídia opcional na rotina, calendário por gesto, máscara de horário, chat móvel com quebra de linha, emojis recentes e anexos compatíveis com GIF/figurinhas. XP continua calculado exclusivamente pelo servidor e desfazer atividade remove o ganho.
+**Versão no ar: v115** — correção emergencial do ciclo de atualização: `APP_BUILD` e cache do service worker agora usam a mesma versão, encerrando o reload contínuo; checagem de contingência passou de 10 segundos para 15 minutos. Mantém o refinamento amplo da v114 baseado nas 26 capturas.
 
 > Documento vivo pra QUALQUER sessão continuar sem perder contexto. Se o chat
 > zerar, leia isto + `docs/07`, `08`, `09` e os arquivos de memória.
