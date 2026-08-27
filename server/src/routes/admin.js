@@ -84,12 +84,19 @@ adminRouter.post('/usuarios/:id/entrar-como', async (req,res)=>{
 });
 
 adminRouter.get('/auditoria', async (_req,res)=>{
-  const itens=await prisma.adminAudit.findMany({orderBy:{criadoEm:'desc'},take:100}); res.json({itens});
+  const itens=await prisma.adminAudit.findMany({orderBy:{criadoEm:'desc'},take:100});
+  const ids=[...new Set(itens.map(i=>i.alvoId).filter(Boolean))];
+  const usuarios=ids.length?await prisma.usuario.findMany({where:{id:{in:ids}},select:{id:true,nomeGuerra:true,username:true}}):[];
+  const porId=new Map(usuarios.map(u=>[u.id,u]));
+  res.json({itens:itens.map(i=>({...i,alvo:porId.get(i.alvoId)||null}))});
 });
 
 adminRouter.get('/avisos',async(_req,res)=>{
   const avisos=await prisma.adminAviso.findMany({orderBy:{criadoEm:'desc'},take:50,include:{_count:{select:{dispensas:true}}}});
-  res.json({avisos});
+  const ids=[...new Set(avisos.map(a=>a.destinatarioId).filter(Boolean))];
+  const usuarios=ids.length?await prisma.usuario.findMany({where:{id:{in:ids}},select:{id:true,nomeGuerra:true,username:true}}):[];
+  const porId=new Map(usuarios.map(u=>[u.id,u]));
+  res.json({avisos:avisos.map(a=>({...a,destinatario:porId.get(a.destinatarioId)||null}))});
 });
 
 adminRouter.post('/avisos',async(req,res)=>{

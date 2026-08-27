@@ -1,6 +1,6 @@
 # REDZONE (ex-DISCIPLINA) — Status atual e roadmap (ponto de retomada)
 
-**Versão no ar: v113** — despertador reorganizado com biblioteca/teste de sons, áudio próprio, intensidade deslizante e repetição por dias; avisos fechados não reaparecem; data de criação da conta disponível no perfil.
+**Versão no ar: v114** — refinamento amplo baseado em 26 capturas: marca/ícones com cache renovado, menu lateral temático, ADM responsivo e legível, busca de destinatários, avisos com conteúdo/destino/data, histórico de ações com nomes, retorno do modo suporte, notificações silenciadas no ADM/suporte, descrições e mídia opcional na rotina, calendário por gesto, máscara de horário, chat móvel com quebra de linha, emojis recentes e anexos compatíveis com GIF/figurinhas. XP continua calculado exclusivamente pelo servidor e desfazer atividade remove o ganho.
 
 > Documento vivo pra QUALQUER sessão continuar sem perder contexto. Se o chat
 > zerar, leia isto + `docs/07`, `08`, `09` e os arquivos de memória.
@@ -55,10 +55,11 @@ Ver memória [[plano-redesign-login-download]] e [[assets-via-downloads]]. Pedir
 fontes/cores; manter wordmark transparente (`redzone-wordmark.png`) e emblema camuflado (`mix-blend-mode:screen`).
 
 ## PENDENTE DE VERDADE
-1. **Redesign login/landing/app** (item ⭐ acima) — foco de amanhã.
-2. **Domínio pro e-mail** (~R$40/ano): sem domínio o Resend só entrega pro dono; recuperação por **pergunta de
+1. **Validação autenticada final da v114 em aparelhos reais**: fluxos internos foram validados por sintaxe, API, hashes e responsividade pública, mas ADM/chat/rotina exigem sessão do proprietário no dispositivo para uma última conferência manual das permissões e do push fechado.
+2. **Redesign login/landing/app** (item ⭐ acima) — aguarda novo mockup específico do Felipe; não refazer sem referência.
+3. **Domínio pro e-mail** (~R$40/ano): sem domínio o Resend só entrega pro dono; recuperação por **pergunta de
    segurança** já cobre todos. Quando houver domínio, configurar SPF/DKIM no Resend e trocar `MAIL_FROM`.
-3. **Landing**: falta screenshots reais (o Felipe pode mandar prints ou exibir o painel Browser pra eu capturar).
+4. **Landing**: falta screenshots reais finais.
 
 ## ONDA 8 — no ar (feedback intenso do Felipe, SW v9→v22) ✅
 - **Cadastro mobile (tela branca)**: `html{background:var(--bg2)}` (fallback escuro) resolveu a faixa branca.
