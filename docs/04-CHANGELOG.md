@@ -1,5 +1,11 @@
 # Changelog
 
+## v118 (30/08/2026)
+- Estudos: substituída a caixa “conteúdos, um por linha” por blocos individuais. O botão “Adicionar” cria outro conteúdo; Enter no celular apenas quebra a linha dentro do conteúdo atual.
+- Cada matéria continua sendo um bloco independente, e a finalização da sessão explicita o nome da matéria e lista somente os assuntos pendentes dela.
+- Migração conservadora reúne matérias antigas com o mesmo nome sem perder conteúdos, conclusão, maior tempo válido, agenda ou vínculos dos registros; duplicações não são somadas como tempo/XP.
+- Publicado como `redzone-v118`; sintaxe, manifesto, service worker, teste específico, serviço público, estabilidade e responsividade validados. A área privada não foi alterada com dados fictícios durante os testes.
+
 ## v1 (protótipo inicial)
 - Primeira versão: bottom nav (Início, Treinos, Estudos, Batalha, Perfil),
   tema vermelho/preto único, sem login.

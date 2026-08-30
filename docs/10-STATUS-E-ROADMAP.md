@@ -1,6 +1,6 @@
 # REDZONE (ex-DISCIPLINA) — Status atual e roadmap (ponto de retomada)
 
-**Versão no ar: v117** — auditoria integral das 26 capturas registrada em `docs/14-AUDITORIA-26-CAPTURAS.md`. A v117 fecha as lacunas encontradas: máscara HH:MM durante digitação; sons suaves reais com prévia/pausa; bandeja de GIFs/figurinhas recentes; preservação de animação/transparência na compactação; busca de destinatário no servidor; cards do ADM abrindo dados atuais; e modo suporte sem registrar visualização em nome do usuário. HTML/SW/manifesto estão alinhados e o site não voltou ao ciclo de reload. Nenhum dado ou conta foi apagado.
+**Versão no ar: v118** — o editor de Estudos não interpreta mais cada Enter do celular como outro assunto. Cada conteúdo agora tem um bloco próprio, com campo multilinha e botão explícito “Adicionar”; a sessão continua exibindo e marcando somente conteúdos da matéria escolhida. Matérias antigas repetidas são consolidadas no primeiro bloco, preservando conteúdos, conclusão, maior tempo válido, agenda e vínculos dos registros, sem somar duplicações. HTML/SW/manifesto estão alinhados em v118. Nenhuma conta ou atividade real foi criada para testar.
 
 > Documento vivo pra QUALQUER sessão continuar sem perder contexto. Se o chat
 > zerar, leia isto + `docs/07`, `08`, `09` e os arquivos de memória.
@@ -55,7 +55,7 @@ Ver memória [[plano-redesign-login-download]] e [[assets-via-downloads]]. Pedir
 fontes/cores; manter wordmark transparente (`redzone-wordmark.png`) e emblema camuflado (`mix-blend-mode:screen`).
 
 ## PENDENTE DE VERDADE
-1. **Validação autenticada final da v117 no aparelho real**: sintaxe, manifesto, serviço, estabilidade pública e responsividade 360×800 / 390×844 / 768×1024 / 1440×900 foram validados. Permissão e push fechado precisam ser confirmados pelo dono da conta atual no próprio Android; não usar a conta antiga excluída. Bloqueio de captura do sistema exige futuro wrapper Android com `FLAG_SECURE`.
+1. **Validação autenticada final no aparelho real**: v118 passou sintaxe, teste automatizado da migração de matérias/conteúdos, manifesto, serviço, estabilidade pública e responsividade 390×844 / 768×1024 / 1440×900. O navegador disponível não tinha sessão autenticada; confirmar no Android atual o editor em blocos e o push fechado, sem usar a conta antiga excluída. Bloqueio de captura do sistema exige futuro wrapper Android com `FLAG_SECURE`.
 2. **Redesign login/landing/app** (item ⭐ acima) — aguarda novo mockup específico do Felipe; não refazer sem referência.
 3. **Domínio pro e-mail** (~R$40/ano): sem domínio o Resend só entrega pro dono; recuperação por **pergunta de
    segurança** já cobre todos. Quando houver domínio, configurar SPF/DKIM no Resend e trocar `MAIL_FROM`.

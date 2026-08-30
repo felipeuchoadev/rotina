@@ -187,6 +187,14 @@ button.rowitem{width:100%;text-align:left;font:inherit}
 .rowitem .txt{flex:1; min-width:0;}
 .rowitem .txt .t{font-weight:700; font-size:15.5px; color:var(--text); line-height:1.35;}
 .rowitem .txt .s{font-size:13px; color:var(--text-dim); line-height:1.45; margin-top:3px;}
+.materia-editor-list{display:grid;gap:10px;margin:10px 0 12px}
+.materia-editor-item{display:flex;align-items:flex-start;gap:9px;padding:11px;border:1px solid var(--line);border-radius:16px;background:var(--surface2)}
+.materia-editor-num{display:grid;place-items:center;flex:0 0 30px;height:30px;border-radius:10px;background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent2);font-weight:800;font-size:13px}
+.materia-editor-item textarea{flex:1;min-width:0;min-height:52px;max-height:180px;resize:none;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--text);padding:12px;font:inherit;line-height:1.4;overflow-y:auto}
+.materia-editor-item textarea:focus{outline:none;border-color:var(--accent)}
+.materia-editor-remove{flex:0 0 38px;width:38px;height:38px;border:1px solid var(--line);border-radius:11px;background:transparent;color:var(--text-dim);font-size:17px}
+.materia-editor-remove:active{border-color:var(--danger);color:var(--danger)}
+.materia-content-name{white-space:pre-line;overflow-wrap:anywhere}
 .profile-bio{margin:12px 2px;color:var(--text);line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
 .pencil{opacity:.8; font-size:16px; padding:6px 9px; border-radius:10px; background:rgba(255,255,255,.05); border:1px solid var(--line);}
 
@@ -735,7 +743,7 @@ setInterval(()=>{ if(authToken&&offQueue().length&&navigator.onLine) flushQueue(
 
 /* id único DESTE aparelho/aba — usado pra não ecoar de volta a própria escrita no sync ao vivo */
 const CLIENT_ID = (Math.random().toString(36).slice(2)+'-'+Date.now().toString(36));
-const APP_BUILD = 'redzone-v117';
+const APP_BUILD = 'redzone-v118';
 // evita re-render que rouba o foco enquanto a pessoa digita (o dado já foi aplicado em S de qualquer forma)
 function _syncPodeRender(){ const a=document.activeElement; return !(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||'')); }
 // ANTI-LOOP: ao aplicar uma mudança que VEIO do servidor, um re-render pode disparar escritas de
@@ -2325,8 +2333,44 @@ function renderProvaPicker(container, onReady){
    ESTUDOS  (matérias + conteúdos; dia da semana mostra próximo conteúdo)
 ========================================================================= */
 let estudoDiaSel = hojeDia();
+function chaveMateria(nome){ return String(nome||'').trim().toLocaleLowerCase('pt-BR'); }
+function chaveConteudo(nome){ return String(nome||'').replace(/\r\n?/g,'\n').trim().toLocaleLowerCase('pt-BR'); }
+function consolidarMateriasDuplicadas(){
+  const materias=Array.isArray(S.materias)?S.materias:[];
+  const canonicas=[], porNome=new Map(), materiaIdMap=new Map(), conteudoIdMap=new Map();
+  let mudou=false;
+  materias.forEach(orig=>{
+    if(!orig||!chaveMateria(orig.nome)) return;
+    const chave=chaveMateria(orig.nome), existente=porNome.get(chave);
+    if(!existente){
+      orig.conteudos=Array.isArray(orig.conteudos)?orig.conteudos:[];
+      canonicas.push(orig); porNome.set(chave,orig); materiaIdMap.set(String(orig.id),orig.id); return;
+    }
+    mudou=true; materiaIdMap.set(String(orig.id),existente.id);
+    (Array.isArray(orig.conteudos)?orig.conteudos:[]).forEach(c=>{
+      const igual=existente.conteudos.find(x=>chaveConteudo(x.nome)===chaveConteudo(c.nome));
+      if(!igual){ existente.conteudos.push(c); conteudoIdMap.set(String(c.id),c.id); return; }
+      conteudoIdMap.set(String(c.id),igual.id);
+      igual.done=Boolean(igual.done||c.done);
+      igual.tempoMs=Math.max(Number(igual.tempoMs||0),Number(c.tempoMs||0));
+      if(!igual.concluidoEm&&c.concluidoEm) igual.concluidoEm=c.concluidoEm;
+    });
+  });
+  if(!mudou) return false;
+  S.materias=canonicas;
+  Object.keys(S.estudoSemana||{}).forEach(d=>{
+    S.estudoSemana[d]=[...new Set((S.estudoSemana[d]||[]).map(id=>materiaIdMap.get(String(id))||id))];
+  });
+  (S.estudoLogs||[]).forEach(l=>{
+    l.materiaId=materiaIdMap.get(String(l.materiaId))||l.materiaId;
+    if(Array.isArray(l.conteudos)) l.conteudos=[...new Set(l.conteudos.map(id=>conteudoIdMap.get(String(id))||id))];
+  });
+  save('estudo:materias'); save('estudo:semana'); save('estudo:logs');
+  return true;
+}
 function renderEstudos(){
   estudoDiaSel=hojeDia();
+  const duplicadasCorrigidas=consolidarMateriasDuplicadas();
   const edit=S.config.editMode;
   $('#scr-estudos').innerHTML = `
     ${topbar('ESTUDOS')}
@@ -2338,7 +2382,8 @@ function renderEstudos(){
     <div id="estDia"></div>
     <h2 class="section-title">Previsão de conclusão</h2>
     <div id="estPrevisao"></div>
-    <h2 class="section-title">Banco de matérias ${edit?`<button class="btn sm" id="addMateria">＋</button>`:''}</h2>
+    <h2 class="section-title">Banco de matérias ${edit?`<button class="btn sm" id="addMateria">＋ Nova matéria</button>`:''}</h2>
+    ${duplicadasCorrigidas?'<p class="small" style="color:var(--ok)">✅ Matérias repetidas foram reunidas num único bloco, sem perder conteúdos ou progresso.</p>':''}
     <div id="estMaterias"></div>
     <h2 class="section-title">Relatório</h2>
     <div id="estRelatorio"></div>
@@ -2412,7 +2457,7 @@ function renderEstudoDia(){
     h+=`<div class="rowitem ${feito?'done':''}">
       ${feito?'<div class="chk">✓</div>':''}
       <div class="txt"><div class="t">${esc(m.nome)}</div>
-        <div class="s">${prox?('Próximo: '+esc(prox.nome)):'✅ Tudo concluído'} — ${m.conteudos.filter(c=>c.done).length}/${m.conteudos.length}</div>
+        <div class="s materia-content-name">${prox?('Próximo: '+esc(prox.nome)):'✅ Tudo concluído'} — ${m.conteudos.filter(c=>c.done).length}/${m.conteudos.length}</div>
         ${feito?`<div class="s" style="color:var(--ok)">✅ Estudado hoje · ${mins} min</div>`:''}</div>${miniaturaRegistro(logMidia)}
       ${edit ? `<button class="pencil" data-redomat="${m.id}">↻</button>`
              : (feito ? '' : `<button class="btn sm" data-startmat="${m.id}" ${d===hojeDia()?'':'aria-disabled="true"'}>▶ Estudar</button>`)}
@@ -2459,7 +2504,7 @@ function abrirMateria(mid){
     <div style="margin-top:8px">${m.conteudos.length? m.conteudos.map(c=>`
       <div class="rowitem ${c.done?'done':''}">
         <div class="chk">${c.done?'✓':''}</div>
-        <div class="txt"><div class="t" style="${c.done?'opacity:.7':''}">${esc(c.nome)}</div>${c.done&&c.tempoMs?`<div class="s" style="color:var(--ok)">✅ concluído</div>`:''}</div>
+        <div class="txt"><div class="t materia-content-name" style="${c.done?'opacity:.7':''}">${esc(c.nome)}</div>${c.done&&c.tempoMs?`<div class="s" style="color:var(--ok)">✅ concluído</div>`:''}</div>
         <div class="mono muted" style="font-size:13px">${c.tempoMs?fmtDur(c.tempoMs):'—'}</div>
       </div>`).join('') : '<p class="muted small">Sem conteúdos. Edite a matéria pra adicionar.</p>'}</div>`);
 }
@@ -2467,16 +2512,43 @@ function editMateriaSheet(mid){
   const m = mid ? S.materias.find(x=>x.id===mid) : {nome:'', conteudos:[]};
   openSheet(`<h3>${mid?'Editar':'Nova'} matéria</h3>
     <div class="field"><label>Nome da matéria</label><input id="matNome" value="${esc(m.nome)}" placeholder="Ex: Português"></div>
-    <label style="font-family:'Oswald';font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim)">Conteúdos (um por linha)</label>
-    <textarea id="matConteudos" class="auto" style="min-height:120px">${esc(m.conteudos.map(c=>c.nome).join('\n'))}</textarea>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
+      <label style="font-family:'Oswald';font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim)">Conteúdos desta matéria</label>
+      <button type="button" class="btn sm ghost" id="matAddConteudo">＋ Adicionar</button>
+    </div>
+    <p class="small muted" style="margin:7px 0 4px">Cada conteúdo fica no próprio bloco. No celular, Enter apenas pula a linha dentro do mesmo conteúdo.</p>
+    <div class="materia-editor-list" id="matConteudos"></div>
+    <p class="small muted" id="matSemConteudo" style="display:none">Nenhum conteúdo ainda. Toque em “Adicionar”.</p>
     <button class="btn" id="matSave" style="margin-top:10px">Salvar</button>`);
-  const ta=$('#matConteudos'); autoGrow(ta); ta.oninput=()=>autoGrow(ta);
+  const lista=$('#matConteudos');
+  const atualizarNumeros=()=>{
+    const itens=$$('.materia-editor-item',lista);
+    itens.forEach((item,i)=>$('.materia-editor-num',item).textContent=String(i+1));
+    $('#matSemConteudo').style.display=itens.length?'none':'block';
+  };
+  const addConteudo=(conteudo=null,focar=false)=>{
+    const item=document.createElement('div'); item.className='materia-editor-item';
+    item.dataset.cid=conteudo?.id||'';
+    item.innerHTML=`<span class="materia-editor-num"></span><textarea rows="2" maxlength="500" placeholder="Ex: Brasil Colônia — chegada dos portugueses"></textarea><button type="button" class="materia-editor-remove" aria-label="Remover conteúdo">🗑️</button>`;
+    const ta=$('textarea',item); ta.value=conteudo?.nome||''; autoGrow(ta); ta.oninput=()=>autoGrow(ta);
+    $('.materia-editor-remove',item).onclick=()=>{ item.remove(); atualizarNumeros(); };
+    lista.appendChild(item); atualizarNumeros(); if(focar) setTimeout(()=>ta.focus(),30);
+  };
+  (m.conteudos||[]).forEach(c=>addConteudo(c));
+  $('#matAddConteudo').onclick=()=>addConteudo(null,true);
+  if(!(m.conteudos||[]).length) addConteudo(null,false);
   $('#matSave').onclick=()=>{
     const nome=$('#matNome').value.trim(); if(!nome) return toast('Nome da matéria?');
-    if(S.materias.some(x=>x.id!==mid&&x.nome.trim().toLocaleLowerCase('pt-BR')===nome.toLocaleLowerCase('pt-BR')))return toast('Essa matéria já existe. Abra o bloco existente e adicione os conteúdos nele.');
-    const linhas=$('#matConteudos').value.split('\n').map(s=>s.trim()).filter(Boolean);
-    if(mid){ m.nome=nome; const antigos=m.conteudos; m.conteudos=linhas.map(l=>{ const old=antigos.find(c=>c.nome===l); return old||{id:uid(),nome:l,done:false}; }); }
-    else S.materias.push({id:uid(), nome, conteudos:linhas.map(l=>({id:uid(),nome:l,done:false}))});
+    if(S.materias.some(x=>x.id!==mid&&chaveMateria(x.nome)===chaveMateria(nome)))return toast('Essa matéria já existe. Abra o bloco existente e adicione os conteúdos nele.');
+    const antigos=m.conteudos||[], vistos=new Set(), conteudos=[];
+    for(const item of $$('.materia-editor-item',lista)){
+      const texto=$('textarea',item).value.replace(/\r\n?/g,'\n').trim(); if(!texto) continue;
+      const chave=chaveConteudo(texto); if(vistos.has(chave)) return toast('Esse conteúdo está repetido dentro da matéria.'); vistos.add(chave);
+      const old=antigos.find(c=>String(c.id)===String(item.dataset.cid));
+      conteudos.push(old?{...old,nome:texto}:{id:uid(),nome:texto,done:false});
+    }
+    if(mid){ m.nome=nome; m.conteudos=conteudos; }
+    else S.materias.push({id:uid(), nome, conteudos});
     save('estudo:materias'); closeSheet(); renderMaterias(); renderEstudoDia();
   };
 }
@@ -2489,8 +2561,8 @@ function posEstudo(sess){
       <div><div class="muted small">Tempo ativo</div><div class="mono" style="font-size:24px">${fmtHMS(sess.ativoMs/1000)}</div></div>
       <div><div class="muted small">Tempo pausado</div><div class="mono" style="font-size:24px">${fmtHMS(sess.pausedMs/1000)}</div></div>
     </div></div>
-    <p class="small muted">Marque os conteúdos que você concluiu:</p>
-    ${pend.length?pend.map(c=>`<label class="rowitem"><input type="checkbox" data-cid="${c.id}" style="width:22px;height:22px"><div class="txt"><div class="t">${esc(c.nome)}</div></div></label>`).join(''):'<p class="muted">Nenhum conteúdo pendente nessa matéria.</p>'}
+    <p class="small muted">Marque somente os conteúdos concluídos em <b>${esc(m?.nome||'esta matéria')}</b>:</p>
+    ${pend.length?pend.map(c=>`<label class="rowitem"><input type="checkbox" data-cid="${c.id}" style="width:22px;height:22px"><div class="txt"><div class="t materia-content-name">${esc(c.nome)}</div></div></label>`).join(''):'<p class="muted">Nenhum conteúdo pendente nessa matéria.</p>'}
     <label style="font-size:12.5px;color:var(--text-dim);font-weight:700">Foto/vídeo do estudo (opcional)</label>
     <div id="estProva" style="margin:7px 0 6px"></div>
     <label class="rowitem" style="cursor:pointer"><input type="checkbox" id="estPostar" style="width:22px;height:22px"><div class="txt"><div class="t">Postar no feed</div><div class="s">Depois de finalizar, escolhe legenda e público/privado.</div></div></label>

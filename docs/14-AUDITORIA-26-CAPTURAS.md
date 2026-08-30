@@ -1,6 +1,6 @@
 # Auditoria completa das 26 capturas — 26/08/2026
 
-Versão verificada: **v117**. Esta matriz separa implementação real de limites do sistema operacional.
+Versão verificada: **v118**. Esta matriz separa implementação real de limites do sistema operacional. A v118 refinou especificamente o fluxo de matérias/conteúdos que ainda estava ambíguo no celular.
 
 | Pedido | Resultado verificado |
 |---|---|
@@ -32,7 +32,7 @@ Versão verificada: **v117**. Esta matriz separa implementação real de limites
 | Histórico de emojis | Aba Recentes persiste emojis escolhidos e enviados. |
 | GIFs e figurinhas | Galeria aceita GIF/WebP; bandeja guarda recentes; servidor preserva animação e transparência ao compactar. |
 | Nova linha no celular | Enter envia somente em dispositivo de ponteiro fino/PC; teclado de toque mantém quebra de linha. |
-| Matérias e conteúdos | Várias matérias viram blocos separados; cada uma abre seus subtópicos e a sessão marca apenas conteúdos daquela matéria. |
+| Matérias e conteúdos | Várias matérias viram blocos separados. Cada conteúdo tem seu próprio campo multilinha e só o botão “Adicionar” cria outro bloco; Enter no celular permanece no mesmo assunto. A sessão marca apenas conteúdos da matéria selecionada. Duplicatas antigas são consolidadas preservando dados e vínculos. |
 | Perfil acessado pelo ADM | Modo suporte não registra visualização nem vincula a identidade do usuário representado. |
 | Histórico de avisos | Exibe conteúdo, destinatário (ou “Todos”), data, alcance e estado. |
 | Nome “Auditoria” | Interface usa “Histórico de ações” com rótulos legíveis. |
@@ -40,8 +40,9 @@ Versão verificada: **v117**. Esta matriz separa implementação real de limites
 ## Testes executados
 
 - Sintaxe do JavaScript do app e das rotas `admin`, `upload` e `batalha`.
-- Manifesto JSON e alinhamento `APP_BUILD`/service worker em `redzone-v117`.
+- Manifesto JSON e alinhamento `APP_BUILD`/service worker em `redzone-v118`.
+- Teste automatizado `server/scripts/test-estudos-materias.js`: quebra de linha no mesmo conteúdo; consolidação de matérias repetidas; preservação de progresso/tempo; atualização da agenda e dos vínculos das sessões.
 - Verificações específicas automatizadas dos elementos acima.
 - Local e publicado em 360×800, 390×844, 768×1024 e 1440×900; sem overflow horizontal e sem erro de console na tela pública.
-- Produção: serviço `disciplina` ativo, sem erro após reinício; HTML, service worker e manifesto retornando v117; site permaneceu estável por mais de 16 s, sem loop de atualização.
+- Produção: serviço `disciplina` ativo; HTML, service worker e manifesto retornando v118; site permaneceu estável por 12 s, sem loop de atualização e sem erros de console em 390×844, 768×1024 e 1440×900.
 - Rotas administrativas protegidas retornaram 401 sem autenticação, como esperado. Fluxos privados não foram acessados sem a conta atual.
