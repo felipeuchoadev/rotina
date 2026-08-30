@@ -33,8 +33,9 @@ Antes de qualquer deploy: fazer backup, conferir `git status`, validar nginx com
 ## Aplicação e contas
 
 - URL: `https://redsystems.ddns.net/rotina/`.
-- Conta de teste conhecida: `felipeestudos220807@gmail.com`.
-- A senha é definida/guardada pelo proprietário e não está neste pacote.
+- A antiga conta de teste `felipeestudos220807@gmail.com` foi excluída e não deve
+  ser usada nem recriada automaticamente. Confirmar com o proprietário qual é a
+  conta atual antes de qualquer teste autenticado.
 - A conta administrativa é exclusiva do proprietário; o identificador e a senha
   devem ser fornecidos por canal seguro, nunca embutidos no frontend ou neste ZIP.
 - O painel administrativo deve redefinir senhas, não exibir senhas atuais. O
@@ -66,3 +67,10 @@ por canal criptografado:
    tratamento adequado dos dados pessoais.
 6. Futuramente, acesso à Play Console e chave de upload Android — nunca pelo Git.
 
+## Observação sobre “incluir todos os acessos”
+
+O pacote inclui este mapa completo de serviços, usuários técnicos, endereços e
+locais onde cada segredo existe. Os valores secretos continuam fora do ZIP para
+evitar que uma cópia do pacote dê acesso imediato à VM, banco, usuários ou GitHub.
+Para uma transferência real, entregar os valores separadamente por cofre de
+senhas ou criar acessos individuais e revogáveis para a pessoa autorizada.

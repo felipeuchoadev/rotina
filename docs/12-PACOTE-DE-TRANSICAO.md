@@ -1,6 +1,6 @@
 # REDZONE — pacote de transição para outra IA/equipe
 
-**Gerado em 23/08/2026.** Este é o índice oficial para continuar o projeto sem
+**Atualizado em 30/08/2026.** Este é o índice oficial para continuar o projeto sem
 depender do histórico de uma conversa. A ordem de leitura é obrigatória:
 
 1. `PACOTE-REDZONE-LEIA-PRIMEIRO.md` na raiz do ZIP.
@@ -10,7 +10,8 @@ depender do histórico de uma conversa. A ordem de leitura é obrigatória:
 5. `docs/09-IMPLANTAR-NA-VM-REDSYSTEMS.md` — infraestrutura atual.
 6. `docs/08-BACKEND-DEPLOY.md` — backend, banco, serviço e backup.
 7. `docs/11-PLAY-STORE-PLANO-ANDROID.md` — plano Android/Google Play.
-8. Demais documentos, changelog, migrations e código.
+8. `docs/14-AUDITORIA-26-CAPTURAS.md` — conferência item por item do feedback visual.
+9. Demais documentos, changelog, migrations e código.
 
 ## O que o pacote contém
 
@@ -77,4 +78,3 @@ Consulte `ACESSOS-E-SEGREDOS-NAO-INCLUIDOS.md`. O arquivo informa usuários,
 endereços, serviços e locais dos segredos, mas não revela valores. Quem continuar
 deve receber os valores diretamente do proprietário e testar acesso sem copiá-los
 para o Git.
-

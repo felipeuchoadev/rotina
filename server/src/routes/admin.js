@@ -24,6 +24,23 @@ adminRouter.get('/resumo', async (_req, res) => {
   res.json({ usuarios, bloqueados, posts, mensagens, estados });
 });
 
+adminRouter.get('/atividade', async (req,res)=>{
+  const tipo=String(req.query.tipo||'');
+  if(tipo==='posts'){
+    const itens=await prisma.feedPost.findMany({orderBy:{criadoEm:'desc'},take:50,select:{id:true,texto:true,tipo:true,privado:true,criadoEm:true,usuario:{select:{nomeGuerra:true,username:true}}}});
+    return res.json({tipo,itens});
+  }
+  if(tipo==='messages'){
+    const itens=await prisma.mensagem.findMany({orderBy:{criadoEm:'desc'},take:50,select:{id:true,texto:true,midiaTipo:true,apagadaTodos:true,criadoEm:true,de:{select:{nomeGuerra:true,username:true}},para:{select:{nomeGuerra:true,username:true}}}});
+    return res.json({tipo,itens});
+  }
+  if(tipo==='states'){
+    const itens=await prisma.userState.groupBy({by:['chave'],_count:{_all:true},orderBy:{_count:{chave:'desc'}}});
+    return res.json({tipo,itens:itens.map(x=>({chave:x.chave,total:x._count._all}))});
+  }
+  res.status(400).json({erro:'Tipo de atividade inválido.'});
+});
+
 adminRouter.get('/usuarios', async (req, res) => {
   const q = String(req.query.q || '').trim();
   const limite = Math.min(100, Math.max(10, Number(req.query.limite) || 40));

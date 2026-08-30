@@ -65,11 +65,22 @@ uploadRouter.post('/', receberArquivo, async (req, res) => {
 
   try {
     if (ehImagem) {
-      // JPEG progressivo e otimizado: tamanho baixo sem destruir detalhes visíveis.
-      const buf = await sharp(req.file.buffer).rotate().resize({ width: 1600, height: 1600, fit: 'inside', withoutEnlargement: true }).jpeg({ quality: 78, progressive: true, mozjpeg: true }).toBuffer();
-      const nome = `${id}.jpg`;
+      // GIFs continuam animados; imagens com transparência viram WebP; fotos
+      // usam JPEG progressivo. Nunca achatamos figurinha/GIF em um quadro JPEG.
+      const ehGif = mime === 'image/gif' || ext === '.gif';
+      const base = sharp(req.file.buffer, { animated: ehGif }).rotate().resize({ width: 1600, height: 1600, fit: 'inside', withoutEnlargement: true });
+      let buf, nome, tipo = 'foto';
+      if (ehGif) {
+        const otimizado = await base.gif({ effort: 5 }).toBuffer();
+        buf = otimizado.length < req.file.buffer.length ? otimizado : req.file.buffer;
+        nome = `${id}.gif`; tipo = 'gif';
+      } else {
+        const meta = await sharp(req.file.buffer).metadata();
+        if (meta.hasAlpha || ext === '.webp') { buf = await base.webp({ quality: 82, alphaQuality: 92, effort: 4 }).toBuffer(); nome = `${id}.webp`; }
+        else { buf = await base.jpeg({ quality: 80, progressive: true, mozjpeg: true }).toBuffer(); nome = `${id}.jpg`; }
+      }
       await writeFile(path.join(UPLOAD_DIR, nome), buf);
-      return res.status(201).json({ url: `${PUBLIC_BASE}/${nome}`, tipo: 'foto' });
+      return res.status(201).json({ url: `${PUBLIC_BASE}/${nome}`, tipo });
     } else if (ehVideo) {
       const extEntrada = ext || '.webm';
       const recebeuCorte = req.body.inicio !== undefined || req.body.fim !== undefined;

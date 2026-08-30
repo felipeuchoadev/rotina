@@ -10,6 +10,7 @@ equipe sem perder o contexto técnico e funcional.
 3. Confira `VERSAO-EXPORTADA.txt` e `MANIFESTO-SHA256.txt`.
 4. Use `redzone-repository.bundle` para restaurar o histórico Git ou abra
    `snapshot/` para consultar imediatamente o código.
+5. Consulte `docs/14-AUDITORIA-26-CAPTURAS.md` para a revisão funcional mais recente.
 
 ## Aviso de segurança
 
@@ -25,4 +26,3 @@ de senhas, com permissões mínimas e possibilidade de revogação.
 Não refaça a aplicação antiga. A fonte de verdade é o código atual, o endereço
 `https://redsystems.ddns.net/rotina/` e o topo do roadmap. Preserve banco,
 contas, mídias e alterações dos usuários.
-
