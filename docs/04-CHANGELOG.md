@@ -1,5 +1,19 @@
 # Changelog
 
+## v120 (31/08/2026)
+- A hierarquia de Estudos deixou de ser fixa: qualquer matéria aceita conteúdos, tópicos e subtópicos recursivos, sem regra específica para Matemática.
+- Cada item interno abre/fecha e recebe “＋” no modo edição; a pessoa pode acrescentar novos filhos dentro de itens como “BLA”, repetindo isso em qualquer profundidade.
+- O resumo da matéria usa “conteúdos”, não “submatérias”, e matéria, conteúdo principal e cada ramo exibem progresso próprio de 0% a 100%.
+- Ao finalizar uma sessão, somente tópicos finais do conteúdo escolhido aparecem para marcação, com o caminho completo; pastas não geram conclusão nem XP.
+- Editor, migração e consolidação preservam relações pai/filho, quebras de linha, progresso, tempo, agenda e registros existentes; vínculos inválidos ou cíclicos são convertidos em raiz sem apagar itens.
+- Publicado como `redzone-v120`; sintaxe, teste automatizado, manifesto, service worker, serviço, estabilidade pública por 12 s e responsividade 390×844 / 768×1024 / 1440×900 foram validados sem erros ou recarga em loop. A área privada não foi alterada com dados fictícios.
+
+## v119 (30/08/2026)
+- Banco de matérias reorganizado como árvore expansível: Matéria → Submatéria/pasta → Conteúdos, inspirado no fluxo de pastas mostrado pelo Felipe.
+- Editor permite várias submatérias dentro de uma matéria e vários conteúdos multilinha dentro de cada submatéria.
+- “Estudar” agora pede a submatéria antes de abrir o cronômetro; a finalização lista somente conteúdos daquela pasta e registra `grupoId`/nome da submatéria na sessão.
+- Migração retrocompatível coloca conteúdos antigos em “Conteúdos gerais” e mantém conteúdos, progresso, tempo, agenda, sessões e XP existentes.
+
 ## v118 (30/08/2026)
 - Estudos: substituída a caixa “conteúdos, um por linha” por blocos individuais. O botão “Adicionar” cria outro conteúdo; Enter no celular apenas quebra a linha dentro do conteúdo atual.
 - Cada matéria continua sendo um bloco independente, e a finalização da sessão explicita o nome da matéria e lista somente os assuntos pendentes dela.

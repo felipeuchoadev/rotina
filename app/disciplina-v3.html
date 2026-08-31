@@ -195,6 +195,50 @@ button.rowitem{width:100%;text-align:left;font:inherit}
 .materia-editor-remove{flex:0 0 38px;width:38px;height:38px;border:1px solid var(--line);border-radius:11px;background:transparent;color:var(--text-dim);font-size:17px}
 .materia-editor-remove:active{border-color:var(--danger);color:var(--danger)}
 .materia-content-name{white-space:pre-line;overflow-wrap:anywhere}
+.study-tree{display:grid;gap:11px}
+.study-tree-materia{border:1px solid var(--line);border-radius:18px;background:var(--surface);overflow:hidden}
+.study-tree-head,.study-tree-group-head{display:flex;align-items:center;gap:11px;width:100%;border:0;color:var(--text);text-align:left;font:inherit}
+.study-tree-head{padding:15px;background:transparent}
+.study-tree-head .txt,.study-tree-group-head .txt{flex:1;min-width:0}
+.study-tree-head .t,.study-tree-group-head .t{display:block;font-weight:800;font-size:15.5px;line-height:1.35}
+.study-tree-head .s,.study-tree-group-head .s{display:block;color:var(--text-dim);font-size:12.5px;line-height:1.4;margin-top:3px}
+.study-tree-head .xpbar{display:block;margin-top:7px}
+.study-tree-caret{display:grid;place-items:center;width:28px;height:28px;color:var(--text-dim);font-size:20px;transition:transform .18s ease}
+.study-tree-materia.open>.study-tree-head .study-tree-caret,.study-tree-group.open>.study-tree-group-head .study-tree-caret{transform:rotate(90deg)}
+.study-tree-body{display:none;padding:0 11px 11px}
+.study-tree-materia.open>.study-tree-body{display:grid;gap:8px}
+.study-tree-group{border:1px solid var(--line);border-radius:14px;background:var(--surface2);overflow:hidden}
+.study-tree-group-head{padding:12px;background:transparent}
+.study-tree-folder{display:grid;place-items:center;flex:0 0 32px;height:32px;border-radius:10px;background:color-mix(in srgb,var(--accent) 15%,transparent);font-size:17px}
+.study-tree-contents{display:none;border-top:1px solid var(--line)}
+.study-tree-group.open>.study-tree-contents{display:block}
+.study-tree-content{display:flex;align-items:flex-start;gap:10px;padding:12px 13px 12px 25px;border-top:1px solid var(--line)}
+.study-tree-content:first-child{border-top:0}
+.study-tree-content .dot{flex:0 0 12px;width:12px;height:12px;margin-top:5px;border:2px solid var(--text-dim);border-radius:50%}
+.study-tree-content.done .dot{background:var(--ok);border-color:var(--ok)}
+.study-tree-content.done .materia-content-name{opacity:.68}
+.study-tree-node{border-top:1px solid var(--line)}
+.study-tree-node:first-child{border-top:0}
+.study-tree-node-row{display:flex;align-items:flex-start;gap:7px;padding:10px 10px 10px calc(12px + min(var(--tree-depth,0),4) * 18px)}
+.study-tree-node-main{display:flex;align-items:flex-start;gap:9px;flex:1;min-width:0;border:0;background:transparent;color:var(--text);font:inherit;text-align:left;padding:2px 0}
+.study-tree-node-main .txt{flex:1;min-width:0}
+.study-tree-node-main .t{font-weight:700;font-size:14px;line-height:1.4}
+.study-tree-node-main .s{font-size:12px;color:var(--text-dim);margin-top:3px}
+.study-tree-node-main .dot{flex:0 0 12px;width:12px;height:12px;margin-top:4px;border:2px solid var(--text-dim);border-radius:50%}
+.study-tree-node-main .mini-caret{display:grid;place-items:center;flex:0 0 22px;width:22px;height:22px;color:var(--text-dim);font-size:18px;transition:transform .18s ease}
+.study-tree-node.open>.study-tree-node-row .mini-caret{transform:rotate(90deg)}
+.study-tree-node-children{display:none;border-top:1px solid var(--line);background:color-mix(in srgb,var(--surface) 45%,transparent)}
+.study-tree-node.open>.study-tree-node-children{display:block}
+.study-tree-node.done>.study-tree-node-row .dot{background:var(--ok);border-color:var(--ok)}
+.study-tree-node.done>.study-tree-node-row .materia-content-name{opacity:.68}
+.study-tree-pct{flex:0 0 auto;align-self:center;min-width:46px;text-align:center;padding:5px 7px;border-radius:999px;background:color-mix(in srgb,var(--ok) 12%,var(--surface));color:var(--text);font-size:11.5px;font-weight:800}
+.study-tree-add{flex:0 0 34px;width:34px;height:34px;border:1px solid color-mix(in srgb,var(--accent) 45%,var(--line));border-radius:10px;background:color-mix(in srgb,var(--accent) 12%,transparent);color:var(--accent2);font-size:20px;line-height:1}
+.materia-grupo-editor{border:1px solid var(--line);border-radius:17px;background:var(--surface2);padding:11px;margin:11px 0}
+.materia-grupo-top{display:flex;align-items:center;gap:8px}
+.materia-grupo-top input{flex:1;min-width:0;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--text);padding:12px;font:inherit;font-weight:700}
+.materia-grupo-top input:focus{outline:none;border-color:var(--accent)}
+.materia-grupo-editor .materia-editor-list{margin:10px 0}
+@media(max-width:390px){.study-tree-head{padding:13px}.study-tree-content{padding-left:17px}.study-tree-node-row{padding-right:7px}.study-tree-pct{min-width:41px;padding-inline:5px}.materia-editor-num{display:none}.materia-editor-item{padding:9px}.materia-grupo-editor{padding:9px}}
 .profile-bio{margin:12px 2px;color:var(--text);line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
 .pencil{opacity:.8; font-size:16px; padding:6px 9px; border-radius:10px; background:rgba(255,255,255,.05); border:1px solid var(--line);}
 
@@ -743,7 +787,7 @@ setInterval(()=>{ if(authToken&&offQueue().length&&navigator.onLine) flushQueue(
 
 /* id único DESTE aparelho/aba — usado pra não ecoar de volta a própria escrita no sync ao vivo */
 const CLIENT_ID = (Math.random().toString(36).slice(2)+'-'+Date.now().toString(36));
-const APP_BUILD = 'redzone-v118';
+const APP_BUILD = 'redzone-v120';
 // evita re-render que rouba o foco enquanto a pessoa digita (o dado já foi aplicado em S de qualquer forma)
 function _syncPodeRender(){ const a=document.activeElement; return !(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||'')); }
 // ANTI-LOOP: ao aplicar uma mudança que VEIO do servidor, um re-render pode disparar escritas de
@@ -1613,7 +1657,7 @@ function xpHistoricoSheet(){
   const hoje=todayISO(), dataOk=iso=>/^\d{4}-\d{2}-\d{2}$/.test(iso)&&iso<=hoje;
   (S.treinoLogs||[]).forEach(l=>{ const ms=Number(l.ativoMs||0),m=Math.floor(ms/60000); if(dataOk(l.dateISO)&&ms>=60000&&ms<=86400000) itens.push({tipo:'treino',dateISO:l.dateISO, at:l.updatedAt||0,xp:m,txt:`Treino: ${l.nome||'sessão'} · ${m} min ativo(s)`}); });
   (S.estudoLogs||[]).forEach(l=>{ const ms=Number(l.ativoMs||0),m=Math.floor(ms/60000); if(!(dataOk(l.dateISO)&&ms>=60000&&ms<=86400000&&m>0)) return; itens.push({tipo:'estudo',dateISO:l.dateISO,at:l.updatedAt||0,xp:m*2,txt:`Estudo: ${l.materia||'matéria'} · ${m} min × 2 XP`});
-    [...new Set(l.conteudos||[])].forEach(cid=>{ const mat=(S.materias||[]).find(x=>x.id===l.materiaId),conteudo=mat?.conteudos?.find(x=>x.id===cid); itens.push({tipo:'estudo',dateISO:l.dateISO,at:l.updatedAt||0,xp:40,txt:`Conteúdo concluído: ${conteudo?.nome||cid}`}); }); });
+    [...new Set(l.conteudos||[])].forEach(cid=>{ const mat=(S.materias||[]).find(x=>x.id===l.materiaId),conteudo=conteudosMateria(mat).find(x=>x.id===cid); itens.push({tipo:'estudo',dateISO:l.dateISO,at:l.updatedAt||0,xp:40,txt:`Conteúdo concluído: ${conteudo?.nome||cid}`}); }); });
   Object.entries(S.agua||{}).forEach(([iso,v])=>{ const ml=Number(v),meta=Number(S.profile.metaAgua||2500); if(dataOk(iso)&&Number.isFinite(ml)&&ml>0&&ml<=20000&&ml>=meta) itens.push({tipo:'agua',dateISO:iso,xp:15,txt:`Meta de água: ${ml.toLocaleString('pt-BR')} de ${meta.toLocaleString('pt-BR')} ml`}); });
   Object.entries(S.rotinaDias||{}).forEach(([iso,acts])=>{ if(!dataOk(iso)||!Array.isArray(acts))return; acts.forEach(a=>itens.push({tipo:'rotina',dateISO:iso,at:a.updatedAt||0,xp:a.done?10:(iso<hoje?-10:0),txt:a.done?`Rotina cumprida: ${a.nome}${a.hora?` (${a.hora})`:''}`:`Rotina não cumprida: ${a.nome}${a.hora?` (${a.hora})`:''}`})); });
   for(let i=itens.length-1;i>=0;i--)if(!itens[i].xp)itens.splice(i,1);
@@ -1872,7 +1916,7 @@ function resumoDetalheSheet(tipo){
   } else if(tipo==='estudo'){
     titulo='Estudo de hoje';
     const plan=(S.estudoSemana[dia]||[]);
-    corpo = plan.length ? plan.map(mid=>{ const m=S.materias.find(x=>x.id===mid); if(!m) return ''; const logs=(S.estudoLogs||[]).filter(l=>l.dateISO===hoje&&l.materiaId===m.id), f=logs.length>0, min=f?minsHojeItem(S.estudoLogs,'materiaId',m.id):0; const ids=new Set(logs.flatMap(l=>l.conteudos||[])); const nomes=(m.conteudos||[]).filter(c=>ids.has(c.id)).map(c=>c.nome);
+    corpo = plan.length ? plan.map(mid=>{ const m=S.materias.find(x=>x.id===mid); if(!m) return ''; const logs=(S.estudoLogs||[]).filter(l=>l.dateISO===hoje&&l.materiaId===m.id), f=logs.length>0, min=f?minsHojeItem(S.estudoLogs,'materiaId',m.id):0; const ids=new Set(logs.flatMap(l=>l.conteudos||[])); const nomes=conteudosMateria(m).filter(c=>ids.has(c.id)).map(c=>c.nome);
       const logMidia=[...logs].reverse().find(l=>l.prova);
       return `<div class="rowitem ${f?'done':''}" style="align-items:flex-start"><div class="chk">${f?'✓':''}</div><div class="txt"><div class="t">${esc(m.nome)}</div><div class="s">${f?`✅ Estudado · ${min} min`:'⏳ Ainda não estudado hoje'}</div>${nomes.length?`<div class="small" style="margin-top:7px;color:var(--text)"><b>Conteúdos:</b> ${nomes.map(esc).join(' • ')}</div>`:(f?'<div class="small muted" style="margin-top:6px">Sessão registrada sem conteúdo marcado.</div>':'')}</div>${miniaturaRegistro(logMidia)}</div>`;
     }).join('') : '<p class="muted small">Nenhuma matéria pra hoje.</p>';
@@ -1905,7 +1949,7 @@ function detalhesHistorico(chave,v){
   else if(chave==='alim:agua')Object.entries(v||{}).sort().slice(-14).reverse().forEach(([d,ml])=>add(`${d} — ${ml} ml`));
   else if(chave==='alim:pesos')(Array.isArray(v)?v:[]).slice(-12).reverse().forEach(x=>add(`${x.dateISO||x.data||'Data'} — ${x.kg??x.peso??'-'} kg`));
   else if(chave==='rotina:dias')Object.entries(v||{}).sort().slice(-14).reverse().forEach(([d,a])=>add(`${d} — ${(Array.isArray(a)?a:[]).map(x=>`${x.done?'✅':'◻️'} ${x.nome}${x.hora?' ('+x.hora+')':''}`).join(' · ')||'sem atividades'}`));
-  else if(chave==='estudo:materias')(Array.isArray(v)?v:Object.values(v||{})).forEach(x=>add(`${x.nome||x.materia||'Matéria'}${Array.isArray(x.conteudos)?' — '+x.conteudos.map(c=>c.nome||c).join(', '):''}`));
+  else if(chave==='estudo:materias')(Array.isArray(v)?v:Object.values(v||{})).forEach(x=>add(`${x.nome||x.materia||'Matéria'}${Array.isArray(x.grupos)&&x.grupos.length?' — '+x.grupos.map(g=>g.nome).join(' / '):''}${Array.isArray(x.conteudos)?' — '+x.conteudos.map(c=>c.nome||c).join(', '):''}`));
   else if(chave==='treino:tpl')Object.entries(v||{}).forEach(([dia,a])=>add(`${dia.toUpperCase()} — ${(Array.isArray(a)?a:[]).map(x=>x.nome||x).join(', ')||'descanso'}`));
   else if(Array.isArray(v))v.slice(-10).forEach(x=>add(typeof x==='object'?(x.nome||x.titulo||x.dateISO||JSON.stringify(x)):x));
   else if(chave==='perfil:dados'){ add(`Nome: ${v?.nome||'não informado'}`); add(`Usuário: @${v?.username||'não informado'}`); add(`Peso: ${v?.peso??'-'} kg`); add(`Altura: ${v?.altura?Number(v.altura/100).toFixed(2).replace('.',','):'-'} m`); }
@@ -2226,14 +2270,15 @@ function updateCountdowns(){ $$('[data-cd]').forEach(el=>{ const secs=Math.max(0
 /* =========================================================================
    CRONÔMETRO FULLSCREEN dedicado (listeners fixos — corrige bug do finalizar)
 ========================================================================= */
-let timerSession = null; // {tipo, dia, refId, startedAt, elapsedMs, pausedMs, pausedAt, running}
+let timerSession = null; // {tipo, dia, refId, grupoId, startedAt, elapsedMs, pausedMs, pausedAt, running}
 let timerRAF=null;
-function startSession(tipo, dia, refId){
+function startSession(tipo, dia, refId, grupoId=null){
   if(!podeExecutarDia(dia)) return;
-  timerSession = { tipo, dia, refId, startedAt:Date.now(), elapsedMs:0, pausedMs:0, pausedAt:null, running:true };
+  timerSession = { tipo, dia, refId, grupoId, startedAt:Date.now(), elapsedMs:0, pausedMs:0, pausedAt:null, running:true };
   const nome = tipo==='treino' ? (S.treinoTemplate[dia].find(x=>x.id===refId)?.nome||'Treino')
                                : (S.materias.find(m=>m.id===refId)?.nome||'Estudo');
-  $('#timerTitle').textContent = (tipo==='treino'?'SESSÃO DE TREINO — ':'SESSÃO DE ESTUDO — ')+nome.toUpperCase();
+  const m=tipo==='estudo'?S.materias.find(x=>x.id===refId):null, grupo=grupoId?gruposMateria(m).find(g=>String(g.id)===String(grupoId)):null;
+  $('#timerTitle').textContent = (tipo==='treino'?'SESSÃO DE TREINO — ':'SESSÃO DE ESTUDO — ')+nome.toUpperCase()+(grupo?' · '+grupo.nome.toUpperCase():'');
   $('#timerPauseBtn').textContent='Pausar';
   rollTaunt();
   $('#timer').classList.add('show');
@@ -2335,28 +2380,64 @@ function renderProvaPicker(container, onReady){
 let estudoDiaSel = hojeDia();
 function chaveMateria(nome){ return String(nome||'').trim().toLocaleLowerCase('pt-BR'); }
 function chaveConteudo(nome){ return String(nome||'').replace(/\r\n?/g,'\n').trim().toLocaleLowerCase('pt-BR'); }
+function chaveGrupo(nome){ return chaveMateria(nome); }
+function gruposMateria(m){ return Array.isArray(m?.grupos)?m.grupos:[]; }
+function conteudosMateria(m,grupoId=null){ const todos=Array.isArray(m?.conteudos)?m.conteudos:[]; return grupoId==null?todos:todos.filter(c=>String(c.grupoId)===String(grupoId)); }
+function filhosConteudo(m,parentId){ return conteudosMateria(m).filter(c=>String(c.parentId||'')===String(parentId||'')); }
+function folhasConteudo(m,grupoId=null){ const cs=conteudosMateria(m,grupoId),pais=new Set(cs.map(c=>String(c.parentId||'')).filter(Boolean)); return cs.filter(c=>!pais.has(String(c.id))); }
+function folhasDoNo(m,no){
+  const folhas=[],visitados=new Set();
+  const andar=atual=>{ if(!atual||visitados.has(String(atual.id)))return; visitados.add(String(atual.id)); const filhos=filhosConteudo(m,atual.id).filter(c=>String(c.grupoId)===String(no.grupoId)); if(!filhos.length)folhas.push(atual); else filhos.forEach(andar); };
+  andar(no); return folhas;
+}
+function progressoConteudos(lista){ const total=lista.length,done=lista.filter(c=>c.done).length; return {total,done,pct:total?Math.round(done/total*100):0}; }
+function caminhoConteudo(m,c){ const nomes=[],vistos=new Set(); let atual=c; while(atual&&!vistos.has(String(atual.id))){vistos.add(String(atual.id));nomes.unshift(atual.nome);atual=conteudosMateria(m).find(x=>String(x.id)===String(atual.parentId));} return nomes.join(' → '); }
+function conteudosOrdenados(m,grupoId){ const todos=conteudosMateria(m,grupoId),out=[],vistos=new Set(); const andar=(c,nivel)=>{if(vistos.has(String(c.id)))return;vistos.add(String(c.id));out.push({conteudo:c,nivel});filhosConteudo(m,c.id).filter(x=>String(x.grupoId)===String(grupoId)).forEach(x=>andar(x,nivel+1));}; todos.filter(c=>!c.parentId||!todos.some(x=>String(x.id)===String(c.parentId))).forEach(c=>andar(c,0)); todos.forEach(c=>andar(c,0)); return out; }
+function prepararEstruturaMateria(m){
+  let mudou=false; m.conteudos=Array.isArray(m.conteudos)?m.conteudos:[]; m.grupos=Array.isArray(m.grupos)?m.grupos:[];
+  const ids=new Set(m.grupos.map(g=>String(g.id)));
+  const soltos=m.conteudos.filter(c=>!c.grupoId||!ids.has(String(c.grupoId)));
+  if(soltos.length){
+    let geral=m.grupos.find(g=>chaveGrupo(g.nome)==='conteúdos gerais');
+    if(!geral){ geral={id:`geral-${m.id}`,nome:'Conteúdos gerais'}; m.grupos.unshift(geral); }
+    soltos.forEach(c=>c.grupoId=geral.id); mudou=true;
+  }
+  const porId=new Map(m.conteudos.map(c=>[String(c.id),c]));
+  m.conteudos.forEach(c=>{ const p=c.parentId?porId.get(String(c.parentId)):null; if(c.parentId&&(!p||String(p.grupoId)!==String(c.grupoId)||String(p.id)===String(c.id))){delete c.parentId;mudou=true;} });
+  m.conteudos.forEach(c=>{ const vistos=new Set([String(c.id)]); let atual=c; while(atual.parentId){ const pid=String(atual.parentId); if(vistos.has(pid)){delete c.parentId;mudou=true;break;} vistos.add(pid); atual=porId.get(pid); if(!atual)break;} });
+  return mudou;
+}
 function consolidarMateriasDuplicadas(){
   const materias=Array.isArray(S.materias)?S.materias:[];
   const canonicas=[], porNome=new Map(), materiaIdMap=new Map(), conteudoIdMap=new Map();
   let mudou=false;
   materias.forEach(orig=>{
     if(!orig||!chaveMateria(orig.nome)) return;
+    if(prepararEstruturaMateria(orig)) mudou=true;
     const chave=chaveMateria(orig.nome), existente=porNome.get(chave);
     if(!existente){
-      orig.conteudos=Array.isArray(orig.conteudos)?orig.conteudos:[];
       canonicas.push(orig); porNome.set(chave,orig); materiaIdMap.set(String(orig.id),orig.id); return;
     }
     mudou=true; materiaIdMap.set(String(orig.id),existente.id);
-    (Array.isArray(orig.conteudos)?orig.conteudos:[]).forEach(c=>{
-      const igual=existente.conteudos.find(x=>chaveConteudo(x.nome)===chaveConteudo(c.nome));
-      if(!igual){ existente.conteudos.push(c); conteudoIdMap.set(String(c.id),c.id); return; }
+    const grupoMap=new Map();
+    gruposMateria(orig).forEach(g=>{
+      let destino=gruposMateria(existente).find(x=>chaveGrupo(x.nome)===chaveGrupo(g.nome));
+      if(!destino){ destino={...g,id:g.id||uid()}; existente.grupos.push(destino); }
+      grupoMap.set(String(g.id),destino.id);
+    });
+    gruposMateria(orig).forEach(g=>conteudosOrdenados(orig,g.id).forEach(({conteudo:c})=>{
+      const grupoId=grupoMap.get(String(c.grupoId))||c.grupoId;
+      const parentId=c.parentId?(conteudoIdMap.get(String(c.parentId))||c.parentId):null;
+      const igual=conteudosMateria(existente,grupoId).find(x=>chaveConteudo(x.nome)===chaveConteudo(c.nome)&&String(x.parentId||'')===String(parentId||''));
+      if(!igual){ existente.conteudos.push({...c,grupoId,...(parentId?{parentId}:{parentId:undefined})}); conteudoIdMap.set(String(c.id),c.id); return; }
       conteudoIdMap.set(String(c.id),igual.id);
       igual.done=Boolean(igual.done||c.done);
       igual.tempoMs=Math.max(Number(igual.tempoMs||0),Number(c.tempoMs||0));
       if(!igual.concluidoEm&&c.concluidoEm) igual.concluidoEm=c.concluidoEm;
-    });
+    }));
   });
   if(!mudou) return false;
+  canonicas.forEach(m=>{ conteudosMateria(m).forEach(c=>{ if(c.parentId)c.parentId=conteudoIdMap.get(String(c.parentId))||c.parentId; }); prepararEstruturaMateria(m); });
   S.materias=canonicas;
   Object.keys(S.estudoSemana||{}).forEach(d=>{
     S.estudoSemana[d]=[...new Set((S.estudoSemana[d]||[]).map(id=>materiaIdMap.get(String(id))||id))];
@@ -2402,7 +2483,7 @@ function ritmoDe(logs){
   return { concl, ms, span, avgMs: concl?ms/concl:0, porDia: concl/span };
 }
 function previsaoMateria(m){
-  const conts=m.conteudos||[]; const total=conts.length, done=conts.filter(c=>c.done).length, rest=total-done;
+  const conts=folhasConteudo(m); const total=conts.length, done=conts.filter(c=>c.done).length, rest=total-done;
   const r=ritmoDe(S.estudoLogs.filter(l=>String(l.materiaId)===String(m.id)));
   const restMin = r.avgMs? Math.round(r.avgMs*rest/60000):0;
   let etaData=null, etaDias=null;
@@ -2413,7 +2494,7 @@ function fmtDataCurta(d){ return d.toLocaleDateString('pt-BR',{day:'2-digit',mon
 function fmtHoras(min){ if(!min) return ''; if(min<60) return min+' min'; return (min/60).toFixed(1).replace('.',',')+'h'; }
 function renderPrevisaoEstudo(){
   const box=$('#estPrevisao'); if(!box) return;
-  const mats=S.materias.filter(m=>(m.conteudos||[]).length);
+  const mats=S.materias.filter(m=>folhasConteudo(m).length);
   if(!mats.length){ box.innerHTML='<p class="muted small">Cadastre matérias e comece a estudar — aqui eu vou prever quando você termina cada uma.</p>'; return; }
   let total=0, totalRest=0;
   mats.forEach(m=>{ const p=previsaoMateria(m); total+=p.total; totalRest+=p.rest; });
@@ -2424,7 +2505,7 @@ function renderPrevisaoEstudo(){
   $('#prevAbrir').onclick=previsaoEstudoSheet;
 }
 function previsaoEstudoSheet(){
-  const mats=S.materias.filter(m=>(m.conteudos||[]).length);
+  const mats=S.materias.filter(m=>folhasConteudo(m).length);
   let total=0, totalRest=0, totalRestMin=0;
   const linhas=mats.map(m=>{ const p=previsaoMateria(m); total+=p.total; totalRest+=p.rest; totalRestMin+=p.restMin;
     const pct=p.total?Math.round(p.done/p.total*100):0;
@@ -2450,14 +2531,14 @@ function renderEstudoDia(){
   if(!ids.length) h+=`<p class="muted small">Sem matéria nesse dia.</p>`;
   ids.forEach(mid=>{
     const m=S.materias.find(x=>x.id===mid); if(!m) return;
-    const prox = m.conteudos.find(c=>!c.done);
+    const conts=folhasConteudo(m), prox = conts.find(c=>!c.done), proxGrupo=prox?gruposMateria(m).find(g=>String(g.id)===String(prox.grupoId)):null;
     const feito = estudoFeitoHoje(m.id);
     const mins = feito ? minsHojeItem(S.estudoLogs,'materiaId',m.id) : 0;
     const logMidia=[...(S.estudoLogs||[])].reverse().find(l=>l.dateISO===todayISO()&&l.materiaId===m.id&&l.prova);
     h+=`<div class="rowitem ${feito?'done':''}">
       ${feito?'<div class="chk">✓</div>':''}
       <div class="txt"><div class="t">${esc(m.nome)}</div>
-        <div class="s materia-content-name">${prox?('Próximo: '+esc(prox.nome)):'✅ Tudo concluído'} — ${m.conteudos.filter(c=>c.done).length}/${m.conteudos.length}</div>
+        <div class="s materia-content-name">${prox?`Próximo: ${proxGrupo?esc(proxGrupo.nome)+' → ':''}${esc(caminhoConteudo(m,prox))}`:'✅ Tudo concluído'} — ${conts.filter(c=>c.done).length}/${conts.length} tópicos · ${gruposMateria(m).length} conteúdos</div>
         ${feito?`<div class="s" style="color:var(--ok)">✅ Estudado hoje · ${mins} min</div>`:''}</div>${miniaturaRegistro(logMidia)}
       ${edit ? `<button class="pencil" data-redomat="${m.id}">↻</button>`
              : (feito ? '' : `<button class="btn sm" data-startmat="${m.id}" ${d===hojeDia()?'':'aria-disabled="true"'}>▶ Estudar</button>`)}
@@ -2467,8 +2548,18 @@ function renderEstudoDia(){
   $('#estDia').innerHTML=h;
   ativarMiniaturasRegistro($('#estDia'));
   if(edit){ $('#setDayMat').onclick=()=>setDayMateriasSheet(d);
-    $$('#estDia [data-redomat]').forEach(b=>b.onclick=()=>{ if(!podeExecutarDia(d)) return; startSession('estudo', d, b.dataset.redomat); }); }
-  $$('#estDia [data-startmat]').forEach(b=>b.onclick=()=>{ if(!podeExecutarDia(d)) return; startSession('estudo', d, b.dataset.startmat); });
+    $$('#estDia [data-redomat]').forEach(b=>b.onclick=()=>{ if(!podeExecutarDia(d)) return; escolherGrupoEstudo(d,b.dataset.redomat); }); }
+  $$('#estDia [data-startmat]').forEach(b=>b.onclick=()=>{ if(!podeExecutarDia(d)) return; escolherGrupoEstudo(d,b.dataset.startmat); });
+}
+function escolherGrupoEstudo(d,mid){
+  const m=S.materias.find(x=>String(x.id)===String(mid)); if(!m) return;
+  prepararEstruturaMateria(m);
+  const grupos=gruposMateria(m);
+  if(!grupos.length) return toast('Adicione um conteúdo principal e seus tópicos antes de estudar.');
+  openSheet(`<h3>${esc(m.nome)}</h3>
+    <p class="small muted">Escolha o conteúdo principal desta sessão. Ao finalizar, só os tópicos específicos dele poderão ser marcados.</p>
+    <div class="study-tree">${grupos.map(g=>{const cs=folhasConteudo(m,g.id),p=progressoConteudos(cs);return `<button class="rowitem" data-study-group="${g.id}" style="cursor:pointer"><span class="study-tree-folder">📁</span><span class="txt"><span class="t">${esc(g.nome)}</span><span class="s">${p.done}/${p.total} tópicos · ${p.pct}%</span></span><span class="muted" style="font-size:20px">›</span></button>`}).join('')}</div>`);
+  $$('#sheet [data-study-group]').forEach(b=>b.onclick=()=>{ const gid=b.dataset.studyGroup; closeSheet(); setTimeout(()=>startSession('estudo',d,m.id,gid),120); });
 }
 function setDayMateriasSheet(d){
   openSheet(`<h3>Matérias de ${DIAS_NOME[d]}</h3>
@@ -2478,91 +2569,102 @@ function setDayMateriasSheet(d){
   $('#saveDayMat').onclick=()=>{ S.estudoSemana[d]=$$('#sheet [data-mid]').filter(c=>c.checked).map(c=>c.dataset.mid); save('estudo:semana'); closeSheet(); renderEstudoDia(); };
 }
 function fmtDur(ms){ const min=Math.round((ms||0)/60000); if(min<60) return min+' min'; return (min/60).toFixed(1).replace('.',',')+'h'; }
+const estudoMateriasAbertas=new Set(), estudoGruposAbertos=new Set(), estudoConteudosAbertos=new Set();
+function renderNosConteudo(m,grupoId,parentId=null,edit=false,nivel=0){
+  const todos=conteudosMateria(m,grupoId), irmaos=todos.filter(c=>String(c.parentId||'')===String(parentId||''));
+  return irmaos.map(c=>{ const filhos=filhosConteudo(m,c.id).filter(x=>String(x.grupoId)===String(grupoId)),p=progressoConteudos(folhasDoNo(m,c)),aberto=estudoConteudosAbertos.has(String(c.id)),concluido=p.total>0&&p.done===p.total; return `<div class="study-tree-node ${aberto?'open':''} ${concluido?'done':''}" style="--tree-depth:${nivel}"><div class="study-tree-node-row"><button type="button" class="study-tree-node-main" ${filhos.length?`data-toggle-content="${c.id}"`:''}>${filhos.length?'<span class="mini-caret">›</span>':'<span class="dot"></span>'}<span class="txt"><span class="t materia-content-name">${esc(c.nome)}</span>${filhos.length?`<span class="s">${p.done}/${p.total} tópicos específicos</span>`:(c.tempoMs?`<span class="s">${fmtDur(c.tempoMs)}</span>`:'')}</span></button><span class="study-tree-pct">${p.pct}%</span>${edit?`<button type="button" class="study-tree-add" data-add-sub="${c.id}" data-mid="${m.id}" aria-label="Adicionar dentro de ${esc(c.nome)}" title="Adicionar dentro deste tópico">＋</button>`:''}</div>${filhos.length?`<div class="study-tree-node-children">${renderNosConteudo(m,grupoId,c.id,edit,nivel+1)}</div>`:''}</div>`; }).join('');
+}
 function renderMaterias(){
   const edit=S.config.editMode;
-  $('#estMaterias').innerHTML = S.materias.length ? S.materias.map(m=>{
-    const feitos=m.conteudos.filter(c=>c.done).length; const pct=m.conteudos.length?Math.round(feitos/m.conteudos.length*100):0;
-    return `<div class="rowitem" data-openmat="${m.id}" style="cursor:pointer">
-      <div class="txt"><div class="t">${esc(m.nome)}</div><div class="s">${feitos}/${m.conteudos.length} conteúdos • ${pct}%</div>
-        <div class="xpbar" style="margin-top:6px"><i style="width:${pct}%"></i></div></div>
-      ${edit?`<button class="pencil" data-edm="${m.id}">✏️</button><button class="pencil" data-delm="${m.id}">🗑️</button>`:'<span class="muted" style="font-size:20px">›</span>'}
-    </div>`; }).join('') : '<p class="muted small">Nenhuma matéria. Ative o modo edição e adicione (ex: Português) com todos os conteúdos.</p>';
-  $$('#estMaterias [data-openmat]').forEach(b=>b.onclick=(e)=>{ if(e.target.closest('[data-edm],[data-delm]')) return; abrirMateria(b.dataset.openmat); });
-  if(edit){ $$('#estMaterias [data-edm]').forEach(b=>b.onclick=()=>editMateriaSheet(b.dataset.edm));
-    $$('#estMaterias [data-delm]').forEach(b=>b.onclick=()=>{ S.materias=S.materias.filter(x=>x.id!==b.dataset.delm); save('estudo:materias'); renderMaterias(); }); }
+  $('#estMaterias').innerHTML = S.materias.length ? `<div class="study-tree">${S.materias.map(m=>{
+    prepararEstruturaMateria(m); const pMat=progressoConteudos(folhasConteudo(m)),matOpen=estudoMateriasAbertas.has(String(m.id));
+    const grupos=gruposMateria(m).map(g=>{ const folhas=folhasConteudo(m,g.id),p=progressoConteudos(folhas),gOpen=estudoGruposAbertos.has(String(g.id)),nos=renderNosConteudo(m,g.id,null,edit); return `<div class="study-tree-group ${gOpen?'open':''}"><button type="button" class="study-tree-group-head" data-toggle-group="${g.id}"><span class="study-tree-folder">📁</span><span class="txt"><span class="t">${esc(g.nome)}</span><span class="s">${p.done}/${p.total} conteúdos · ${p.pct}%</span></span><span class="study-tree-pct">${p.pct}%</span><span class="study-tree-caret">›</span></button><div class="study-tree-contents">${nos||'<p class="small muted" style="padding:12px 14px;margin:0">Conteúdo vazio.</p>'}</div></div>`; }).join('');
+    const qtdGrupos=gruposMateria(m).length;
+    return `<div class="study-tree-materia ${matOpen?'open':''}"><button type="button" class="study-tree-head" data-toggle-mat="${m.id}"><span class="study-tree-folder">📚</span><span class="txt"><span class="t">${esc(m.nome)}</span><span class="s">${qtdGrupos} ${qtdGrupos===1?'conteúdo':'conteúdos'} · ${pMat.done}/${pMat.total} conteúdos · ${pMat.pct}%</span><span class="xpbar"><i style="width:${pMat.pct}%"></i></span></span><span class="study-tree-pct">${pMat.pct}%</span><span class="study-tree-caret">›</span></button><div class="study-tree-body">${edit?`<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn sm ghost" data-edm="${m.id}">✏️ Editar estrutura</button><button class="btn sm ghost" data-delm="${m.id}">🗑️</button></div>`:''}${grupos||'<p class="small muted">Sem conteúdos principais. Edite para criar o primeiro.</p>'}</div></div>`;
+  }).join('')}</div>` : '<p class="muted small">Nenhuma matéria. Ative o modo edição e crie, por exemplo: Matemática → Funções – ESA → conteúdos.</p>';
+  $$('#estMaterias [data-toggle-mat]').forEach(b=>b.onclick=()=>{ const id=String(b.dataset.toggleMat); estudoMateriasAbertas.has(id)?estudoMateriasAbertas.delete(id):estudoMateriasAbertas.add(id); renderMaterias(); });
+  $$('#estMaterias [data-toggle-group]').forEach(b=>b.onclick=()=>{ const id=String(b.dataset.toggleGroup); estudoGruposAbertos.has(id)?estudoGruposAbertos.delete(id):estudoGruposAbertos.add(id); renderMaterias(); });
+  $$('#estMaterias [data-toggle-content]').forEach(b=>b.onclick=()=>{ const id=String(b.dataset.toggleContent); estudoConteudosAbertos.has(id)?estudoConteudosAbertos.delete(id):estudoConteudosAbertos.add(id); renderMaterias(); });
+  if(edit)$$('#estMaterias [data-add-sub]').forEach(b=>b.onclick=()=>adicionarSubtopicoSheet(b.dataset.mid,b.dataset.addSub));
+  if(edit){ $$('#estMaterias [data-edm]').forEach(b=>b.onclick=()=>editMateriaSheet(b.dataset.edm)); $$('#estMaterias [data-delm]').forEach(b=>b.onclick=()=>{ const m=S.materias.find(x=>String(x.id)===String(b.dataset.delm)); if(!m||!confirm(`Apagar a matéria “${m.nome}” e sua estrutura? Os registros de sessões já realizadas serão preservados.`))return; S.materias=S.materias.filter(x=>String(x.id)!==String(m.id)); Object.keys(S.estudoSemana||{}).forEach(d=>S.estudoSemana[d]=(S.estudoSemana[d]||[]).filter(id=>String(id)!==String(m.id))); save('estudo:materias'); save('estudo:semana'); renderMaterias(); renderEstudoDia(); }); }
 }
-function abrirMateria(mid){
-  const m=S.materias.find(x=>x.id===mid); if(!m) return;
-  const totalMs=(m.conteudos||[]).reduce((a,c)=>a+(c.tempoMs||0),0);
-  const p=previsaoMateria(m);
-  const prevTxt = p.rest===0 ? '<b style="color:var(--ok)">Matéria concluída ✅</b>'
-    : (p.etaData ? `Faltam <b>${p.rest}</b>${p.restMin?` (≈${fmtHoras(p.restMin)})`:''} · no teu ritmo termina ~<b>${fmtDataCurta(p.etaData)}</b> (${p.etaDias} dias)`
-                 : `Faltam <b>${p.rest}</b> conteúdos${p.restMin?` (≈${fmtHoras(p.restMin)})`:''} · estuda mais uns dias que eu prevejo a data`);
-  openSheet(`<h3>${esc(m.nome)}</h3>
-    <p class="small muted">${m.conteudos.filter(c=>c.done).length}/${m.conteudos.length} concluídos · tempo total ${fmtDur(totalMs)}</p>
-    <div class="card" style="margin:8px 0"><p class="small" style="margin:0">📈 ${prevTxt}</p></div>
-    <div style="margin-top:8px">${m.conteudos.length? m.conteudos.map(c=>`
-      <div class="rowitem ${c.done?'done':''}">
-        <div class="chk">${c.done?'✓':''}</div>
-        <div class="txt"><div class="t materia-content-name" style="${c.done?'opacity:.7':''}">${esc(c.nome)}</div>${c.done&&c.tempoMs?`<div class="s" style="color:var(--ok)">✅ concluído</div>`:''}</div>
-        <div class="mono muted" style="font-size:13px">${c.tempoMs?fmtDur(c.tempoMs):'—'}</div>
-      </div>`).join('') : '<p class="muted small">Sem conteúdos. Edite a matéria pra adicionar.</p>'}</div>`);
+function adicionarSubtopicoSheet(mid,parentId){
+  const m=S.materias.find(x=>String(x.id)===String(mid)),pai=m?conteudosMateria(m).find(c=>String(c.id)===String(parentId)):null; if(!m||!pai)return;
+  openSheet(`<h3>Adicionar dentro de ${esc(pai.nome)}</h3><p class="small muted">Crie os tópicos específicos estudáveis dentro deste item. Você poderá usar o “＋” novamente em qualquer nível.</p><div class="materia-editor-list" id="subtopicosNovos"></div><button type="button" class="btn sm ghost" id="addOutroSub">＋ Outro tópico</button><button class="btn" id="saveSubtopicos" style="margin-top:10px">Salvar tópicos</button>`);
+  const box=$('#subtopicosNovos');
+  const add=()=>{const item=document.createElement('div');item.className='materia-editor-item';item.innerHTML=`<textarea rows="2" maxlength="500" placeholder="O que será estudado especificamente?"></textarea><button type="button" class="materia-editor-remove" aria-label="Remover">🗑️</button>`;const ta=$('textarea',item);ta.oninput=()=>autoGrow(ta);$('.materia-editor-remove',item).onclick=()=>item.remove();box.appendChild(item);setTimeout(()=>ta.focus(),30);};
+  add(); $('#addOutroSub').onclick=add;
+  $('#saveSubtopicos').onclick=()=>{const nomes=$$('#subtopicosNovos textarea').map(x=>x.value.replace(/\r\n?/g,'\n').trim()).filter(Boolean),vistos=new Set();if(!nomes.length)return toast('Escreva pelo menos um tópico.');for(const n of nomes){const k=chaveConteudo(n);if(vistos.has(k)||filhosConteudo(m,pai.id).some(x=>chaveConteudo(x.nome)===k))return toast('Há um tópico repetido dentro desta pasta.');vistos.add(k);}nomes.forEach(nome=>m.conteudos.push({id:uid(),nome,grupoId:pai.grupoId,parentId:pai.id,done:false}));save('estudo:materias');estudoConteudosAbertos.add(String(pai.id));estudoMateriasAbertas.add(String(m.id));estudoGruposAbertos.add(String(pai.grupoId));closeSheet();renderMaterias();renderEstudoDia();};
 }
 function editMateriaSheet(mid){
-  const m = mid ? S.materias.find(x=>x.id===mid) : {nome:'', conteudos:[]};
+  const m = mid ? S.materias.find(x=>String(x.id)===String(mid)) : {id:uid(),nome:'',grupos:[],conteudos:[]};
+  prepararEstruturaMateria(m);
   openSheet(`<h3>${mid?'Editar':'Nova'} matéria</h3>
-    <div class="field"><label>Nome da matéria</label><input id="matNome" value="${esc(m.nome)}" placeholder="Ex: Português"></div>
+    <div class="field"><label>Nome da matéria</label><input id="matNome" value="${esc(m.nome)}" placeholder="Ex: Matemática"></div>
     <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
-      <label style="font-family:'Oswald';font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim)">Conteúdos desta matéria</label>
-      <button type="button" class="btn sm ghost" id="matAddConteudo">＋ Adicionar</button>
+      <label style="font-family:'Oswald';font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim)">Conteúdos principais / pastas</label>
+      <button type="button" class="btn sm ghost" id="matAddGrupo">＋ Novo conteúdo</button>
     </div>
-    <p class="small muted" style="margin:7px 0 4px">Cada conteúdo fica no próprio bloco. No celular, Enter apenas pula a linha dentro do mesmo conteúdo.</p>
-    <div class="materia-editor-list" id="matConteudos"></div>
-    <p class="small muted" id="matSemConteudo" style="display:none">Nenhum conteúdo ainda. Toque em “Adicionar”.</p>
+    <p class="small muted" style="margin:7px 0 4px">Organize qualquer matéria em conteúdos, tópicos e subtópicos. Enter apenas pula uma linha dentro do mesmo item.</p>
+    <div id="matGrupos"></div>
+    <p class="small muted" id="matSemGrupo" style="display:none">Nenhum conteúdo principal ainda. Toque em “Novo conteúdo”.</p>
     <button class="btn" id="matSave" style="margin-top:10px">Salvar</button>`);
-  const lista=$('#matConteudos');
-  const atualizarNumeros=()=>{
-    const itens=$$('.materia-editor-item',lista);
+  const gruposBox=$('#matGrupos');
+  const atualizarNumeros=(grupoEl)=>{
+    const itens=$$('.materia-editor-item',grupoEl);
     itens.forEach((item,i)=>$('.materia-editor-num',item).textContent=String(i+1));
-    $('#matSemConteudo').style.display=itens.length?'none':'block';
+    const vazio=$('.grupo-sem-conteudo',grupoEl); if(vazio)vazio.style.display=itens.length?'none':'block';
   };
-  const addConteudo=(conteudo=null,focar=false)=>{
+  const addConteudo=(grupoEl,conteudo=null,focar=false,nivel=0)=>{
     const item=document.createElement('div'); item.className='materia-editor-item';
     item.dataset.cid=conteudo?.id||'';
-    item.innerHTML=`<span class="materia-editor-num"></span><textarea rows="2" maxlength="500" placeholder="Ex: Brasil Colônia — chegada dos portugueses"></textarea><button type="button" class="materia-editor-remove" aria-label="Remover conteúdo">🗑️</button>`;
+    item.dataset.nivel=String(nivel); item.style.marginLeft=`${Math.min(nivel,4)*14}px`;
+    item.innerHTML=`<span class="materia-editor-num">${nivel?'↳':''}</span><textarea rows="2" maxlength="500" placeholder="Descreva o tópico específico"></textarea><button type="button" class="materia-editor-remove" aria-label="Remover conteúdo">🗑️</button>`;
     const ta=$('textarea',item); ta.value=conteudo?.nome||''; autoGrow(ta); ta.oninput=()=>autoGrow(ta);
-    $('.materia-editor-remove',item).onclick=()=>{ item.remove(); atualizarNumeros(); };
-    lista.appendChild(item); atualizarNumeros(); if(focar) setTimeout(()=>ta.focus(),30);
+    $('.materia-editor-remove',item).onclick=()=>{ item.remove(); atualizarNumeros(grupoEl); toast('Conteúdo retirado desta edição. Salve para confirmar.'); };
+    $('.materia-editor-list',grupoEl).appendChild(item); atualizarNumeros(grupoEl); if(focar)setTimeout(()=>ta.focus(),30);
   };
-  (m.conteudos||[]).forEach(c=>addConteudo(c));
-  $('#matAddConteudo').onclick=()=>addConteudo(null,true);
-  if(!(m.conteudos||[]).length) addConteudo(null,false);
+  const addGrupo=(grupo=null,focar=false)=>{
+    const el=document.createElement('div'); el.className='materia-grupo-editor'; el.dataset.gid=grupo?.id||uid();
+    el.innerHTML=`<div class="materia-grupo-top"><span class="study-tree-folder">📁</span><input maxlength="120" placeholder="Ex: Acentuação" value="${esc(grupo?.nome||'')}"><button type="button" class="materia-editor-remove grupo-remove" aria-label="Remover conteúdo principal">🗑️</button></div><div class="materia-editor-list"></div><p class="small muted grupo-sem-conteudo">Pasta vazia.</p><button type="button" class="btn sm ghost grupo-add-conteudo">＋ Adicionar tópico</button>`;
+    $('.grupo-remove',el).onclick=()=>{ el.remove(); $('#matSemGrupo').style.display=$$('.materia-grupo-editor',gruposBox).length?'none':'block'; toast('Conteúdo retirado desta edição. Salve para confirmar.'); };
+    $('.grupo-add-conteudo',el).onclick=()=>addConteudo(el,null,true);
+    gruposBox.appendChild(el); (grupo?conteudosOrdenados(m,grupo.id):[]).forEach(({conteudo,nivel})=>addConteudo(el,conteudo,false,nivel)); atualizarNumeros(el); $('#matSemGrupo').style.display='none'; if(focar)setTimeout(()=>$('.materia-grupo-top input',el).focus(),30);
+  };
+  gruposMateria(m).forEach(g=>addGrupo(g));
+  $('#matAddGrupo').onclick=()=>addGrupo(null,true);
+  if(!gruposMateria(m).length)addGrupo(null,false);
   $('#matSave').onclick=()=>{
     const nome=$('#matNome').value.trim(); if(!nome) return toast('Nome da matéria?');
-    if(S.materias.some(x=>x.id!==mid&&chaveMateria(x.nome)===chaveMateria(nome)))return toast('Essa matéria já existe. Abra o bloco existente e adicione os conteúdos nele.');
-    const antigos=m.conteudos||[], vistos=new Set(), conteudos=[];
-    for(const item of $$('.materia-editor-item',lista)){
-      const texto=$('textarea',item).value.replace(/\r\n?/g,'\n').trim(); if(!texto) continue;
-      const chave=chaveConteudo(texto); if(vistos.has(chave)) return toast('Esse conteúdo está repetido dentro da matéria.'); vistos.add(chave);
-      const old=antigos.find(c=>String(c.id)===String(item.dataset.cid));
-      conteudos.push(old?{...old,nome:texto}:{id:uid(),nome:texto,done:false});
+    if(S.materias.some(x=>String(x.id)!==String(mid)&&chaveMateria(x.nome)===chaveMateria(nome)))return toast('Essa matéria já existe. Abra o bloco existente e adicione os conteúdos nela.');
+    const antigos=conteudosMateria(m), nomesGrupo=new Set(), grupos=[], conteudos=[];
+    for(const grupoEl of $$('.materia-grupo-editor',gruposBox)){
+      const nomeGrupo=$('.materia-grupo-top input',grupoEl).value.trim(); if(!nomeGrupo)return toast('Dê um nome para cada conteúdo principal.');
+      const chaveG=chaveGrupo(nomeGrupo); if(nomesGrupo.has(chaveG))return toast('Esse conteúdo principal está repetido.'); nomesGrupo.add(chaveG);
+      const grupoId=grupoEl.dataset.gid, vistos=new Set(); grupos.push({id:grupoId,nome:nomeGrupo});
+      for(const item of $$('.materia-editor-item',grupoEl)){
+        const texto=$('textarea',item).value.replace(/\r\n?/g,'\n').trim(); if(!texto)continue;
+        const chave=chaveConteudo(texto); if(vistos.has(chave))return toast(`Conteúdo repetido em ${nomeGrupo}.`); vistos.add(chave);
+        const old=antigos.find(c=>String(c.id)===String(item.dataset.cid)); conteudos.push(old?{...old,nome:texto,grupoId}:{id:uid(),nome:texto,grupoId,done:false});
+      }
     }
-    if(mid){ m.nome=nome; m.conteudos=conteudos; }
-    else S.materias.push({id:uid(), nome, conteudos});
+    if(mid){ m.nome=nome; m.grupos=grupos; m.conteudos=conteudos; prepararEstruturaMateria(m); }
+    else { const nova={id:m.id,nome,grupos,conteudos}; prepararEstruturaMateria(nova); S.materias.push(nova); }
     save('estudo:materias'); closeSheet(); renderMaterias(); renderEstudoDia();
   };
 }
 function posEstudo(sess){
-  const m=S.materias.find(x=>x.id===sess.refId);
-  const pend = m ? m.conteudos.filter(c=>!c.done) : [];
+  const m=S.materias.find(x=>String(x.id)===String(sess.refId));
+  const grupo=m?gruposMateria(m).find(g=>String(g.id)===String(sess.grupoId)):null;
+  const pend = m ? folhasConteudo(m,sess.grupoId).filter(c=>!c.done) : [];
   openSheet(`
     <h3>Sessão encerrada</h3>
     <div class="card"><div style="display:flex;justify-content:space-around;text-align:center">
       <div><div class="muted small">Tempo ativo</div><div class="mono" style="font-size:24px">${fmtHMS(sess.ativoMs/1000)}</div></div>
       <div><div class="muted small">Tempo pausado</div><div class="mono" style="font-size:24px">${fmtHMS(sess.pausedMs/1000)}</div></div>
     </div></div>
-    <p class="small muted">Marque somente os conteúdos concluídos em <b>${esc(m?.nome||'esta matéria')}</b>:</p>
-    ${pend.length?pend.map(c=>`<label class="rowitem"><input type="checkbox" data-cid="${c.id}" style="width:22px;height:22px"><div class="txt"><div class="t materia-content-name">${esc(c.nome)}</div></div></label>`).join(''):'<p class="muted">Nenhum conteúdo pendente nessa matéria.</p>'}
+    <p class="small muted">Marque somente os tópicos específicos estudados em <b>${esc(m?.nome||'esta matéria')} → ${esc(grupo?.nome||'conteúdo principal')}</b>:</p>
+    ${pend.length?pend.map(c=>`<label class="rowitem"><input type="checkbox" data-cid="${c.id}" style="width:22px;height:22px"><div class="txt"><div class="t materia-content-name">${esc(caminhoConteudo(m,c))}</div></div></label>`).join(''):'<p class="muted">Nenhum tópico específico pendente nesse conteúdo.</p>'}
     <label style="font-size:12.5px;color:var(--text-dim);font-weight:700">Foto/vídeo do estudo (opcional)</label>
     <div id="estProva" style="margin:7px 0 6px"></div>
     <label class="rowitem" style="cursor:pointer"><input type="checkbox" id="estPostar" style="width:22px;height:22px"><div class="txt"><div class="t">Postar no feed</div><div class="s">Depois de finalizar, escolhe legenda e público/privado.</div></div></label>
@@ -2575,10 +2677,10 @@ function posEstudo(sess){
     const marcados=$$('#sheet [data-cid]').filter(c=>c.checked).map(c=>c.dataset.cid);
     if(m){
       const fatia = marcados.length ? Math.round(sess.ativoMs/marcados.length) : 0;
-      m.conteudos.forEach(c=>{ if(marcados.includes(c.id)){ c.done=true; c.tempoMs=(c.tempoMs||0)+fatia; c.concluidoEm=todayISO(); } });
+      folhasConteudo(m,sess.grupoId).forEach(c=>{ if(marcados.includes(c.id)){ c.done=true; c.tempoMs=(c.tempoMs||0)+fatia; c.concluidoEm=todayISO(); } });
       save('estudo:materias');
     }
-    S.estudoLogs.push({ materia:m?.nome||'Estudo', materiaId:sess.refId, dateISO:todayISO(), ativoMs:sess.ativoMs, pausaMs:sess.pausedMs, conteudos:marcados, prova:prova?.url, provaTipo:prova?.tipo });
+    S.estudoLogs.push({ materia:m?.nome||'Estudo', materiaId:sess.refId, grupo:grupo?.nome||'', grupoId:sess.grupoId||null, dateISO:todayISO(), ativoMs:sess.ativoMs, pausaMs:sess.pausedMs, conteudos:marcados, prova:prova?.url, provaTipo:prova?.tipo });
     save('estudo:logs'); reportXP();
     let rec=null;
     if(prova){ addRecordacao({tipo:'estudo', url:prova.url, midiaTipo:prova.tipo==='video'?'video':'image', texto:`Estudo: ${m?.nome||''}`}); rec=S.recordacoes[0]; }
