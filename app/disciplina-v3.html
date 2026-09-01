@@ -188,10 +188,13 @@ button.rowitem{width:100%;text-align:left;font:inherit}
 .rowitem .txt .t{font-weight:700; font-size:15.5px; color:var(--text); line-height:1.35;}
 .rowitem .txt .s{font-size:13px; color:var(--text-dim); line-height:1.45; margin-top:3px;}
 .materia-editor-list{display:grid;gap:10px;margin:10px 0 12px}
-.materia-editor-item{display:flex;align-items:flex-start;gap:9px;padding:11px;border:1px solid var(--line);border-radius:16px;background:var(--surface2)}
+.materia-editor-item{display:grid;gap:8px;padding:11px;border:1px solid var(--line);border-radius:16px;background:var(--surface2)}
+.materia-editor-row{display:flex;align-items:flex-start;gap:9px;min-width:0}
 .materia-editor-num{display:grid;place-items:center;flex:0 0 30px;height:30px;border-radius:10px;background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent2);font-weight:800;font-size:13px}
 .materia-editor-item textarea{flex:1;min-width:0;min-height:52px;max-height:180px;resize:none;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--text);padding:12px;font:inherit;line-height:1.4;overflow-y:auto}
 .materia-editor-item textarea:focus{outline:none;border-color:var(--accent)}
+.materia-editor-add-sub{justify-self:start;margin-left:39px;border:0;background:transparent;color:var(--accent2);font:inherit;font-size:12.5px;font-weight:800;padding:5px 8px;border-radius:9px}
+.materia-editor-add-sub:hover,.materia-editor-add-sub:focus-visible{background:color-mix(in srgb,var(--accent) 12%,transparent);outline:none}
 .materia-editor-remove{flex:0 0 38px;width:38px;height:38px;border:1px solid var(--line);border-radius:11px;background:transparent;color:var(--text-dim);font-size:17px}
 .materia-editor-remove:active{border-color:var(--danger);color:var(--danger)}
 .materia-content-name{white-space:pre-line;overflow-wrap:anywhere}
@@ -787,7 +790,7 @@ setInterval(()=>{ if(authToken&&offQueue().length&&navigator.onLine) flushQueue(
 
 /* id único DESTE aparelho/aba — usado pra não ecoar de volta a própria escrita no sync ao vivo */
 const CLIENT_ID = (Math.random().toString(36).slice(2)+'-'+Date.now().toString(36));
-const APP_BUILD = 'redzone-v120';
+const APP_BUILD = 'redzone-v121';
 // evita re-render que rouba o foco enquanto a pessoa digita (o dado já foi aplicado em S de qualquer forma)
 function _syncPodeRender(){ const a=document.activeElement; return !(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||'')); }
 // ANTI-LOOP: ao aplicar uma mudança que VEIO do servidor, um re-render pode disparar escritas de
@@ -2538,7 +2541,7 @@ function renderEstudoDia(){
     h+=`<div class="rowitem ${feito?'done':''}">
       ${feito?'<div class="chk">✓</div>':''}
       <div class="txt"><div class="t">${esc(m.nome)}</div>
-        <div class="s materia-content-name">${prox?`Próximo: ${proxGrupo?esc(proxGrupo.nome)+' → ':''}${esc(caminhoConteudo(m,prox))}`:'✅ Tudo concluído'} — ${conts.filter(c=>c.done).length}/${conts.length} tópicos · ${gruposMateria(m).length} conteúdos</div>
+        <div class="s materia-content-name">${prox?`Próximo: ${proxGrupo?esc(proxGrupo.nome)+' → ':''}${esc(caminhoConteudo(m,prox))}`:'✅ Tudo concluído'} — ${conts.filter(c=>c.done).length}/${conts.length} assuntos · ${gruposMateria(m).length} conteúdos</div>
         ${feito?`<div class="s" style="color:var(--ok)">✅ Estudado hoje · ${mins} min</div>`:''}</div>${miniaturaRegistro(logMidia)}
       ${edit ? `<button class="pencil" data-redomat="${m.id}">↻</button>`
              : (feito ? '' : `<button class="btn sm" data-startmat="${m.id}" ${d===hojeDia()?'':'aria-disabled="true"'}>▶ Estudar</button>`)}
@@ -2555,10 +2558,10 @@ function escolherGrupoEstudo(d,mid){
   const m=S.materias.find(x=>String(x.id)===String(mid)); if(!m) return;
   prepararEstruturaMateria(m);
   const grupos=gruposMateria(m);
-  if(!grupos.length) return toast('Adicione um conteúdo principal e seus tópicos antes de estudar.');
+  if(!grupos.length) return toast('Adicione um conteúdo principal e seus assuntos antes de estudar.');
   openSheet(`<h3>${esc(m.nome)}</h3>
-    <p class="small muted">Escolha o conteúdo principal desta sessão. Ao finalizar, só os tópicos específicos dele poderão ser marcados.</p>
-    <div class="study-tree">${grupos.map(g=>{const cs=folhasConteudo(m,g.id),p=progressoConteudos(cs);return `<button class="rowitem" data-study-group="${g.id}" style="cursor:pointer"><span class="study-tree-folder">📁</span><span class="txt"><span class="t">${esc(g.nome)}</span><span class="s">${p.done}/${p.total} tópicos · ${p.pct}%</span></span><span class="muted" style="font-size:20px">›</span></button>`}).join('')}</div>`);
+    <p class="small muted">Escolha o conteúdo principal desta sessão. Ao finalizar, só os assuntos específicos dele poderão ser marcados.</p>
+    <div class="study-tree">${grupos.map(g=>{const cs=folhasConteudo(m,g.id),p=progressoConteudos(cs);return `<button class="rowitem" data-study-group="${g.id}" style="cursor:pointer"><span class="study-tree-folder">📁</span><span class="txt"><span class="t">${esc(g.nome)}</span><span class="s">${p.done}/${p.total} assuntos · ${p.pct}%</span></span><span class="muted" style="font-size:20px">›</span></button>`}).join('')}</div>`);
   $$('#sheet [data-study-group]').forEach(b=>b.onclick=()=>{ const gid=b.dataset.studyGroup; closeSheet(); setTimeout(()=>startSession('estudo',d,m.id,gid),120); });
 }
 function setDayMateriasSheet(d){
@@ -2572,7 +2575,7 @@ function fmtDur(ms){ const min=Math.round((ms||0)/60000); if(min<60) return min+
 const estudoMateriasAbertas=new Set(), estudoGruposAbertos=new Set(), estudoConteudosAbertos=new Set();
 function renderNosConteudo(m,grupoId,parentId=null,edit=false,nivel=0){
   const todos=conteudosMateria(m,grupoId), irmaos=todos.filter(c=>String(c.parentId||'')===String(parentId||''));
-  return irmaos.map(c=>{ const filhos=filhosConteudo(m,c.id).filter(x=>String(x.grupoId)===String(grupoId)),p=progressoConteudos(folhasDoNo(m,c)),aberto=estudoConteudosAbertos.has(String(c.id)),concluido=p.total>0&&p.done===p.total; return `<div class="study-tree-node ${aberto?'open':''} ${concluido?'done':''}" style="--tree-depth:${nivel}"><div class="study-tree-node-row"><button type="button" class="study-tree-node-main" ${filhos.length?`data-toggle-content="${c.id}"`:''}>${filhos.length?'<span class="mini-caret">›</span>':'<span class="dot"></span>'}<span class="txt"><span class="t materia-content-name">${esc(c.nome)}</span>${filhos.length?`<span class="s">${p.done}/${p.total} tópicos específicos</span>`:(c.tempoMs?`<span class="s">${fmtDur(c.tempoMs)}</span>`:'')}</span></button><span class="study-tree-pct">${p.pct}%</span>${edit?`<button type="button" class="study-tree-add" data-add-sub="${c.id}" data-mid="${m.id}" aria-label="Adicionar dentro de ${esc(c.nome)}" title="Adicionar dentro deste tópico">＋</button>`:''}</div>${filhos.length?`<div class="study-tree-node-children">${renderNosConteudo(m,grupoId,c.id,edit,nivel+1)}</div>`:''}</div>`; }).join('');
+  return irmaos.map(c=>{ const filhos=filhosConteudo(m,c.id).filter(x=>String(x.grupoId)===String(grupoId)),p=progressoConteudos(folhasDoNo(m,c)),aberto=estudoConteudosAbertos.has(String(c.id)),concluido=p.total>0&&p.done===p.total; return `<div class="study-tree-node ${aberto?'open':''} ${concluido?'done':''}" style="--tree-depth:${nivel}"><div class="study-tree-node-row"><button type="button" class="study-tree-node-main" ${filhos.length?`data-toggle-content="${c.id}"`:''}>${filhos.length?'<span class="mini-caret">›</span>':'<span class="dot"></span>'}<span class="txt"><span class="t materia-content-name">${esc(c.nome)}</span>${filhos.length?`<span class="s">${p.done}/${p.total} subassuntos</span>`:(c.tempoMs?`<span class="s">${fmtDur(c.tempoMs)}</span>`:'')}</span></button><span class="study-tree-pct">${p.pct}%</span>${edit?`<button type="button" class="study-tree-add" data-add-sub="${c.id}" data-mid="${m.id}" aria-label="Adicionar subassunto em ${esc(c.nome)}" title="Adicionar subassunto">＋</button>`:''}</div>${filhos.length?`<div class="study-tree-node-children">${renderNosConteudo(m,grupoId,c.id,edit,nivel+1)}</div>`:''}</div>`; }).join('');
 }
 function renderMaterias(){
   const edit=S.config.editMode;
@@ -2590,11 +2593,11 @@ function renderMaterias(){
 }
 function adicionarSubtopicoSheet(mid,parentId){
   const m=S.materias.find(x=>String(x.id)===String(mid)),pai=m?conteudosMateria(m).find(c=>String(c.id)===String(parentId)):null; if(!m||!pai)return;
-  openSheet(`<h3>Adicionar dentro de ${esc(pai.nome)}</h3><p class="small muted">Crie os tópicos específicos estudáveis dentro deste item. Você poderá usar o “＋” novamente em qualquer nível.</p><div class="materia-editor-list" id="subtopicosNovos"></div><button type="button" class="btn sm ghost" id="addOutroSub">＋ Outro tópico</button><button class="btn" id="saveSubtopicos" style="margin-top:10px">Salvar tópicos</button>`);
+  openSheet(`<h3>Adicionar subassunto em ${esc(pai.nome)}</h3><p class="small muted">Crie assuntos específicos dentro deste item. O “＋ Adicionar subassunto” pode ser usado novamente em qualquer nível.</p><div class="materia-editor-list" id="subtopicosNovos"></div><button type="button" class="btn sm ghost" id="addOutroSub">＋ Outro subassunto</button><button class="btn" id="saveSubtopicos" style="margin-top:10px">Salvar subassuntos</button>`);
   const box=$('#subtopicosNovos');
-  const add=()=>{const item=document.createElement('div');item.className='materia-editor-item';item.innerHTML=`<textarea rows="2" maxlength="500" placeholder="O que será estudado especificamente?"></textarea><button type="button" class="materia-editor-remove" aria-label="Remover">🗑️</button>`;const ta=$('textarea',item);ta.oninput=()=>autoGrow(ta);$('.materia-editor-remove',item).onclick=()=>item.remove();box.appendChild(item);setTimeout(()=>ta.focus(),30);};
+  const add=()=>{const item=document.createElement('div');item.className='materia-editor-item';item.innerHTML=`<div class="materia-editor-row"><textarea rows="2" maxlength="500" placeholder="Nome do subassunto"></textarea><button type="button" class="materia-editor-remove" aria-label="Remover">🗑️</button></div>`;const ta=$('textarea',item);ta.oninput=()=>autoGrow(ta);$('.materia-editor-remove',item).onclick=()=>item.remove();box.appendChild(item);setTimeout(()=>ta.focus(),30);};
   add(); $('#addOutroSub').onclick=add;
-  $('#saveSubtopicos').onclick=()=>{const nomes=$$('#subtopicosNovos textarea').map(x=>x.value.replace(/\r\n?/g,'\n').trim()).filter(Boolean),vistos=new Set();if(!nomes.length)return toast('Escreva pelo menos um tópico.');for(const n of nomes){const k=chaveConteudo(n);if(vistos.has(k)||filhosConteudo(m,pai.id).some(x=>chaveConteudo(x.nome)===k))return toast('Há um tópico repetido dentro desta pasta.');vistos.add(k);}nomes.forEach(nome=>m.conteudos.push({id:uid(),nome,grupoId:pai.grupoId,parentId:pai.id,done:false}));save('estudo:materias');estudoConteudosAbertos.add(String(pai.id));estudoMateriasAbertas.add(String(m.id));estudoGruposAbertos.add(String(pai.grupoId));closeSheet();renderMaterias();renderEstudoDia();};
+  $('#saveSubtopicos').onclick=()=>{const nomes=$$('#subtopicosNovos textarea').map(x=>x.value.replace(/\r\n?/g,'\n').trim()).filter(Boolean),vistos=new Set();if(!nomes.length)return toast('Escreva pelo menos um subassunto.');for(const n of nomes){const k=chaveConteudo(n);if(vistos.has(k)||filhosConteudo(m,pai.id).some(x=>chaveConteudo(x.nome)===k))return toast('Há um subassunto repetido dentro deste assunto.');vistos.add(k);}nomes.forEach(nome=>m.conteudos.push({id:uid(),nome,grupoId:pai.grupoId,parentId:pai.id,done:false}));save('estudo:materias');estudoConteudosAbertos.add(String(pai.id));estudoMateriasAbertas.add(String(m.id));estudoGruposAbertos.add(String(pai.grupoId));closeSheet();renderMaterias();renderEstudoDia();};
 }
 function editMateriaSheet(mid){
   const m = mid ? S.materias.find(x=>String(x.id)===String(mid)) : {id:uid(),nome:'',grupos:[],conteudos:[]};
@@ -2605,31 +2608,34 @@ function editMateriaSheet(mid){
       <label style="font-family:'Oswald';font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim)">Conteúdos principais / pastas</label>
       <button type="button" class="btn sm ghost" id="matAddGrupo">＋ Novo conteúdo</button>
     </div>
-    <p class="small muted" style="margin:7px 0 4px">Organize qualquer matéria em conteúdos, tópicos e subtópicos. Enter apenas pula uma linha dentro do mesmo item.</p>
+    <p class="small muted" style="margin:7px 0 4px">Organize qualquer matéria em conteúdos, assuntos e subassuntos. Dentro de cada assunto, use “＋ Adicionar subassunto”. Enter apenas pula uma linha no mesmo item.</p>
     <div id="matGrupos"></div>
     <p class="small muted" id="matSemGrupo" style="display:none">Nenhum conteúdo principal ainda. Toque em “Novo conteúdo”.</p>
     <button class="btn" id="matSave" style="margin-top:10px">Salvar</button>`);
   const gruposBox=$('#matGrupos');
   const atualizarNumeros=(grupoEl)=>{
-    const itens=$$('.materia-editor-item',grupoEl);
-    itens.forEach((item,i)=>$('.materia-editor-num',item).textContent=String(i+1));
+    const itens=Array.from($('.materia-editor-list',grupoEl).children); let raiz=0;
+    itens.forEach(item=>{const nivel=Number(item.dataset.nivel||0);if(!nivel)raiz++;$('.materia-editor-num',item).textContent=nivel?`↳${nivel}`:String(raiz);});
     const vazio=$('.grupo-sem-conteudo',grupoEl); if(vazio)vazio.style.display=itens.length?'none':'block';
   };
-  const addConteudo=(grupoEl,conteudo=null,focar=false,nivel=0)=>{
+  const addConteudo=(grupoEl,conteudo=null,focar=false,nivel=0,parentId='')=>{
     const item=document.createElement('div'); item.className='materia-editor-item';
-    item.dataset.cid=conteudo?.id||'';
+    item.dataset.cid=conteudo?.id||uid(); item.dataset.parentId=conteudo?.parentId||parentId||'';
     item.dataset.nivel=String(nivel); item.style.marginLeft=`${Math.min(nivel,4)*14}px`;
-    item.innerHTML=`<span class="materia-editor-num">${nivel?'↳':''}</span><textarea rows="2" maxlength="500" placeholder="Descreva o tópico específico"></textarea><button type="button" class="materia-editor-remove" aria-label="Remover conteúdo">🗑️</button>`;
+    item.innerHTML=`<div class="materia-editor-row"><span class="materia-editor-num"></span><textarea rows="2" maxlength="500" placeholder="Nome do assunto"></textarea><button type="button" class="materia-editor-remove" aria-label="Remover assunto">🗑️</button></div><button type="button" class="materia-editor-add-sub">＋ Adicionar subassunto</button>`;
     const ta=$('textarea',item); ta.value=conteudo?.nome||''; autoGrow(ta); ta.oninput=()=>autoGrow(ta);
-    $('.materia-editor-remove',item).onclick=()=>{ item.remove(); atualizarNumeros(grupoEl); toast('Conteúdo retirado desta edição. Salve para confirmar.'); };
-    $('.materia-editor-list',grupoEl).appendChild(item); atualizarNumeros(grupoEl); if(focar)setTimeout(()=>ta.focus(),30);
+    $('.materia-editor-remove',item).onclick=()=>{const nivelAtual=Number(item.dataset.nivel||0);let prox=item.nextElementSibling;while(prox&&Number(prox.dataset.nivel||0)>nivelAtual){const remover=prox;prox=prox.nextElementSibling;remover.remove();}item.remove();atualizarNumeros(grupoEl);toast('Assunto e seus subassuntos retirados desta edição. Salve para confirmar.');};
+    $('.materia-editor-add-sub',item).onclick=()=>addConteudo(grupoEl,null,true,nivel+1,item.dataset.cid);
+    const lista=$('.materia-editor-list',grupoEl);
+    if(parentId){let ancora=Array.from(lista.children).find(x=>String(x.dataset.cid)===String(parentId));if(ancora){const nivelPai=Math.max(0,nivel-1);let prox=ancora.nextElementSibling;while(prox&&Number(prox.dataset.nivel||0)>nivelPai){ancora=prox;prox=prox.nextElementSibling;}ancora.after(item);}else lista.appendChild(item);}else lista.appendChild(item);
+    atualizarNumeros(grupoEl); if(focar)setTimeout(()=>ta.focus(),30);
   };
   const addGrupo=(grupo=null,focar=false)=>{
     const el=document.createElement('div'); el.className='materia-grupo-editor'; el.dataset.gid=grupo?.id||uid();
-    el.innerHTML=`<div class="materia-grupo-top"><span class="study-tree-folder">📁</span><input maxlength="120" placeholder="Ex: Acentuação" value="${esc(grupo?.nome||'')}"><button type="button" class="materia-editor-remove grupo-remove" aria-label="Remover conteúdo principal">🗑️</button></div><div class="materia-editor-list"></div><p class="small muted grupo-sem-conteudo">Pasta vazia.</p><button type="button" class="btn sm ghost grupo-add-conteudo">＋ Adicionar tópico</button>`;
+    el.innerHTML=`<div class="materia-grupo-top"><span class="study-tree-folder">📁</span><input maxlength="120" placeholder="Ex: Acentuação" value="${esc(grupo?.nome||'')}"><button type="button" class="materia-editor-remove grupo-remove" aria-label="Remover conteúdo principal">🗑️</button></div><div class="materia-editor-list"></div><p class="small muted grupo-sem-conteudo">Pasta vazia.</p><button type="button" class="btn sm ghost grupo-add-conteudo">＋ Adicionar assunto</button>`;
     $('.grupo-remove',el).onclick=()=>{ el.remove(); $('#matSemGrupo').style.display=$$('.materia-grupo-editor',gruposBox).length?'none':'block'; toast('Conteúdo retirado desta edição. Salve para confirmar.'); };
     $('.grupo-add-conteudo',el).onclick=()=>addConteudo(el,null,true);
-    gruposBox.appendChild(el); (grupo?conteudosOrdenados(m,grupo.id):[]).forEach(({conteudo,nivel})=>addConteudo(el,conteudo,false,nivel)); atualizarNumeros(el); $('#matSemGrupo').style.display='none'; if(focar)setTimeout(()=>$('.materia-grupo-top input',el).focus(),30);
+    gruposBox.appendChild(el); (grupo?conteudosOrdenados(m,grupo.id):[]).forEach(({conteudo,nivel})=>addConteudo(el,conteudo,false,nivel,conteudo.parentId||'')); atualizarNumeros(el); $('#matSemGrupo').style.display='none'; if(focar)setTimeout(()=>$('.materia-grupo-top input',el).focus(),30);
   };
   gruposMateria(m).forEach(g=>addGrupo(g));
   $('#matAddGrupo').onclick=()=>addGrupo(null,true);
@@ -2641,11 +2647,12 @@ function editMateriaSheet(mid){
     for(const grupoEl of $$('.materia-grupo-editor',gruposBox)){
       const nomeGrupo=$('.materia-grupo-top input',grupoEl).value.trim(); if(!nomeGrupo)return toast('Dê um nome para cada conteúdo principal.');
       const chaveG=chaveGrupo(nomeGrupo); if(nomesGrupo.has(chaveG))return toast('Esse conteúdo principal está repetido.'); nomesGrupo.add(chaveG);
-      const grupoId=grupoEl.dataset.gid, vistos=new Set(); grupos.push({id:grupoId,nome:nomeGrupo});
-      for(const item of $$('.materia-editor-item',grupoEl)){
+      const grupoId=grupoEl.dataset.gid, vistos=new Set(),itens=Array.from($('.materia-editor-list',grupoEl).children),nomesPorId=new Map(itens.map(item=>[String(item.dataset.cid),$('textarea',item).value.replace(/\r\n?/g,'\n').trim()])); grupos.push({id:grupoId,nome:nomeGrupo});
+      for(const item of itens){
         const texto=$('textarea',item).value.replace(/\r\n?/g,'\n').trim(); if(!texto)continue;
-        const chave=chaveConteudo(texto); if(vistos.has(chave))return toast(`Conteúdo repetido em ${nomeGrupo}.`); vistos.add(chave);
-        const old=antigos.find(c=>String(c.id)===String(item.dataset.cid)); conteudos.push(old?{...old,nome:texto,grupoId}:{id:uid(),nome:texto,grupoId,done:false});
+        const parentId=item.dataset.parentId||''; if(parentId&&!nomesPorId.get(String(parentId)))return toast('Preencha o assunto acima antes de salvar o subassunto.');
+        const chave=`${parentId}::${chaveConteudo(texto)}`; if(vistos.has(chave))return toast(`Assunto repetido em ${nomeGrupo}.`); vistos.add(chave);
+        const old=antigos.find(c=>String(c.id)===String(item.dataset.cid)),base=old?{...old,nome:texto,grupoId}:{id:item.dataset.cid,nome:texto,grupoId,done:false}; if(parentId)base.parentId=parentId;else delete base.parentId; conteudos.push(base);
       }
     }
     if(mid){ m.nome=nome; m.grupos=grupos; m.conteudos=conteudos; prepararEstruturaMateria(m); }
@@ -2663,8 +2670,8 @@ function posEstudo(sess){
       <div><div class="muted small">Tempo ativo</div><div class="mono" style="font-size:24px">${fmtHMS(sess.ativoMs/1000)}</div></div>
       <div><div class="muted small">Tempo pausado</div><div class="mono" style="font-size:24px">${fmtHMS(sess.pausedMs/1000)}</div></div>
     </div></div>
-    <p class="small muted">Marque somente os tópicos específicos estudados em <b>${esc(m?.nome||'esta matéria')} → ${esc(grupo?.nome||'conteúdo principal')}</b>:</p>
-    ${pend.length?pend.map(c=>`<label class="rowitem"><input type="checkbox" data-cid="${c.id}" style="width:22px;height:22px"><div class="txt"><div class="t materia-content-name">${esc(caminhoConteudo(m,c))}</div></div></label>`).join(''):'<p class="muted">Nenhum tópico específico pendente nesse conteúdo.</p>'}
+    <p class="small muted">Marque somente os assuntos específicos estudados em <b>${esc(m?.nome||'esta matéria')} → ${esc(grupo?.nome||'conteúdo principal')}</b>:</p>
+    ${pend.length?pend.map(c=>`<label class="rowitem"><input type="checkbox" data-cid="${c.id}" style="width:22px;height:22px"><div class="txt"><div class="t materia-content-name">${esc(caminhoConteudo(m,c))}</div></div></label>`).join(''):'<p class="muted">Nenhum assunto específico pendente nesse conteúdo.</p>'}
     <label style="font-size:12.5px;color:var(--text-dim);font-weight:700">Foto/vídeo do estudo (opcional)</label>
     <div id="estProva" style="margin:7px 0 6px"></div>
     <label class="rowitem" style="cursor:pointer"><input type="checkbox" id="estPostar" style="width:22px;height:22px"><div class="txt"><div class="t">Postar no feed</div><div class="s">Depois de finalizar, escolhe legenda e público/privado.</div></div></label>

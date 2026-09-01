@@ -1,6 +1,6 @@
 # REDZONE (ex-DISCIPLINA) — Status atual e roadmap (ponto de retomada)
 
-**Versão no ar: v120** — o Banco de matérias agora usa uma árvore genérica e recursiva: **Matéria → Conteúdos principais/pastas → tópicos → subtópicos**, com quantos níveis forem necessários. Cada item interno pode abrir/fechar e, no modo edição, recebe um botão “＋” para criar filhos. Matéria, pasta e cada ramo mostram a própria porcentagem; apenas os tópicos finais podem ser marcados ao encerrar o estudo. Dados antigos entram automaticamente em “Conteúdos gerais”; duplicatas, progresso, tempo, agenda, sessões e XP continuam preservados. HTML/SW/manifesto estão alinhados em v120. Nenhuma conta, atividade ou XP fictício foi criado.
+**Versão no ar: v121** — o Banco de matérias usa uma árvore genérica e recursiva: **Matéria → Conteúdos principais/pastas → assuntos → subassuntos**, com quantos níveis forem necessários. O editor da matéria agora mostra “＋ Adicionar subassunto” dentro de cada assunto, inclusive antes do primeiro salvamento; cada subassunto pode receber outros filhos. Todos os nomes visíveis que usavam “tópico” foram trocados por “assunto”. Matéria, pasta e cada ramo mostram a própria porcentagem; apenas os assuntos finais podem ser marcados ao encerrar o estudo. Dados e vínculos existentes continuam preservados. HTML/SW/manifesto estão alinhados em v121. Nenhuma conta, atividade ou XP fictício foi criado.
 
 > Documento vivo pra QUALQUER sessão continuar sem perder contexto. Se o chat
 > zerar, leia isto + `docs/07`, `08`, `09` e os arquivos de memória.
@@ -55,7 +55,7 @@ Ver memória [[plano-redesign-login-download]] e [[assets-via-downloads]]. Pedir
 fontes/cores; manter wordmark transparente (`redzone-wordmark.png`) e emblema camuflado (`mix-blend-mode:screen`).
 
 ## PENDENTE DE VERDADE
-1. **Validação autenticada final no aparelho real**: v120 passou sintaxe, teste automatizado da migração e da árvore recursiva, preservação de dados, percentuais por ramo, seleção exclusiva de folhas, manifesto, serviço, estabilidade pública e responsividade 390×844 / 768×1024 / 1440×900. O navegador disponível não tinha sessão autenticada e não havia Chrome conectado; confirmar no Android atual o botão “＋” em níveis internos e o push fechado, sem usar a conta antiga excluída. Bloqueio de captura do sistema exige futuro wrapper Android com `FLAG_SECURE`.
+1. **Validação autenticada final no aparelho real**: v121 passou sintaxe, teste automatizado da migração e da árvore recursiva, preservação de dados, criação de subassunto no próprio editor, percentuais por ramo, seleção exclusiva de folhas, manifesto, serviço, estabilidade pública e responsividade 390×844 / 768×1024 / 1440×900. O navegador disponível não tinha sessão autenticada e não havia Chrome conectado; confirmar no Android atual o botão “＋ Adicionar subassunto” dentro do editor e o push fechado, sem usar a conta antiga excluída. Bloqueio de captura do sistema exige futuro wrapper Android com `FLAG_SECURE`.
 2. **Redesign login/landing/app** (item ⭐ acima) — aguarda novo mockup específico do Felipe; não refazer sem referência.
 3. **Domínio pro e-mail** (~R$40/ano): sem domínio o Resend só entrega pro dono; recuperação por **pergunta de
    segurança** já cobre todos. Quando houver domínio, configurar SPF/DKIM no Resend e trocar `MAIL_FROM`.

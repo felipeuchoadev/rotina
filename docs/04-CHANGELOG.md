@@ -1,5 +1,12 @@
 # Changelog
 
+## v121 (01/09/2026)
+- “Tópico/subtópico” foi substituído por “assunto/subassunto” em toda a interface de Estudos.
+- Cada bloco de assunto no editor da matéria agora exibe “＋ Adicionar subassunto”; o recurso funciona antes de salvar e pode ser repetido em qualquer profundidade.
+- Novos assuntos recebem ID ainda no editor, permitindo que subassuntos apontem corretamente para pais ainda não persistidos.
+- O editor preserva ordem, profundidade e vínculos existentes; nomes repetidos são bloqueados somente entre irmãos, e remover um assunto da edição retira seu ramo para não criar órfãos.
+- Publicado como `redzone-v121`; sintaxe, teste específico, manifesto, service worker, serviço, estabilidade pública e responsividade foram validados sem criar dados fictícios.
+
 ## v120 (31/08/2026)
 - A hierarquia de Estudos deixou de ser fixa: qualquer matéria aceita conteúdos, tópicos e subtópicos recursivos, sem regra específica para Matemática.
 - Cada item interno abre/fecha e recebe “＋” no modo edição; a pessoa pode acrescentar novos filhos dentro de itens como “BLA”, repetindo isso em qualquer profundidade.

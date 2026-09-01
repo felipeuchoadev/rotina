@@ -37,8 +37,8 @@ assert.equal(S.materias[0].conteudos[0].done, true, 'Progresso da duplicata deve
 assert.equal(S.materias[0].conteudos[0].tempoMs, 2000, 'Maior tempo registrado deve ser preservado sem somar duplicação');
 assert.deepEqual(S.estudoSemana.seg, ['hist-1','mat-1'], 'Agenda deve apontar uma única vez para a matéria consolidada');
 assert.equal(api.gruposMateria(S.materias[1])[0].nome, 'Funções – ESA', 'Conteúdos principais existentes devem ser preservados');
-assert.equal(api.folhasConteudo(S.materias[1],'funcoes').length, 2, 'Somente tópicos finais devem ser estudáveis');
-assert.equal(api.folhasDoNo(S.materias[1],S.materias[1].conteudos[0]).length, 2, 'Um tópico deve aceitar subtópicos recursivos');
+assert.equal(api.folhasConteudo(S.materias[1],'funcoes').length, 2, 'Somente assuntos finais devem ser estudáveis');
+assert.equal(api.folhasDoNo(S.materias[1],S.materias[1].conteudos[0]).length, 2, 'Um assunto deve aceitar subassuntos recursivos');
 assert.deepEqual(api.progressoConteudos(api.folhasConteudo(S.materias[1],'funcoes')), {total:2,done:1,pct:50});
 assert.equal(api.caminhoConteudo(S.materias[1],S.materias[1].conteudos[1]), '3 Funções → 3.1 Noção intuitiva de função');
 assert.deepEqual(api.conteudosOrdenados(S.materias[1],'funcoes').map(x=>x.nivel), [0,1,1], 'A ordem e a profundidade da árvore devem ser preservadas');
@@ -49,7 +49,10 @@ assert.match(html, /Conteúdos principais \/ pastas/);
 assert.match(html, /Escolha o conteúdo principal desta sessão/);
 assert.match(html, /data-toggle-group/);
 assert.match(html, /data-add-sub/);
-assert.match(html, /Marque somente os tópicos específicos estudados em/);
+assert.match(html, /materia-editor-add-sub/);
+assert.match(html, /＋ Adicionar subassunto/);
+assert.match(html, /item\.dataset\.parentId/);
+assert.match(html, /Marque somente os assuntos específicos estudados em/);
 assert.match(html, /folhasConteudo\(m,sess\.grupoId\)/);
 
 console.log('ESTUDOS_MATERIAS_TEST=OK');
