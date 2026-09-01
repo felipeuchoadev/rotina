@@ -1,6 +1,6 @@
 # Auditoria completa das 26 capturas — 26/08/2026
 
-Versão verificada: **v121**. Esta matriz separa implementação real de limites do sistema operacional. A v121 completa a criação recursiva diretamente no editor do Banco de matérias.
+Versão verificada: **v122**. Esta matriz separa implementação real de limites do sistema operacional. A v122 padroniza visualmente todas as gavetas recursivas do Banco de matérias.
 
 | Pedido | Resultado verificado |
 |---|---|
@@ -32,7 +32,7 @@ Versão verificada: **v121**. Esta matriz separa implementação real de limites
 | Histórico de emojis | Aba Recentes persiste emojis escolhidos e enviados. |
 | GIFs e figurinhas | Galeria aceita GIF/WebP; bandeja guarda recentes; servidor preserva animação e transparência ao compactar. |
 | Nova linha no celular | Enter envia somente em dispositivo de ponteiro fino/PC; teclado de toque mantém quebra de linha. |
-| Matérias e conteúdos | Árvore expansível e recursiva: Matéria → Conteúdos principais/pastas → assuntos → subassuntos em qualquer profundidade. Cada bloco do próprio editor exibe “＋ Adicionar subassunto”, inclusive antes de salvar; o botão “＋” da árvore permite continuar depois. Todos os ramos exibem porcentagem própria. Antes de estudar, escolhe-se o conteúdo principal; ao finalizar, somente assuntos finais dele aparecem, com caminho completo. Dados antigos migram para “Conteúdos gerais” e duplicatas são consolidadas preservando dados e vínculos. |
+| Matérias e conteúdos | Árvore expansível e recursiva: Matéria → Conteúdos principais/pastas → assuntos → subassuntos em qualquer profundidade. Todas as gavetas usam marcador à esquerda e seta de abrir/fechar na última coluna à direita; porcentagem e “＋” ficam alinhados antes dela. Cada bloco do editor exibe “＋ Adicionar subassunto”. Todos os ramos exibem porcentagem própria e somente assuntos finais são concluíveis. Dados antigos e vínculos são preservados. |
 | Perfil acessado pelo ADM | Modo suporte não registra visualização nem vincula a identidade do usuário representado. |
 | Histórico de avisos | Exibe conteúdo, destinatário (ou “Todos”), data, alcance e estado. |
 | Nome “Auditoria” | Interface usa “Histórico de ações” com rótulos legíveis. |
@@ -40,9 +40,9 @@ Versão verificada: **v121**. Esta matriz separa implementação real de limites
 ## Testes executados
 
 - Sintaxe do JavaScript do app e das rotas `admin`, `upload` e `batalha`.
-- Manifesto JSON e alinhamento `APP_BUILD`/service worker em `redzone-v121`.
+- Manifesto JSON e alinhamento `APP_BUILD`/service worker em `redzone-v122`.
 - Teste automatizado `server/scripts/test-estudos-materias.js`: migração para pasta geral; árvore recursiva; folhas estudáveis; botão “Adicionar subassunto” no editor; vínculos pai/filho; porcentagem por ramo; caminho completo; ordem/profundidade; quebra de linha no mesmo item; consolidação de matérias repetidas; preservação de progresso/tempo; atualização da agenda e dos vínculos das sessões.
 - Verificações específicas automatizadas dos elementos acima.
 - Local e publicado em 360×800, 390×844, 768×1024 e 1440×900; sem overflow horizontal e sem erro de console na tela pública.
-- Produção: serviço `disciplina` ativo; HTML, service worker e manifesto retornando v121; site permaneceu estável, sem loop de atualização e sem erros de console em 390×844, 768×1024 e 1440×900.
+- Produção: serviço `disciplina` ativo; HTML, service worker e manifesto retornando v122; site permaneceu estável, sem loop de atualização e sem erros de console em 390×844, 768×1024 e 1440×900.
 - Rotas administrativas protegidas retornaram 401 sem autenticação, como esperado. Fluxos privados não foram acessados sem a conta atual.

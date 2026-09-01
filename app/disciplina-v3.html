@@ -228,8 +228,9 @@ button.rowitem{width:100%;text-align:left;font:inherit}
 .study-tree-node-main .t{font-weight:700;font-size:14px;line-height:1.4}
 .study-tree-node-main .s{font-size:12px;color:var(--text-dim);margin-top:3px}
 .study-tree-node-main .dot{flex:0 0 12px;width:12px;height:12px;margin-top:4px;border:2px solid var(--text-dim);border-radius:50%}
-.study-tree-node-main .mini-caret{display:grid;place-items:center;flex:0 0 22px;width:22px;height:22px;color:var(--text-dim);font-size:18px;transition:transform .18s ease}
-.study-tree-node.open>.study-tree-node-row .mini-caret{transform:rotate(90deg)}
+.study-tree-node-caret,.study-tree-node-caret-spacer{display:grid;place-items:center;flex:0 0 28px;width:28px;height:34px}
+.study-tree-node-caret{border:0;background:transparent;color:var(--text-dim);font-size:20px;transition:transform .18s ease}
+.study-tree-node.open>.study-tree-node-row>.study-tree-node-caret{transform:rotate(90deg)}
 .study-tree-node-children{display:none;border-top:1px solid var(--line);background:color-mix(in srgb,var(--surface) 45%,transparent)}
 .study-tree-node.open>.study-tree-node-children{display:block}
 .study-tree-node.done>.study-tree-node-row .dot{background:var(--ok);border-color:var(--ok)}
@@ -790,7 +791,7 @@ setInterval(()=>{ if(authToken&&offQueue().length&&navigator.onLine) flushQueue(
 
 /* id único DESTE aparelho/aba — usado pra não ecoar de volta a própria escrita no sync ao vivo */
 const CLIENT_ID = (Math.random().toString(36).slice(2)+'-'+Date.now().toString(36));
-const APP_BUILD = 'redzone-v121';
+const APP_BUILD = 'redzone-v122';
 // evita re-render que rouba o foco enquanto a pessoa digita (o dado já foi aplicado em S de qualquer forma)
 function _syncPodeRender(){ const a=document.activeElement; return !(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||'')); }
 // ANTI-LOOP: ao aplicar uma mudança que VEIO do servidor, um re-render pode disparar escritas de
@@ -2575,7 +2576,7 @@ function fmtDur(ms){ const min=Math.round((ms||0)/60000); if(min<60) return min+
 const estudoMateriasAbertas=new Set(), estudoGruposAbertos=new Set(), estudoConteudosAbertos=new Set();
 function renderNosConteudo(m,grupoId,parentId=null,edit=false,nivel=0){
   const todos=conteudosMateria(m,grupoId), irmaos=todos.filter(c=>String(c.parentId||'')===String(parentId||''));
-  return irmaos.map(c=>{ const filhos=filhosConteudo(m,c.id).filter(x=>String(x.grupoId)===String(grupoId)),p=progressoConteudos(folhasDoNo(m,c)),aberto=estudoConteudosAbertos.has(String(c.id)),concluido=p.total>0&&p.done===p.total; return `<div class="study-tree-node ${aberto?'open':''} ${concluido?'done':''}" style="--tree-depth:${nivel}"><div class="study-tree-node-row"><button type="button" class="study-tree-node-main" ${filhos.length?`data-toggle-content="${c.id}"`:''}>${filhos.length?'<span class="mini-caret">›</span>':'<span class="dot"></span>'}<span class="txt"><span class="t materia-content-name">${esc(c.nome)}</span>${filhos.length?`<span class="s">${p.done}/${p.total} subassuntos</span>`:(c.tempoMs?`<span class="s">${fmtDur(c.tempoMs)}</span>`:'')}</span></button><span class="study-tree-pct">${p.pct}%</span>${edit?`<button type="button" class="study-tree-add" data-add-sub="${c.id}" data-mid="${m.id}" aria-label="Adicionar subassunto em ${esc(c.nome)}" title="Adicionar subassunto">＋</button>`:''}</div>${filhos.length?`<div class="study-tree-node-children">${renderNosConteudo(m,grupoId,c.id,edit,nivel+1)}</div>`:''}</div>`; }).join('');
+  return irmaos.map(c=>{ const filhos=filhosConteudo(m,c.id).filter(x=>String(x.grupoId)===String(grupoId)),p=progressoConteudos(folhasDoNo(m,c)),aberto=estudoConteudosAbertos.has(String(c.id)),concluido=p.total>0&&p.done===p.total; return `<div class="study-tree-node ${aberto?'open':''} ${concluido?'done':''}" style="--tree-depth:${nivel}"><div class="study-tree-node-row"><button type="button" class="study-tree-node-main" ${filhos.length?`data-toggle-content="${c.id}"`:''}><span class="dot"></span><span class="txt"><span class="t materia-content-name">${esc(c.nome)}</span>${filhos.length?`<span class="s">${p.done}/${p.total} subassuntos</span>`:(c.tempoMs?`<span class="s">${fmtDur(c.tempoMs)}</span>`:'')}</span></button><span class="study-tree-pct">${p.pct}%</span>${edit?`<button type="button" class="study-tree-add" data-add-sub="${c.id}" data-mid="${m.id}" aria-label="Adicionar subassunto em ${esc(c.nome)}" title="Adicionar subassunto">＋</button>`:''}${filhos.length?`<button type="button" class="study-tree-node-caret" data-toggle-content="${c.id}" aria-label="${aberto?'Fechar':'Abrir'} ${esc(c.nome)}">›</button>`:'<span class="study-tree-node-caret-spacer" aria-hidden="true"></span>'}</div>${filhos.length?`<div class="study-tree-node-children">${renderNosConteudo(m,grupoId,c.id,edit,nivel+1)}</div>`:''}</div>`; }).join('');
 }
 function renderMaterias(){
   const edit=S.config.editMode;

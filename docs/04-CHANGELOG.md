@@ -1,5 +1,11 @@
 # Changelog
 
+## v122 (01/09/2026)
+- Gavetas internas de assuntos e subassuntos agora seguem o mesmo padrão das gavetas de matéria e conteúdo principal.
+- A seta saiu da esquerda e passou para a última coluna à direita; o assunto mantém marcador à esquerda, porcentagem e “＋” alinhados antes da seta.
+- Linhas sem filhos reservam a coluna da seta, mantendo os controles alinhados verticalmente.
+- A seta da direita também é clicável e gira ao abrir/fechar a gaveta.
+
 ## v121 (01/09/2026)
 - “Tópico/subtópico” foi substituído por “assunto/subassunto” em toda a interface de Estudos.
 - Cada bloco de assunto no editor da matéria agora exibe “＋ Adicionar subassunto”; o recurso funciona antes de salvar e pode ser repetido em qualquer profundidade.

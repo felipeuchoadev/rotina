@@ -49,6 +49,8 @@ assert.match(html, /Conteúdos principais \/ pastas/);
 assert.match(html, /Escolha o conteúdo principal desta sessão/);
 assert.match(html, /data-toggle-group/);
 assert.match(html, /data-add-sub/);
+assert.match(html, /data-add-sub=.*study-tree-node-caret/, 'A seta da gaveta interna deve vir à direita do botão de adicionar');
+assert.doesNotMatch(html, /mini-caret/, 'A seta antiga não pode continuar à esquerda do assunto');
 assert.match(html, /materia-editor-add-sub/);
 assert.match(html, /＋ Adicionar subassunto/);
 assert.match(html, /item\.dataset\.parentId/);
