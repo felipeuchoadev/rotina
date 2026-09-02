@@ -187,6 +187,13 @@ button.rowitem{width:100%;text-align:left;font:inherit}
 .rowitem .txt{flex:1; min-width:0;}
 .rowitem .txt .t{font-weight:700; font-size:15.5px; color:var(--text); line-height:1.35;}
 .rowitem .txt .s{font-size:13px; color:var(--text-dim); line-height:1.45; margin-top:3px;}
+.rotina-drag{flex:0 0 36px;width:36px;height:38px;border:1px solid var(--line);border-radius:11px;background:var(--surface2);color:var(--text-dim);font-size:20px;cursor:grab;touch-action:none;user-select:none}
+.rotina-drag:active{cursor:grabbing;color:var(--accent2);border-color:var(--accent)}
+.rotina-ordering{opacity:.72;outline:2px solid var(--accent);outline-offset:2px}
+.rotina-batch-list{display:grid;gap:10px;margin:10px 0}
+.rotina-batch-item{display:grid;grid-template-columns:minmax(0,1fr) minmax(110px,.35fr) 40px;gap:8px;align-items:start;padding:10px;border:1px solid var(--line);border-radius:15px;background:var(--surface2)}
+.rotina-batch-item textarea{grid-column:1/-1;min-height:58px;resize:vertical}
+@media(max-width:520px){.rotina-batch-item{grid-template-columns:minmax(0,1fr) 40px}.rotina-batch-item .batch-hora{grid-column:1}.rotina-batch-item textarea{grid-column:1/-1}}
 .materia-editor-list{display:grid;gap:10px;margin:10px 0 12px}
 .materia-editor-item{display:grid;gap:8px;padding:11px;border:1px solid var(--line);border-radius:16px;background:var(--surface2)}
 .materia-editor-row{display:flex;align-items:flex-start;gap:9px;min-width:0}
@@ -333,6 +340,7 @@ button.rowitem{width:100%;text-align:left;font:inherit}
 .nav{position:fixed; top:0; left:0; bottom:0; z-index:70; width:250px; max-width:82vw; background:linear-gradient(180deg,color-mix(in srgb,var(--accent) 12%,var(--bg)),var(--bg2)); backdrop-filter:blur(16px);
   border-right:1px solid var(--line); padding:16px 0 calc(20px + env(safe-area-inset-bottom)); transform:translateX(-106%); transition:transform .25s ease,box-shadow .25s ease; overflow-y:auto; box-shadow:none;}
 .nav.open{transform:translateX(0); box-shadow:8px 0 40px rgba(0,0,0,.5);}
+.nav.swiping{transition:none;box-shadow:8px 0 40px rgba(0,0,0,.5)}
 .nav-inner{display:flex; flex-direction:column; gap:4px; padding:0 10px;}
 /* wordmark REDZONE transparente (PNG) no topo do menu, no lugar do texto */
 .nav-inner::before{content:''; display:block; height:34px; margin:2px 12px 14px; background:url(redzone-wordmark.png) left center/contain no-repeat;}
@@ -341,6 +349,7 @@ button.rowitem{width:100%;text-align:left;font:inherit}
 .nav button.active{color:var(--accent); background:color-mix(in srgb,var(--accent) 13%, transparent);}
 .navbd{position:fixed; inset:0; z-index:65; background:rgba(0,0,0,.5); display:none;}
 .navbd.show{display:block;}
+.navbd.swiping{display:block;transition:none;pointer-events:none}
 .hamb{display:inline-flex; align-items:center; justify-content:center; width:40px; height:40px; border-radius:11px; border:1px solid var(--line); background:var(--surface2); color:var(--text); font-size:19px; flex:0 0 40px; cursor:pointer;}
 /* seta de voltar: reaproveita o visual do ☰ mas fica visível também no desktop (onde o ☰ some) */
 .backbtn{font-size:26px !important; display:inline-flex !important; line-height:1;}
@@ -791,7 +800,7 @@ setInterval(()=>{ if(authToken&&offQueue().length&&navigator.onLine) flushQueue(
 
 /* id único DESTE aparelho/aba — usado pra não ecoar de volta a própria escrita no sync ao vivo */
 const CLIENT_ID = (Math.random().toString(36).slice(2)+'-'+Date.now().toString(36));
-const APP_BUILD = 'redzone-v122';
+const APP_BUILD = 'redzone-v124';
 // evita re-render que rouba o foco enquanto a pessoa digita (o dado já foi aplicado em S de qualquer forma)
 function _syncPodeRender(){ const a=document.activeElement; return !(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||'')); }
 // ANTI-LOOP: ao aplicar uma mudança que VEIO do servidor, um re-render pode disparar escritas de
@@ -1422,8 +1431,25 @@ function renderNav(){
   $$('#navInner button').forEach(b=> b.onclick=()=>go(b.dataset.tab));
 }
 // gaveta lateral (celular)
-function openDrawer(){ $('#nav').classList.add('open'); $('#navBackdrop').classList.add('show'); }
-function closeDrawer(){ $('#nav').classList.remove('open'); $('#navBackdrop').classList.remove('show'); }
+function limparArrasteDrawer(){const nav=$('#nav'),fundo=$('#navBackdrop');nav?.classList.remove('swiping');fundo?.classList.remove('swiping');nav?.style.removeProperty('transform');fundo?.style.removeProperty('opacity');}
+function openDrawer(){ limparArrasteDrawer();$('#nav').classList.add('open');$('#navBackdrop').classList.add('show');$('#nav').setAttribute('aria-hidden','false'); }
+function closeDrawer(){ limparArrasteDrawer();$('#nav').classList.remove('open');$('#navBackdrop').classList.remove('show');$('#nav').setAttribute('aria-hidden','true'); }
+function ativarGestoMenu(){
+  let gesto=null;
+  document.addEventListener('pointerdown',e=>{
+    if(!e.isPrimary||e.pointerType==='mouse'||innerWidth>=900||e.clientX>28||$('#app')?.classList.contains('hidden')||$('#nav')?.classList.contains('open'))return;
+    if($('#overlay')?.classList.contains('show')||$('#storyview')?.classList.contains('on')||$('#timer')?.classList.contains('on')||$('.system-notice.show,.media-lightbox.show,.chat-viewer.show'))return;
+    gesto={id:e.pointerId,x:e.clientX,y:e.clientY,arrastando:false};
+  },true);
+  document.addEventListener('pointermove',e=>{
+    if(!gesto||e.pointerId!==gesto.id)return;const dx=e.clientX-gesto.x,dy=e.clientY-gesto.y;
+    if(!gesto.arrastando){if(dx<10&&Math.abs(dy)<10)return;if(dx<=0||Math.abs(dx)<Math.abs(dy)*1.15){gesto=null;return;}gesto.arrastando=true;$('#nav').classList.add('swiping');$('#navBackdrop').classList.add('swiping');}
+    e.preventDefault();const largura=$('#nav').getBoundingClientRect().width||250,avanco=Math.min(largura,Math.max(0,dx));$('#nav').style.transform=`translateX(${avanco-largura}px)`;$('#navBackdrop').style.opacity=String(Math.min(1,avanco/largura));
+  },{capture:true,passive:false});
+  const terminar=(e,cancelado=false)=>{if(!gesto||e.pointerId!==gesto.id)return;const dx=e.clientX-gesto.x,dy=e.clientY-gesto.y,abrir=!cancelado&&gesto.arrastando&&dx>=70&&Math.abs(dx)>Math.abs(dy)*1.15;gesto=null;if(abrir)openDrawer();else closeDrawer();};
+  document.addEventListener('pointerup',e=>terminar(e),true);document.addEventListener('pointercancel',e=>terminar(e,true),true);
+}
+ativarGestoMenu();
 window.openDrawer=openDrawer; window.closeDrawer=closeDrawer;
 let _navStack=[];   // histórico de abas pra seta de voltar
 function goBack(){ if(_navStack.length){ go(_navStack.pop(), true); } else { go('inicio', true); } }
@@ -1655,24 +1681,33 @@ function pesoRelatorioSheet(){
     </div></div>
     <div class="section-title" style="margin-top:8px">Histórico</div>${linhas}`);
 }
-// clicar na patente/XP → histórico de pontos recebidos e descontados
-function xpHistoricoSheet(){
+// Extrato local de contingência. A API usa exatamente as mesmas regras e é a
+// fonte oficial; esta cópia mantém o histórico legível quando o aparelho está offline.
+function extratoXpLocal(){
   const itens=[];
   const hoje=todayISO(), dataOk=iso=>/^\d{4}-\d{2}-\d{2}$/.test(iso)&&iso<=hoje;
   (S.treinoLogs||[]).forEach(l=>{ const ms=Number(l.ativoMs||0),m=Math.floor(ms/60000); if(dataOk(l.dateISO)&&ms>=60000&&ms<=86400000) itens.push({tipo:'treino',dateISO:l.dateISO, at:l.updatedAt||0,xp:m,txt:`Treino: ${l.nome||'sessão'} · ${m} min ativo(s)`}); });
-  (S.estudoLogs||[]).forEach(l=>{ const ms=Number(l.ativoMs||0),m=Math.floor(ms/60000); if(!(dataOk(l.dateISO)&&ms>=60000&&ms<=86400000&&m>0)) return; itens.push({tipo:'estudo',dateISO:l.dateISO,at:l.updatedAt||0,xp:m*2,txt:`Estudo: ${l.materia||'matéria'} · ${m} min × 2 XP`});
+  (S.estudoLogs||[]).forEach(l=>{ const ms=Number(l.ativoMs||0),m=Math.floor(ms/60000); if(!dataOk(l.dateISO))return;if(ms>=60000&&ms<=86400000&&m>0)itens.push({tipo:'estudo',dateISO:l.dateISO,at:l.updatedAt||0,xp:m*2,txt:`Estudo: ${l.materia||'matéria'} · ${m} min × 2 XP`});
     [...new Set(l.conteudos||[])].forEach(cid=>{ const mat=(S.materias||[]).find(x=>x.id===l.materiaId),conteudo=conteudosMateria(mat).find(x=>x.id===cid); itens.push({tipo:'estudo',dateISO:l.dateISO,at:l.updatedAt||0,xp:40,txt:`Conteúdo concluído: ${conteudo?.nome||cid}`}); }); });
   Object.entries(S.agua||{}).forEach(([iso,v])=>{ const ml=Number(v),meta=Number(S.profile.metaAgua||2500); if(dataOk(iso)&&Number.isFinite(ml)&&ml>0&&ml<=20000&&ml>=meta) itens.push({tipo:'agua',dateISO:iso,xp:15,txt:`Meta de água: ${ml.toLocaleString('pt-BR')} de ${meta.toLocaleString('pt-BR')} ml`}); });
   Object.entries(S.rotinaDias||{}).forEach(([iso,acts])=>{ if(!dataOk(iso)||!Array.isArray(acts))return; acts.forEach(a=>itens.push({tipo:'rotina',dateISO:iso,at:a.updatedAt||0,xp:a.done?10:(iso<hoje?-10:0),txt:a.done?`Rotina cumprida: ${a.nome}${a.hora?` (${a.hora})`:''}`:`Rotina não cumprida: ${a.nome}${a.hora?` (${a.hora})`:''}`})); });
   for(let i=itens.length-1;i>=0;i--)if(!itens[i].xp)itens.splice(i,1);
   if(S.profile.xpBonus) itens.push({tipo:'ajustes',dateISO:todayISO(), xp:S.profile.xpBonus, txt:'Bônus/ajuste administrativo'});
   itens.sort((a,b)=>String(b.dateISO).localeCompare(String(a.dateISO))||(b.at||0)-(a.at||0));
-  const total=computeXP();
   const ganhos=itens.filter(i=>i.xp>0).reduce((s,i)=>s+i.xp,0), perdas=itens.filter(i=>i.xp<0).reduce((s,i)=>s+i.xp,0);
+  return {total:Math.max(0,Math.floor(ganhos+perdas)),ganhos,perdas,itens};
+}
+// clicar na patente/XP → histórico oficial de pontos recebidos e descontados
+async function xpHistoricoSheet(){
+  openSheet(`<h3>Histórico de XP</h3><p class="muted small">Conferindo seus lançamentos…</p>`);
+  let extrato;
+  try{extrato=await api('/state/xp/extrato');if(Number.isFinite(Number(extrato?.total)))S.profile.xp=Number(extrato.total);}
+  catch(e){extrato=extratoXpLocal();toast('Sem conexão: mostrando o histórico salvo neste aparelho.');}
+  const itens=Array.isArray(extrato?.itens)?extrato.itens:[],total=Number(extrato?.total||0),ganhos=Number(extrato?.ganhos||0),perdas=Number(extrato?.perdas||0);
   openSheet(`<h3>Histórico de XP</h3>
     <p class="small muted">Total atual: <b>${total.toLocaleString('pt-BR')} XP</b> · ganhos listados: <b style="color:var(--ok)">+${ganhos.toLocaleString('pt-BR')}</b> · perdas: <b style="color:var(--accent2)">${perdas.toLocaleString('pt-BR')}</b>. Cada linha informa exatamente a origem.</p>
     <div class="xp-folders">${[['geral','🗂️ Geral'],['treino','🏋️ Treinos'],['estudo','🎓 Estudos'],['agua','💧 Água'],['rotina','✅ Rotina'],['ajustes','⚖️ Ajustes']].map(([k,n])=>`<button class="xp-folder ${k==='geral'?'on':''}" data-xp-tipo="${k}">${n}</button>`).join('')}</div><div id="xpLinhas"></div>`);
-  const desenhar=tipo=>{const lista=(tipo==='geral'?itens:itens.filter(i=>i.tipo===tipo)).slice(0,60),box=$('#xpLinhas');box.innerHTML=lista.length?lista.map(i=>`<div class="rowitem"><div class="txt"><div class="t">${esc(i.txt)}</div><div class="s mono">${i.dateISO?new Date(i.dateISO+'T00:00:00').toLocaleDateString('pt-BR'):''}</div></div><div style="font-weight:800;color:${i.xp<0?'var(--accent2)':'var(--ok)'}">${i.xp>0?'+':''}${i.xp.toLocaleString('pt-BR')}</div></div>`).join(''):'<p class="muted small">Nenhum lançamento nesta pasta.</p>';};
+  const desenhar=tipo=>{const lista=(tipo==='geral'?itens:itens.filter(i=>i.tipo===tipo)).slice(0,60),box=$('#xpLinhas');box.innerHTML=lista.length?lista.map(i=>`<div class="rowitem"><div class="txt"><div class="t">${esc(i.txt)}</div><div class="s mono">${i.dateISO?new Date(i.dateISO+'T00:00:00').toLocaleDateString('pt-BR'):''}</div></div><div style="font-weight:800;color:${i.xp<0?'var(--accent2)':'var(--ok)'}">${i.xp>0?'+':''}${Number(i.xp).toLocaleString('pt-BR')}</div></div>`).join(''):'<p class="muted small">Nenhum lançamento nesta pasta.</p>';};
   $$('[data-xp-tipo]').forEach(b=>b.onclick=()=>{$$('[data-xp-tipo]').forEach(x=>x.classList.toggle('on',x===b));desenhar(b.dataset.xpTipo)});desenhar('geral');
 }
 
@@ -3027,11 +3062,11 @@ function renderRotina(){
         <div class="section-title" style="margin-top:0;display:flex;flex-direction:column;align-items:flex-start;gap:12px">
           <span style="line-height:1.3">Calendário — sua rotina por dia</span>
           <span style="display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-start;width:100%">
-            ${edit?`<button class="btn sm" id="rotAdicionarDias" style="padding:6px 10px">${rotAddMode?'✖ cancelar':'＋ adicionar nos dias'}</button>`:''}
+            ${edit?`<button class="btn sm" id="rotAdicionarDias" style="padding:6px 10px">${rotAddMode?'✖ cancelar':'＋ planejar vários dias'}</button>`:''}
             <button class="btn sm ghost" id="rotLimpar" style="padding:6px 10px">${rotClearMode?'✖ cancelar':'🗑️ limpar dias'}</button>
           </span>
         </div>
-        <p class="small muted" style="margin:0 2px 8px">${rotClearMode?'Selecione os dias que quer remover e confirme abaixo.':rotAddMode?'Selecione um ou vários dias e confirme abaixo para adicionar a atividade.':edit?'Toque num dia para editar ou use “＋ adicionar nos dias” para selecionar vários.':'Toque num dia pra ver o que tem planejado.'}</p>
+        <p class="small muted" style="margin:0 2px 8px">${rotClearMode?'Selecione os dias que quer remover e confirme abaixo.':rotAddMode?'Selecione dias manualmente ou confirme sem selecionar para usar regras como “todas as segundas” e “próximos X dias”.':edit?'Toque num dia para editar ou use “＋ planejar vários dias”. Atividades sem horário podem ser arrastadas.':'Toque num dia pra ver o que tem planejado.'}</p>
         <div id="rotinaCal"></div>
       </div>
     </div>
@@ -3092,8 +3127,9 @@ function diaStatusRotina(iso){
   return {total:0, done:0};
 }
 function rotinaDoDia(iso=todayISO()){
-  return [...((S.rotinaDias&&S.rotinaDias[iso])||[])].sort((a,b)=>(a.hora||'~').localeCompare(b.hora||'~'));
+  return ordenarAtividadesRotina((S.rotinaDias&&S.rotinaDias[iso])||[]);
 }
+function ordenarAtividadesRotina(lista){return [...lista].map((a,i)=>({a,i})).sort((x,y)=>{const a=x.a,b=y.a;if(a.hora&&b.hora)return a.hora.localeCompare(b.hora);if(a.hora)return -1;if(b.hora)return 1;return Number(a.ordemLivre??x.i)-Number(b.ordemLivre??y.i);}).map(x=>x.a);}
 function atualizaRotinaHist(){
   const lista=rotinaDoDia(todayISO());
   const total=lista.length;
@@ -3137,7 +3173,7 @@ function renderCalendarioRotina(){
     <div class="calgrid caldow">${['D','S','T','Q','Q','S','S'].map(x=>`<div class="caldw">${x}</div>`).join('')}</div>
     <div class="calgrid">${cells}</div>
     <div class="callegend"><span><i class="lok"></i>Concluído</span><span><i class="lfail"></i>Incompleto</span><span><i class="lfut"></i>Futuro</span></div>
-    ${rotAddMode?`<button class="btn" id="rotAddConfirm" style="margin-top:12px">＋ Adicionar atividade em ${rotAddSel.size} dia(s)</button>`:''}
+    ${rotAddMode?`<button class="btn" id="rotAddConfirm" style="margin-top:12px">＋ Planejar várias atividades${rotAddSel.size?` em ${rotAddSel.size} dia(s)`:''}</button>`:''}
     ${rotClearMode?`<button class="btn" id="rotLimparConfirm" style="margin-top:12px;background:linear-gradient(135deg,var(--accent),var(--accent2))">🗑️ Limpar ${rotClearSel.size} dia(s) selecionado(s)</button>`:''}
   </div>`;
   $('#rotPrev').onclick=()=>{ rotCalM--; if(rotCalM<0){ rotCalM=11; rotCalY--; } renderCalendarioRotina(); };
@@ -3160,20 +3196,38 @@ function renderCalendarioRotina(){
 }
 function adicionarAtividadeDiasSheet(dias){
   dias=[...new Set(dias)].sort();
-  if(!dias.length) return toast('Selecione pelo menos um dia no calendário.');
-  openSheet(`<h3>Adicionar em ${dias.length} dia(s)</h3>
-    <p class="small muted">A atividade será incluída somente nos dias selecionados.</p>
-    <div class="field"><label>Atividade</label><input id="multiActNome" placeholder="Ex: Corrida, estudar Matemática..."></div>
-    <div class="field"><label>Horário (opcional · HH:MM)</label>${campoHorario('multiActHora')}</div>
-    <button class="btn" id="multiActSalvar">＋ Adicionar nos dias selecionados</button>`);
-  ativarCampoHorario('multiActHora');
+  const nomesDias=['domingo','segunda-feira','terça-feira','quarta-feira','quinta-feira','sexta-feira','sábado'],padrao=dias.length?'selecionados':'semanaMes';
+  openSheet(`<h3>Adicionar várias atividades</h3>
+    <p class="small muted">Cadastre várias de uma vez e escolha os dias automaticamente ou use os dias marcados no calendário.</p>
+    <div class="field"><label>Aplicar em</label><select id="multiActRegra">
+      <option value="selecionados" ${dias.length?'':'disabled'}>Dias selecionados (${dias.length})</option>
+      <option value="semanaMes" ${padrao==='semanaMes'?'selected':''}>Todas as… deste mês</option>
+      <option value="proximos">Próximos X dias</option>
+      <option value="mes">Todos os dias deste mês</option>
+    </select></div>
+    <div class="field" id="multiSemanaWrap"><label>Dia da semana</label><select id="multiSemana">${nomesDias.map((n,i)=>`<option value="${i}" ${i===brasiliaNow().getDay()?'selected':''}>${n}</option>`).join('')}</select></div>
+    <div class="field" id="multiXWrap" style="display:none"><label>Quantidade de dias para frente</label><input id="multiX" type="number" min="1" max="366" value="7" inputmode="numeric"></div>
+    <div class="section-title" style="margin:12px 0 4px">Atividades</div><div class="rotina-batch-list" id="multiActLista"></div>
+    <button type="button" class="btn sm ghost" id="multiActOutra">＋ Adicionar outra atividade</button>
+    <button class="btn" id="multiActSalvar" style="margin-top:12px">Salvar atividades</button>`);
+  const listaBox=$('#multiActLista'); let seq=0;
+  const addLinha=()=>{const n=++seq,item=document.createElement('div');item.className='rotina-batch-item';item.innerHTML=`<input class="batch-nome" maxlength="120" placeholder="Nome da atividade"><div class="batch-hora">${campoHorario('multiHora'+n)}</div><button type="button" class="materia-editor-remove batch-remove" aria-label="Remover atividade">🗑️</button><textarea class="batch-desc" maxlength="500" placeholder="Descrição opcional"></textarea>`;listaBox.appendChild(item);ativarCampoHorario('multiHora'+n);$('.batch-remove',item).onclick=()=>{item.remove();if(!listaBox.children.length)addLinha();};if(n>1)setTimeout(()=>$('.batch-nome',item).focus(),30);};
+  addLinha(); $('#multiActOutra').onclick=addLinha;
+  const atualizarRegra=()=>{const r=$('#multiActRegra').value;$('#multiSemanaWrap').style.display=r==='semanaMes'?'block':'none';$('#multiXWrap').style.display=r==='proximos'?'block':'none';};$('#multiActRegra').onchange=atualizarRegra;atualizarRegra();
   $('#multiActSalvar').onclick=async()=>{
-    const nome=$('#multiActNome').value.trim(); if(!nome) return toast('Qual é a atividade?');
-    const hora=normalizarHorario($('#multiActHora').value); if(hora===null) return toast('Horário inválido. Use HH:MM, por exemplo 08:00.');
-    if(!S.rotinaDias) S.rotinaDias={}; let adicionados=0;
-    dias.forEach(iso=>{ const lista=S.rotinaDias[iso]||(S.rotinaDias[iso]=[]); const duplicada=lista.some(a=>String(a.nome||'').trim().toLocaleLowerCase('pt-BR')===nome.toLocaleLowerCase('pt-BR')&&(a.hora||'')===hora); if(!duplicada){lista.push({id:uid(),nome,hora,done:false,updatedAt:Date.now()});adicionados++;} });
-    await save('rotina:dias'); rotAddMode=false; rotAddSel=new Set(); closeSheet(); renderRotina(); toast(`Atividade adicionada em ${adicionados} dia(s).`);
+    const atividades=[];for(const item of Array.from(listaBox.children)){const nome=$('.batch-nome',item).value.trim();if(!nome)continue;const hora=normalizarHorario($('input[id^="multiHora"]',item).value);if(hora===null)return toast(`Horário inválido em “${nome}”.`);atividades.push({nome,hora,descricao:$('.batch-desc',item).value.trim()});}if(!atividades.length)return toast('Adicione pelo menos uma atividade.');
+    const regra=$('#multiActRegra').value,x=Math.min(366,Math.max(1,parseInt($('#multiX').value||'1',10))),alvos=diasRegraRotina(dias,regra,+$('#multiSemana').value,x);if(!alvos.length)return toast('Essa regra não encontrou dias disponíveis.');
+    if(!S.rotinaDias)S.rotinaDias={};const series=atividades.map(()=>uid());let adicionados=0,diasAlterados=new Set();alvos.forEach(iso=>{const lista=S.rotinaDias[iso]||(S.rotinaDias[iso]=[]);atividades.forEach((a,i)=>{const duplicada=lista.some(b=>chaveAtividadeRotina(b)===chaveAtividadeRotina(a));if(!duplicada){lista.push({id:uid(),serieId:series[i],...a,done:false,updatedAt:Date.now()});adicionados++;diasAlterados.add(iso);}});});
+    await save('rotina:dias');rotAddMode=false;rotAddSel=new Set();closeSheet();renderRotina();toast(`${adicionados} atividade(s) adicionada(s) em ${diasAlterados.size} dia(s).`);
   };
+}
+function chaveAtividadeRotina(a){return `${String(a?.nome||'').trim().toLocaleLowerCase('pt-BR')}|${a?.hora||''}`;}
+function diasRegraRotina(selecionados,regra,diaSemana=1,x=7){
+  const hoje=todayISO(),out=[];if(regra==='selecionados')return [...new Set(selecionados||[])].filter(iso=>iso>=hoje).sort();
+  const y=rotCalY??brasiliaNow().getFullYear(),m=rotCalM??brasiliaNow().getMonth();
+  if(regra==='semanaMes'||regra==='mes'){const dim=new Date(y,m+1,0).getDate();for(let d=1;d<=dim;d++){const dt=new Date(y,m,d),iso=isoDeData(dt);if(iso>=hoje&&(regra==='mes'||dt.getDay()===diaSemana))out.push(iso);}}
+  else if(regra==='proximos'){const base=new Date(hoje+'T00:00:00');for(let i=0;i<x;i++){const dt=new Date(base);dt.setDate(base.getDate()+i);out.push(isoDeData(dt));}}
+  return [...new Set(out)].sort();
 }
 function isoDeData(x){ return `${x.getFullYear()}-${String(x.getMonth()+1).padStart(2,'0')}-${String(x.getDate()).padStart(2,'0')}`; }
 function campoHorario(id,valor=''){
@@ -3200,7 +3254,7 @@ function diaRotinaSheet(iso){
   const past=iso<hoje, isToday=iso===hoje;
   const editable=S.config.editMode&&!past;
   if(!S.rotinaDias) S.rotinaDias={};
-  const acts=[...(S.rotinaDias[iso]||[])].sort((a,b)=>(a.hora||'~').localeCompare(b.hora||'~'));
+  const acts=ordenarAtividadesRotina(S.rotinaDias[iso]||[]);
   const dObj=new Date(iso+'T00:00:00');
   const dataLabel=dObj.toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long'});
   const st=diaStatusRotina(iso);
@@ -3210,7 +3264,7 @@ function diaRotinaSheet(iso){
   const linhas = acts.length ? acts.map(a=>`<div class="rowitem ${a.done?'done':''}">
       <div class="chk" data-actchk="${a.id}" style="${podeMarcar?'':'opacity:.5'}">${a.done?'✓':''}</div>
       <div class="txt"><div class="t">${esc(a.nome)}</div>${a.hora?`<div class="s mono">⏰ ${a.hora}</div>`:''}${a.descricao?`<div class="activity-description">${esc(a.descricao)}</div>`:''}${a.midiaUrl?`<img class="chat-media" src="${esc(a.midiaUrl)}" alt="Comprovação da atividade">`:''}</div>
-      ${editable?`<button class="pencil" data-actdel="${a.id}">🗑️</button>`:''}
+      ${editable?`<button class="pencil" data-actedit="${a.id}" aria-label="Editar atividade">✏️</button><button class="pencil" data-actdel="${a.id}" aria-label="Excluir atividade">🗑️</button>`:''}
     </div>`).join('') : `<p class="muted small">Nenhuma atividade nesse dia.${editable?' Adicione abaixo.':''}</p>`;
   let sheet=`<h3 style="text-transform:capitalize">${dataLabel}</h3>
     <p class="small" style="${st.total>0&&st.done>=st.total?'color:var(--ok)':'color:var(--text-dim)'}">${st.total>0?`${st.done}/${st.total} atividades${st.done>=st.total?' · dia 100% ✅':''}`:'Sem atividades planejadas.'}</p>
@@ -3244,6 +3298,7 @@ function diaRotinaSheet(iso){
   if(editable){
     $('#actRep').onchange=()=>$('#actRepXWrap').style.display=$('#actRep').value==='x'?'block':'none';
     $('#actAdd').onclick=async()=>{ const nome=$('#actNome').value.trim(); if(!nome) return toast('Qual a atividade?'); const descricao=$('#actDesc').value.trim(); const hora=normalizarHorario($('#actHora').value); if(hora===null) return toast('Horário inválido. Use HH:MM, por exemplo 08:00.'); const tipo=$('#actRep').value, n=tipo==='x'?Math.min(366,Math.max(0,parseInt($('#actRepX').value||'0',10))):0; if(tipo==='x'&&!n) return toast('Informe de 1 a 366 dias.'); const count=adicionarAtividadeRepetida(iso,{nome,hora,descricao},tipo,n); await save('rotina:dias'); if(iso===hoje){ atualizaRotinaHist(); renderRotinaList(); } toast(count>1?`Atividade aplicada a ${count} dias.`:'Atividade adicionada.'); diaRotinaSheet(iso); renderCalendarioRotina(); };
+    $$('#sheet [data-actedit]').forEach(b=>b.onclick=()=>editHabitoSheet(b.dataset.actedit,iso));
     $$('#sheet [data-actdel]').forEach(b=>b.onclick=()=>{ S.rotinaDias[iso]=(S.rotinaDias[iso]||[]).filter(x=>x.id!==b.dataset.actdel); if(!S.rotinaDias[iso].length) delete S.rotinaDias[iso]; save('rotina:dias'); if(iso===hoje){ atualizaRotinaHist(); renderRotinaList(); } diaRotinaSheet(iso); renderCalendarioRotina(); });
     $$('#sheet [data-fill]').forEach(b=>b.onclick=()=>aplicarRotinaDias(iso, b.dataset.fill));
   }
@@ -3258,12 +3313,12 @@ function diasDaRepeticao(iso,tipo,n=0){
   return dias;
 }
 function adicionarAtividadeRepetida(iso,atividade,tipo,n=0){
-  const hoje=todayISO(); let count=0;
-  diasDaRepeticao(iso,tipo,n).forEach(data=>{ const k=isoDeData(data); if(k<hoje&&k!==iso) return; const lista=S.rotinaDias[k]||(S.rotinaDias[k]=[]); const duplicada=lista.some(a=>String(a.nome||'').trim().toLocaleLowerCase('pt-BR')===atividade.nome.trim().toLocaleLowerCase('pt-BR')&&(a.hora||'')===(atividade.hora||'')); if(duplicada) return; lista.push({id:uid(),nome:atividade.nome,hora:atividade.hora,descricao:atividade.descricao||'',done:false,updatedAt:Date.now()}); count++; });
+  const hoje=todayISO(),serieId=uid(); let count=0;
+  diasDaRepeticao(iso,tipo,n).forEach(data=>{ const k=isoDeData(data); if(k<hoje&&k!==iso) return; const lista=S.rotinaDias[k]||(S.rotinaDias[k]=[]); const duplicada=lista.some(a=>String(a.nome||'').trim().toLocaleLowerCase('pt-BR')===atividade.nome.trim().toLocaleLowerCase('pt-BR')&&(a.hora||'')===(atividade.hora||'')); if(duplicada) return; lista.push({id:uid(),serieId,nome:atividade.nome,hora:atividade.hora,descricao:atividade.descricao||'',done:false,updatedAt:Date.now()}); count++; });
   return count;
 }
 function aplicarRotinaDias(iso, tipo){
-  const base=(S.rotinaDias[iso]||[]).map(a=>({nome:a.nome,hora:a.hora}));
+  const base=(S.rotinaDias[iso]||[]).map(a=>{if(!a.serieId)a.serieId=uid();return {nome:a.nome,hora:a.hora,descricao:a.descricao||'',serieId:a.serieId};});
   if(!base.length) return toast('Adicione atividades nesse dia primeiro.');
   const d0=new Date(iso+'T00:00:00'); let dias=[];
   if(tipo==='semana'){ const off=(d0.getDay()+6)%7; const mon=new Date(d0); mon.setDate(d0.getDate()-off); for(let i=0;i<7;i++){ const x=new Date(mon); x.setDate(mon.getDate()+i); dias.push(x); } }
@@ -3271,7 +3326,7 @@ function aplicarRotinaDias(iso, tipo){
   else if(tipo==='ano'){ const y=d0.getFullYear(); for(let m=0;m<12;m++){ const dim=new Date(y,m+1,0).getDate(); for(let dd=1;dd<=dim;dd++) dias.push(new Date(y,m,dd)); } }
   else if(tipo==='x'){ const n=parseInt(prompt('Aplicar aos próximos quantos dias?','7')||'0',10); if(!(n>0)) return; for(let i=1;i<=n;i++){ const x=new Date(d0); x.setDate(d0.getDate()+i); dias.push(x); } }
   const hoje=todayISO(); let count=0;
-  dias.forEach(x=>{ const k=isoDeData(x); if(k<hoje) return; const lista=S.rotinaDias[k]||(S.rotinaDias[k]=[]); let mudou=false; base.forEach(b=>{ const duplicada=lista.some(a=>String(a.nome||'').trim().toLocaleLowerCase('pt-BR')===String(b.nome||'').trim().toLocaleLowerCase('pt-BR')&&(a.hora||'')===(b.hora||'')); if(!duplicada){ lista.push({id:uid(),nome:b.nome,hora:b.hora,done:false,updatedAt:Date.now()}); mudou=true; } }); if(mudou) count++; });
+  dias.forEach(x=>{ const k=isoDeData(x); if(k<hoje) return; const lista=S.rotinaDias[k]||(S.rotinaDias[k]=[]); let mudou=false; base.forEach(b=>{ const duplicada=lista.some(a=>String(a.nome||'').trim().toLocaleLowerCase('pt-BR')===String(b.nome||'').trim().toLocaleLowerCase('pt-BR')&&(a.hora||'')===(b.hora||'')); if(!duplicada){ lista.push({id:uid(),serieId:b.serieId,nome:b.nome,hora:b.hora,descricao:b.descricao,done:false,updatedAt:Date.now()}); mudou=true; } }); if(mudou) count++; });
   save('rotina:dias'); closeSheet(); toast(`Rotina aplicada a ${count} dia(s).`); renderRotinaList(); renderCalendarioRotina();
 }
 function renderRotinaList(){
@@ -3279,7 +3334,8 @@ function renderRotinaList(){
   const hoje=todayISO(), list=rotinaDoDia(hoje);
   $('#rotinaList').innerHTML = list.length? list.map(r=>{
     const done=!!r.done;
-    return `<div class="rowitem ${done?'done':''}">
+    return `<div class="rowitem ${done?'done':''}" ${!r.hora?`data-rot-order="${r.id}"`:''}>
+      ${edit&&!r.hora?`<button type="button" class="rotina-drag" data-rot-drag="${r.id}" aria-label="Arrastar ${esc(r.nome)} para reordenar" title="Arraste para mudar a ordem">≡</button>`:''}
       <div class="chk" data-togh="${r.id}">${done?'✓':''}</div>
       <div class="txt"><div class="t">${esc(r.nome)}</div><div class="s mono">${r.hora||'--:--'}</div>${r.descricao?`<div class="activity-description">${esc(r.descricao)}</div>`:''}${r.midiaUrl?`<img class="chat-media" src="${esc(r.midiaUrl)}" alt="Comprovação da atividade">`:''}</div>
       ${edit?`<button class="pencil" data-edh="${r.id}">✏️</button><button class="pencil" data-delh="${r.id}">🗑️</button>`:''}
@@ -3288,25 +3344,46 @@ function renderRotinaList(){
   if(edit){
     $$('#rotinaList [data-edh]').forEach(b=>b.onclick=()=>editHabitoSheet(b.dataset.edh));
     $$('#rotinaList [data-delh]').forEach(b=>b.onclick=()=>{ S.rotinaDias[hoje]=(S.rotinaDias[hoje]||[]).filter(x=>x.id!==b.dataset.delh); if(!S.rotinaDias[hoje].length) delete S.rotinaDias[hoje]; save('rotina:dias'); atualizaRotinaHist(); renderRotinaList(); renderCalendarioRotina(); });
+    ativarOrdenacaoRotinaSemHorario(hoje);
   }
 }
-function editHabitoSheet(id){
-  const hoje=todayISO(); if(!S.rotinaDias) S.rotinaDias={}; if(!S.rotinaDias[hoje]) S.rotinaDias[hoje]=[];
-  const r=id?S.rotinaDias[hoje].find(x=>x.id===id):{nome:'',hora:'',descricao:'',midiaUrl:'',done:false};
+function ativarOrdenacaoRotinaSemHorario(iso){
+  $$('#rotinaList [data-rot-drag]').forEach(alca=>alca.onpointerdown=e=>{if(e.button!==undefined&&e.button!==0)return;e.preventDefault();const row=alca.closest('[data-rot-order]');if(!row)return;row.classList.add('rotina-ordering');alca.setPointerCapture?.(e.pointerId);
+    const mover=ev=>{const alvo=document.elementFromPoint(ev.clientX,ev.clientY)?.closest?.('[data-rot-order]');if(!alvo||alvo===row||alvo.parentElement!==row.parentElement)return;const r=alvo.getBoundingClientRect();alvo.parentElement.insertBefore(row,ev.clientY<r.top+r.height/2?alvo:alvo.nextSibling);};
+    const soltar=async()=>{alca.onpointermove=null;alca.onpointerup=null;alca.onpointercancel=null;row.classList.remove('rotina-ordering');const ids=$$('#rotinaList [data-rot-order]').map(x=>x.dataset.rotOrder),lista=S.rotinaDias[iso]||[];ids.forEach((id,i)=>{const a=lista.find(x=>String(x.id)===String(id));if(a&&!a.hora){a.ordemLivre=i;a.updatedAt=Date.now();}});await save('rotina:dias');renderRotinaList();};
+    alca.onpointermove=mover;alca.onpointerup=soltar;alca.onpointercancel=soltar;
+  });
+}
+function ocorrenciasAtividadeRotina(iso,atividade){
+  const hoje=todayISO(),chave=chaveAtividadeRotina(atividade),serie=atividade?.serieId;const encontradas=[];
+  Object.entries(S.rotinaDias||{}).forEach(([dia,lista])=>{if(dia<hoje||!Array.isArray(lista))return;lista.forEach(item=>{if((serie&&item.serieId===serie)||(!serie&&chaveAtividadeRotina(item)===chave))encontradas.push({dia,item});});});
+  if(!encontradas.some(x=>x.dia===iso&&x.item.id===atividade.id))encontradas.push({dia:iso,item:atividade});
+  return encontradas;
+}
+function editHabitoSheet(id,iso=todayISO()){
+  const hoje=todayISO(); if(!S.rotinaDias) S.rotinaDias={}; if(!S.rotinaDias[iso]) S.rotinaDias[iso]=[];
+  const r=id?S.rotinaDias[iso].find(x=>x.id===id):{nome:'',hora:'',descricao:'',midiaUrl:'',done:false};
   if(!r) return;
-  openSheet(`<h3>${id?'Editar':'Nova'} atividade de hoje</h3>
+  const dataLabel=new Date(iso+'T00:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'long'});
+  openSheet(`<h3>${id?'Editar':'Nova'} atividade</h3><p class="small muted" style="text-transform:capitalize">${dataLabel}</p>
     <div class="field"><label>Atividade</label><input id="hbNome" value="${esc(r.nome)}" placeholder="Ex: Corrida, estudar Português..."></div>
     <div class="field"><label>Descrição (opcional)</label><textarea id="hbDesc" rows="3" maxlength="500" placeholder="Detalhes, local, objetivo ou observações">${esc(r.descricao||'')}</textarea></div>
     <div class="field"><label>Horário (opcional · HH:MM)</label>${campoHorario('hbHora',r.hora||'')}
-      <p class="small muted" style="margin:4px 2px 0">Esta atividade também aparecerá no dia de hoje do calendário.</p></div>
+      <p class="small muted" style="margin:4px 2px 0">A atividade continuará vinculada a este dia no calendário.</p></div>
     <div class="field"><label>Comprovação (opcional)</label><input id="hbMidia" type="file" accept="image/*,video/*"><p class="small muted">Você pode anexar uma foto ou vídeo agora, ou deixar sem mídia.</p></div>
     <button class="btn" id="hbSave">Salvar</button>`);
   ativarCampoHorario('hbHora');
   $('#hbSave').onclick=async()=>{ const nome=$('#hbNome').value.trim(); if(!nome) return toast('Nome do hábito?');
     const hora=normalizarHorario($('#hbHora').value); if(hora===null) return toast('Horário inválido. Use HH:MM, por exemplo 08:00.');
-    const descricao=$('#hbDesc').value.trim(),arquivo=$('#hbMidia').files?.[0];let midiaUrl=r.midiaUrl||'',midiaTipo=r.midiaTipo||'';if(arquivo){toast('Comprimindo e enviando a comprovação…');const up=await uploadMedia(arquivo);midiaUrl=up.url;midiaTipo=up.tipo;}
-    if(id){ r.nome=nome; r.hora=hora; r.descricao=descricao; r.midiaUrl=midiaUrl; r.midiaTipo=midiaTipo; r.updatedAt=Date.now(); } else S.rotinaDias[hoje].push({id:uid(),nome,hora,descricao,midiaUrl,midiaTipo,done:false,updatedAt:Date.now()});
-    await save('rotina:dias'); atualizaRotinaHist(); closeSheet(); renderRotinaList(); renderCalendarioRotina(); };
+    const dados={nome,hora,descricao:$('#hbDesc').value.trim()},arquivo=$('#hbMidia').files?.[0];
+    const finalizar=async(todas)=>{let midiaUrl=r.midiaUrl||'',midiaTipo=r.midiaTipo||'';try{if(arquivo){toast('Comprimindo e enviando a comprovação…');const up=await uploadMedia(arquivo);midiaUrl=up.url;midiaTipo=up.tipo;}}catch(e){return toast(e.message||'Não foi possível enviar a comprovação.');}
+      if(id){const alvos=todas?ocorrenciasAtividadeRotina(iso,r):[{dia:iso,item:r}],serie=todas?(r.serieId||uid()):r.serieId;alvos.forEach(({item})=>{item.nome=dados.nome;item.hora=dados.hora;item.descricao=dados.descricao;item.midiaUrl=midiaUrl;item.midiaTipo=midiaTipo;if(serie)item.serieId=serie;item.updatedAt=Date.now();});}
+      else S.rotinaDias[iso].push({id:uid(),serieId:uid(),...dados,midiaUrl,midiaTipo,done:false,updatedAt:Date.now()});
+      await save('rotina:dias');if(iso===hoje)atualizaRotinaHist();closeSheet();renderRotinaList();renderCalendarioRotina();toast(todas?'Alteração aplicada a todas as ocorrências.':'Atividade salva somente neste dia.');};
+    if(!id)return finalizar(false);const ocorrencias=ocorrenciasAtividadeRotina(iso,r);if(ocorrencias.length<=1)return finalizar(false);
+    openSheet(`<h3>Onde aplicar esta edição?</h3><p class="muted small">Encontramos esta atividade em ${ocorrencias.length} dias. Escolha sem perder o que já foi marcado como concluído.</p><button class="btn" id="hbSoDia">Somente este dia</button><button class="btn ghost" id="hbTodas" style="margin-top:10px">Todos os ${ocorrencias.length} dias</button>`);
+    $('#hbSoDia').onclick=()=>finalizar(false);$('#hbTodas').onclick=()=>finalizar(true);
+  };
 }
 
 /* =========================================================================

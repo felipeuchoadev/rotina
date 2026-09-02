@@ -1,6 +1,6 @@
 # REDZONE (ex-DISCIPLINA) — Status atual e roadmap (ponto de retomada)
 
-**Versão no ar: v122** — o Banco de matérias usa gavetas recursivas no padrão visual pedido: **Matéria → Conteúdos principais/pastas → assuntos → subassuntos**. Nas gavetas internas, o marcador fica à esquerda e a seta de abrir/fechar ocupa sempre a última coluna à direita, depois da porcentagem e do “＋”, alinhada com as gavetas de matéria e conteúdo principal. Linhas sem filhos reservam a mesma coluna para manter todos os botões alinhados. Dados e vínculos existentes continuam preservados. HTML/SW/manifesto estão alinhados em v122. Nenhuma conta, atividade ou XP fictício foi criado.
+**Versão no ar: v124** — além do planejamento em lote e da ordenação da v123, o celular abre o menu arrastando a borda esquerda; a edição de atividades repetidas pergunta entre somente o dia e todas as ocorrências; e o total/histórico de XP usam o mesmo extrato oficial do servidor. Conteúdos concluídos aparecem com +40 mesmo em sessão inferior a um minuto, enquanto XP por minutos continua exigindo 60 segundos. HTML/SW/manifesto estão alinhados em v124. O recálculo seguro percorreu as 3 contas existentes e confirmou que os saldos oficiais já estavam corretos; a falha era somente a listagem visual. Nenhuma atividade fictícia foi criada.
 
 > Documento vivo pra QUALQUER sessão continuar sem perder contexto. Se o chat
 > zerar, leia isto + `docs/07`, `08`, `09` e os arquivos de memória.
@@ -55,7 +55,7 @@ Ver memória [[plano-redesign-login-download]] e [[assets-via-downloads]]. Pedir
 fontes/cores; manter wordmark transparente (`redzone-wordmark.png`) e emblema camuflado (`mix-blend-mode:screen`).
 
 ## PENDENTE DE VERDADE
-1. **Validação autenticada final no aparelho real**: v122 passou sintaxe, teste automatizado da árvore recursiva e do posicionamento da seta, preservação de dados, manifesto, serviço, estabilidade pública e responsividade 390×844 / 768×1024 / 1440×900. O navegador disponível não tinha sessão autenticada; confirmar no Android atual as gavetas internas e o push fechado, sem usar a conta antiga excluída. Bloqueio de captura do sistema exige futuro wrapper Android com `FLAG_SECURE`.
+1. **Validação autenticada final no aparelho real**: v124 tem testes automatizados de planejamento, ordenação, escopo de edição, extrato de XP e árvore de Estudos. Confirmar no Android atual o gesto da borda, o arraste das atividades, o planejamento em lote e o push fechado. Bloqueio de captura do sistema exige futuro wrapper Android com `FLAG_SECURE`.
 2. **Redesign login/landing/app** (item ⭐ acima) — aguarda novo mockup específico do Felipe; não refazer sem referência.
 3. **Domínio pro e-mail** (~R$40/ano): sem domínio o Resend só entrega pro dono; recuperação por **pergunta de
    segurança** já cobre todos. Quando houver domínio, configurar SPF/DKIM no Resend e trocar `MAIL_FROM`.

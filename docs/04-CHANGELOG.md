@@ -1,5 +1,20 @@
 # Changelog
 
+## v124 (02/09/2026)
+- No celular, arrastar a partir da borda esquerda abre a gaveta principal acompanhando o dedo; rolagens verticais e gestos iniciados fora da borda continuam livres.
+- Atividades repetidas recebem um identificador de série. Ao editar uma ocorrência, o aplicativo pergunta se deve alterar somente aquele dia ou todas as ocorrências atuais/futuras, preservando o estado concluído de cada dia.
+- O Histórico de XP passou a vir do mesmo extrato oficial usado pelo servidor para calcular o total, eliminando divergência entre saldo e “ganhos listados”.
+- Conteúdo concluído gera e exibe seus 40 XP independentemente de a sessão alcançar um minuto; minutos de estudo continuam exigindo ao menos 60 segundos para pontuar.
+- Saldos existentes podem ser recalculados em lote pelo script `server/scripts/recalculate-all-xp.mjs`; a abertura do histórico também autocorrige o saldo da conta.
+- Testes específicos cobrem extrato, duplicidade de conteúdos, datas futuras, perdas, gesto da gaveta, séries e confirmação de escopo.
+
+## v123 (01/09/2026)
+- “Planejar vários dias” permite cadastrar várias atividades na mesma operação, cada uma com horário e descrição opcionais.
+- Destinos podem ser dias marcados manualmente, todas as ocorrências de um dia da semana no mês exibido, todos os dias desse mês ou próximos X dias a partir de hoje.
+- Inserção em lote ignora duplicatas com o mesmo nome e horário e informa quantas atividades e dias foram realmente alterados.
+- Atividades de hoje sem horário recebem alça de arraste por dedo ou mouse; a ordem livre é sincronizada em `rotina:dias`.
+- Atividades com horário permanecem bloqueadas na ordem cronológica e não exibem alça.
+
 ## v122 (01/09/2026)
 - Gavetas internas de assuntos e subassuntos agora seguem o mesmo padrão das gavetas de matéria e conteúdo principal.
 - A seta saiu da esquerda e passou para a última coluna à direita; o assunto mantém marcador à esquerda, porcentagem e “＋” alinhados antes da seta.

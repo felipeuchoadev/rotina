@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { prisma } from '../lib/db.js';
 import { exigirAuth } from '../lib/auth.js';
 import { emitToUser, emitRanking } from '../realtime.js';
+import { calcularExtratoXp } from '../lib/xp-ledger.js';
 
 // Armazenamento chave-valor por usuário (dados pessoais do app).
 export const stateRouter = Router();
@@ -92,51 +93,33 @@ function protegerExecucaoPorData(chave, atual, recebido) {
 
 async function recalcularXp(usuarioId) {
   const rows = await prisma.userState.findMany({
-    where: { usuarioId, chave: { in: ['treino:logs', 'estudo:logs', 'alim:agua', 'rotina:dias', 'xp:bonus'] } },
+    where: { usuarioId, chave: { in: ['treino:logs', 'estudo:logs', 'estudo:materias', 'alim:agua', 'rotina:dias', 'xp:bonus'] } },
   });
   const s = Object.fromEntries(rows.map(r => [r.chave, r.valor]));
   const hoje = new Intl.DateTimeFormat('en-CA', { timeZone:'America/Sao_Paulo', year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date());
-  const dataLegitima = value => /^\d{4}-\d{2}-\d{2}$/.test(String(value || '')) && value <= hoje;
-  const minutosLegitimos = value => {
-    const ms = Number(value);
-    return Number.isFinite(ms) && ms >= 60_000 && ms <= 86_400_000 ? Math.floor(ms / 60_000) : 0;
-  };
-  let xp = 0;
-  for (const log of Array.isArray(s['treino:logs']) ? s['treino:logs'] : []) {
-    if (dataLegitima(log?.dateISO)) xp += minutosLegitimos(log?.ativoMs);
-  }
-  for (const log of Array.isArray(s['estudo:logs']) ? s['estudo:logs'] : []) {
-    const minutos = dataLegitima(log?.dateISO) ? minutosLegitimos(log?.ativoMs) : 0;
-    if (!minutos) continue;
-    xp += minutos * 2;
-    xp += new Set((Array.isArray(log.conteudos) ? log.conteudos : []).filter(Boolean)).size * 40;
-  }
   const usuario = await prisma.usuario.findUnique({ where: { id: usuarioId }, select: { metaAgua: true } });
-  const metaAgua = Math.max(250, Number(usuario?.metaAgua || 2500));
-  const agua = s['alim:agua'] && typeof s['alim:agua'] === 'object' && !Array.isArray(s['alim:agua']) ? s['alim:agua'] : {};
-  for (const [dia, valor] of Object.entries(agua)) {
-    const ml = Number(valor);
-    if (dataLegitima(dia) && Number.isFinite(ml) && ml >= metaAgua && ml <= 20_000) xp += 15;
-  }
-  // Rotina vale apenas no dia correto. Cumprir rende XP; deixar uma atividade
-  // planejada para trás desconta XP. O dia atual ainda não sofre penalidade.
-  const rotina = s['rotina:dias'] && typeof s['rotina:dias'] === 'object' && !Array.isArray(s['rotina:dias']) ? s['rotina:dias'] : {};
-  for (const [dia, atividades] of Object.entries(rotina)) {
-    if (!dataLegitima(dia) || !Array.isArray(atividades)) continue;
-    for (const atividade of atividades.slice(0, 100)) {
-      if (atividade?.done === true) xp += 10;
-      else if (dia < hoje) xp -= 10;
-    }
-  }
-  const bonus = Number(s['xp:bonus']);
-  // Ajustes administrativos podem ser positivos ou negativos; o usuário não
-  // consegue editar esta chave pelas rotas públicas.
-  if (Number.isFinite(bonus)) xp += Math.floor(bonus);
-  const xpFinal = Math.max(0, Math.floor(xp));
+  const extrato = calcularExtratoXp(s, usuario, hoje);
+  const xpFinal = extrato.total;
   await prisma.usuario.update({ where: { id: usuarioId }, data: { xp: xpFinal } });
   emitToUser(usuarioId, 'profile:changed', { usuario: { xp: xpFinal }, src: null });
   emitRanking();
   return xpFinal;
+}
+
+async function extratoXpDoUsuario(usuarioId) {
+  const [rows, usuario] = await Promise.all([
+    prisma.userState.findMany({ where: { usuarioId, chave: { in: ['treino:logs', 'estudo:logs', 'estudo:materias', 'alim:agua', 'rotina:dias', 'xp:bonus'] } } }),
+    prisma.usuario.findUnique({ where: { id: usuarioId }, select: { metaAgua: true, xp: true } }),
+  ]);
+  const estados = Object.fromEntries(rows.map(r => [r.chave, r.valor]));
+  const hoje = hojeBrasilia();
+  const extrato = calcularExtratoXp(estados, usuario, hoje);
+  if (usuario && usuario.xp !== extrato.total) {
+    await prisma.usuario.update({ where: { id: usuarioId }, data: { xp: extrato.total } });
+    emitToUser(usuarioId, 'profile:changed', { usuario: { xp: extrato.total }, src: null });
+    emitRanking();
+  }
+  return extrato;
 }
 
 // Todos os blobs do usuário de uma vez → { chave: valor, ... }
@@ -152,6 +135,10 @@ stateRouter.get('/historico/lista', async (req,res)=>{
   const limite=Math.min(1000,Math.max(50,Number(req.query.limite)||500));
   const rows=await prisma.stateHistory.findMany({where:{usuarioId:req.userId,...(chaves.length?{chave:{in:chaves}}:{})},orderBy:{criadoEm:'desc'},take:limite});
   res.json(rows.map(r=>({id:String(r.id),chave:r.chave,valor:r.valor,criadoEm:r.criadoEm})));
+});
+
+stateRouter.get('/xp/extrato', async (req, res) => {
+  res.json(await extratoXpDoUsuario(req.userId));
 });
 
 // Um blob específico
