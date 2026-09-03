@@ -16,13 +16,14 @@ const UPLOAD_DIR = process.env.UPLOAD_DIR || './uploads';
 const PUBLIC_BASE = process.env.PUBLIC_MEDIA_BASE || '/uploads';
 const execFileAsync = promisify(execFile);
 
-async function comprimirComFfmpeg(buffer, ext, tipo, corte = null) {
+async function comprimirComFfmpeg(buffer, ext, tipo, corte = null, perfil = '') {
   const dir = await mkdtemp(path.join(os.tmpdir(), 'rz-media-'));
   const entrada = path.join(dir, 'entrada' + ext), saida = path.join(dir, tipo === 'video' ? 'saida.mp4' : 'saida.ogg');
   try {
     await writeFile(entrada, buffer);
+    const demonstracao=perfil==='demonstracao';
     const args = tipo === 'video'
-      ? ['-y','-i',entrada,...(corte?['-ss',String(corte.inicio),'-t',String(corte.duracao)]:[]),'-vf','scale=min(1280\\,iw):-2','-c:v','libx264','-preset','superfast','-crf','27','-c:a','aac','-b:a','96k','-movflags','+faststart',saida]
+      ? ['-y','-i',entrada,...(corte?['-ss',String(corte.inicio),'-t',String(corte.duracao)]:[]),'-vf',`scale=min(${demonstracao?960:1280}\\,iw):-2`,'-c:v','libx264','-preset',demonstracao?'ultrafast':'superfast','-crf',demonstracao?'29':'27','-c:a','aac','-b:a',demonstracao?'64k':'96k','-movflags','+faststart',saida]
       : ['-y','-i',entrada,'-vn','-c:a','libopus','-b:a','64k',saida];
     await execFileAsync('ffmpeg', args, { timeout: 180000, maxBuffer: 2 * 1024 * 1024 });
     const comprimido = await readFile(saida);
@@ -89,7 +90,8 @@ uploadRouter.post('/', receberArquivo, async (req, res) => {
         ? { inicio, duracao: Math.min(60, fim - inicio) } : null;
       if (recebeuCorte && !corte) return res.status(400).json({ erro: 'Trecho de vídeo inválido. Escolha até 60 segundos.' });
       let nome = `${id}.mp4`;
-      const comprimido = await comprimirComFfmpeg(req.file.buffer, extEntrada, 'video', corte);
+      const perfil=String(req.body.perfil||'');
+      const comprimido = await comprimirComFfmpeg(req.file.buffer, extEntrada, 'video', corte, perfil);
       const usarComprimido = corte || comprimido.length < req.file.buffer.length;
       const buf = usarComprimido ? comprimido : req.file.buffer;
       if (!usarComprimido) nome = `${id}${extEntrada}`;
