@@ -4,10 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no, interactive-widget=resizes-content">
 <meta name="theme-color" content="#0a0a0d">
-<link rel="manifest" href="manifest.json?v=117">
-<link rel="icon" type="image/png" sizes="227x227" href="favicon-rz.png?v=117">
-<link rel="shortcut icon" type="image/png" href="favicon-rz.png?v=117">
-<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png?v=117">
+<link rel="manifest" href="manifest.json?v=139">
+<link rel="icon" href="favicon.ico?v=139" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-rz.png?v=139">
+<link rel="shortcut icon" href="favicon.ico?v=139">
+<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png?v=139">
 <title>REDZONE</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -262,15 +263,16 @@ button.rowitem{width:100%;text-align:left;font:inherit}
 .pencil{opacity:.8; font-size:16px; padding:6px 9px; border-radius:10px; background:rgba(255,255,255,.05); border:1px solid var(--line);}
 
 /* Dias da semana */
-.days{display:flex;justify-content:center;gap:8px;overflow-x:auto;padding:4px 0 8px;margin-inline:auto;max-width:900px;scrollbar-width:none;}
+.days{display:flex;justify-content:center;gap:8px;overflow-x:auto;padding:4px 0 8px;margin-inline:auto;width:100%;max-width:900px;scrollbar-width:none;}
 .days::-webkit-scrollbar{display:none;}
 @media(max-width:680px){.days{justify-content:flex-start}}
-.day{flex:0 0 auto; min-width:62px; text-align:center; padding:12px 10px; border-radius:16px; border:1px solid var(--line); background:var(--surface);}
+.day{flex:1 1 0;min-width:0;text-align:center;padding:12px 10px;border-radius:16px;border:1px solid var(--line);background:var(--surface);}
 .day.sel{border-color:transparent; background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff;}
 .day.today{box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 55%, transparent);}
 .day .dn{font-weight:800; font-size:14px;}
 .day .dd{font-size:10.5px; color:var(--text-dim);}
 .day.sel .dd{color:rgba(255,255,255,.85);}
+@media(max-width:680px){.day{flex:0 0 62px;min-width:62px}}
 
 /* Semana travada */
 .week{border:1px solid var(--line); border-radius:18px; margin:12px 0; overflow:hidden; background:var(--surface);}
@@ -501,6 +503,7 @@ html.chat-open,body.chat-open{overflow:hidden!important;overscroll-behavior:none
 
 /* Rotina: layout com calendário à direita */
 .rotina-wrap{display:flex; gap:16px; flex-wrap:wrap; align-items:flex-start;}
+#scr-rotina>.section-title{margin-top:38px;margin-bottom:16px}#scr-rotina>.section-title+.small{margin-bottom:18px!important;line-height:1.55}#alarmPushStatus:not(:empty){margin:16px 0}#alarmList{margin-top:18px}.alarm-empty{padding:28px 20px;gap:9px}.alarm-empty span{line-height:1.5}
 .rotina-col{flex:1 1 300px; min-width:0;}
 .rotina-cal{flex:1 1 280px; min-width:0;}
 /* Calendário branco e legível */
@@ -832,7 +835,7 @@ setInterval(()=>{ if(authToken&&offQueue().length&&navigator.onLine) flushQueue(
 
 /* id único DESTE aparelho/aba — usado pra não ecoar de volta a própria escrita no sync ao vivo */
 const CLIENT_ID = (Math.random().toString(36).slice(2)+'-'+Date.now().toString(36));
-const APP_BUILD = 'redzone-v138';
+const APP_BUILD = 'redzone-v139';
 // evita re-render que rouba o foco enquanto a pessoa digita (o dado já foi aplicado em S de qualquer forma)
 function _syncPodeRender(){ const a=document.activeElement; return !(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||'')); }
 // ANTI-LOOP: ao aplicar uma mudança que VEIO do servidor, um re-render pode disparar escritas de
