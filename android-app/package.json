@@ -4,8 +4,7 @@
   "private": true,
   "scripts": {
     "sync": "cap sync android",
-    "build:debug": "cd android && gradlew.bat assembleDebug",
-    "install:debug": "cd android && gradlew.bat installDebug"
+    "build:release": "cd android && gradlew.bat assembleRelease"
   },
   "dependencies": {
     "@capacitor/android": "8.5.1",
