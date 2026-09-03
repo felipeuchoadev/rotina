@@ -310,6 +310,8 @@ button.rowitem{width:100%;text-align:left;font:inherit}
 .weekstrip .wd b{display:block; font-size:15px; line-height:1.3;}
 .week-plan-card{border:1px solid var(--line);border-radius:16px;background:var(--surface);padding:14px;margin:10px 0}.week-plan-card.selected{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
 .week-plan-top{display:flex;align-items:center;gap:10px}.week-plan-main{flex:1;min-width:0}.week-plan-main b,.week-plan-main span{display:block}.week-plan-main span{font-size:12px;color:var(--text-dim);margin-top:3px}.week-plan-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}.week-plan-actions .btn{flex:1;min-width:88px}.week-plan-move{display:flex;gap:5px}.week-plan-move button{width:38px;height:38px;border-radius:11px;border:1px solid var(--line);background:var(--surface2);color:var(--text);font-weight:900}
+.natural-video{display:block;width:auto!important;height:auto!important;max-width:100%;max-height:min(68vh,720px)!important;margin:10px auto 0;border-radius:12px;background:#000;object-fit:contain}
+@media(max-width:520px){.natural-video{max-height:62dvh!important}}
 .weeks-block-title{display:flex;align-items:center;gap:9px;margin:16px 3px 7px;color:var(--text-dim);font-size:13px;font-weight:800;text-transform:uppercase;letter-spacing:.05em}
 .week-history{margin-top:14px;border:1px solid var(--line);border-radius:18px;background:var(--surface);overflow:hidden}
 .week-history summary{list-style:none;display:flex;align-items:center;gap:12px;padding:16px;cursor:pointer;font-weight:800;color:var(--text)}
@@ -815,7 +817,7 @@ setInterval(()=>{ if(authToken&&offQueue().length&&navigator.onLine) flushQueue(
 
 /* id único DESTE aparelho/aba — usado pra não ecoar de volta a própria escrita no sync ao vivo */
 const CLIENT_ID = (Math.random().toString(36).slice(2)+'-'+Date.now().toString(36));
-const APP_BUILD = 'redzone-v130';
+const APP_BUILD = 'redzone-v131';
 // evita re-render que rouba o foco enquanto a pessoa digita (o dado já foi aplicado em S de qualquer forma)
 function _syncPodeRender(){ const a=document.activeElement; return !(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||'')); }
 // ANTI-LOOP: ao aplicar uma mudança que VEIO do servidor, um re-render pode disparar escritas de
@@ -2172,7 +2174,7 @@ function renderTreinoDia(){
       <div class="txt"><div class="t">${esc(ex.nome)}</div>
         ${ex.desc?`<div class="s">${esc(ex.desc)}</div>`:''}
         ${feito?`<div class="s" style="color:var(--ok)">✅ Feito hoje · ${mins} min</div>`:''}
-        ${ex.videoUrl?`<video src="${ex.videoUrl}" controls playsinline style="border-radius:10px;margin-top:8px;max-height:200px;width:100%"></video>`:''}
+        ${ex.videoUrl?`<video class="natural-video" src="${ex.videoUrl}" controls playsinline preload="metadata"></video>`:''}
       </div>${miniaturaRegistro(logMidia)}
       ${edit ? `<button class="pencil" data-edex="${ex.id}">✏️</button><button class="pencil" data-delex="${ex.id}">🗑️</button>`
              : (feito ? '' : `<button class="btn sm" data-startex="${ex.id}" ${d===hojeDia()?'':'aria-disabled="true"'}>▶</button>`)}
@@ -2202,7 +2204,7 @@ function editExecSheet(dia, exId){
   let videoUrl = ex.videoUrl||null;
   const va=$('#exVideoArea');
   const paintVideo=()=>{ va.innerHTML = videoUrl
-    ? `<video src="${videoUrl}" controls playsinline style="border-radius:10px;max-height:200px;width:100%"></video><button class="btn sm ghost" id="exVideoDel" style="margin-top:6px">Remover vídeo</button>`
+    ? `<video class="natural-video" src="${videoUrl}" controls playsinline preload="metadata"></video><button class="btn sm ghost" id="exVideoDel" style="margin-top:6px">Remover vídeo</button>`
     : `<button class="btn sm ghost" id="exVideoAdd">🎥 Selecionar vídeo</button>`;
     if($('#exVideoAdd')) $('#exVideoAdd').onclick=()=>{ const inp=$('#capVideo'); inp.value=''; inp.removeAttribute('capture'); inp.onchange=async()=>{ const f=inp.files[0]; if(!f)return; va.innerHTML='<p class="muted small">Enviando vídeo…</p>'; try{ const up=await uploadMedia(f); videoUrl=up.url; }catch(e){ toast('Falha ao enviar vídeo.'); } paintVideo(); }; inp.click(); };
     if($('#exVideoDel')) $('#exVideoDel').onclick=()=>{ videoUrl=null; paintVideo(); };
