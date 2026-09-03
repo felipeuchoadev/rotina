@@ -18,6 +18,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.font.Font
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -33,6 +36,7 @@ private val Edge = Color(0xFF292C35)
 private val Red = Color(0xFFFF5559)
 private val DeepRed = Color(0xFF3A090C)
 private val Muted = Color(0xFF9B9DA7)
+private val Inter = FontFamily(Font(R.font.inter_variable))
 private data class Sector(val name: String, val icon: ImageVector)
 private val sectors = listOf(
     Sector("Início", Icons.Default.Home), Sector("Treinos", Icons.Default.FitnessCenter),
@@ -43,7 +47,10 @@ private val sectors = listOf(
 
 @Composable fun RedzoneApp() {
     var page by remember { mutableIntStateOf(0) }
-    MaterialTheme(colorScheme = darkColorScheme(primary = Red, background = Bg, surface = Panel)) {
+    MaterialTheme(colorScheme = darkColorScheme(primary = Red, background = Bg, surface = Panel), typography = Typography(
+        bodyLarge = TextStyle(fontFamily = Inter), bodyMedium = TextStyle(fontFamily = Inter), bodySmall = TextStyle(fontFamily = Inter),
+        titleLarge = TextStyle(fontFamily = Inter), titleMedium = TextStyle(fontFamily = Inter), labelLarge = TextStyle(fontFamily = Inter)
+    )) {
         Scaffold(containerColor = Bg, topBar = { Header(sectors[page].name) }, bottomBar = { BottomNav(page) { page = it } }) { inset ->
             Box(Modifier.fillMaxSize().padding(inset).background(Brush.verticalGradient(listOf(DeepRed.copy(.38f), Bg), endY = 420f))) {
                 when (page) {
@@ -64,13 +71,13 @@ private val sectors = listOf(
     var time by remember { mutableStateOf(LocalTime.now()) }
     LaunchedEffect(Unit) { while (true) { time = LocalTime.now(); delay(1000) } }
     Surface(color = Color(0xFF0A0B0F), shadowElevation = 10.dp) {
-        Row(Modifier.fillMaxWidth().statusBarsPadding().height(61.dp).padding(horizontal = 13.dp), verticalAlignment = Alignment.CenterVertically) {
-            Image(painterResource(R.drawable.redzone_wordmark), "REDZONE", Modifier.width(126.dp).height(38.dp), contentScale = ContentScale.Fit)
-            Spacer(Modifier.width(9.dp)); Box(Modifier.width(1.dp).height(24.dp).background(Edge)); Spacer(Modifier.width(9.dp))
+        Row(Modifier.fillMaxWidth().statusBarsPadding().height(52.dp).padding(horizontal = 9.dp), verticalAlignment = Alignment.CenterVertically) {
+            Image(painterResource(R.drawable.redzone_wordmark), "REDZONE", Modifier.width(116.dp).height(30.dp), contentScale = ContentScale.Fit)
+            Spacer(Modifier.width(7.dp)); Box(Modifier.width(1.dp).height(21.dp).background(Edge)); Spacer(Modifier.width(7.dp))
             Text(section.uppercase(), color = Color.White, fontWeight = FontWeight.Black, fontSize = 13.sp, maxLines = 1)
             Spacer(Modifier.weight(1f))
             Column(horizontalAlignment = Alignment.End) {
-                Text(time.format(DateTimeFormatter.ofPattern("HH:mm")), color = Color.White, fontWeight = FontWeight.Black, fontSize = 18.sp)
+                Text(time.format(DateTimeFormatter.ofPattern("HH:mm")), color = Color.White, fontWeight = FontWeight.Black, fontSize = 17.sp)
                 Text("REDZONE", color = Red, fontWeight = FontWeight.Bold, fontSize = 8.sp)
             }
         }
@@ -78,14 +85,14 @@ private val sectors = listOf(
 }
 
 @Composable private fun BottomNav(active: Int, select: (Int) -> Unit) = Surface(color = Color(0xFF0E0F14), shadowElevation = 14.dp) {
-    Row(Modifier.fillMaxWidth().navigationBarsPadding().height(67.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
+    Row(Modifier.fillMaxWidth().navigationBarsPadding().height(58.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
         sectors.forEachIndexed { i, item ->
             val on = i == active
             Box(Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.Center) {
                 IconButton({ select(i) }, Modifier.fillMaxSize()) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-                        Box(Modifier.size(31.dp).clip(CircleShape).background(if (on) Red.copy(.17f) else Color.Transparent), contentAlignment = Alignment.Center) {
-                            Icon(item.icon, item.name, tint = if (on) Red else Muted, modifier = Modifier.size(19.dp))
+                        Box(Modifier.size(26.dp).clip(CircleShape).background(if (on) Red.copy(.17f) else Color.Transparent), contentAlignment = Alignment.Center) {
+                            Icon(item.icon, item.name, tint = if (on) Red else Muted, modifier = Modifier.size(17.dp))
                         }
                         Text(item.name, color = if (on) Red else Muted, fontSize = 7.5.sp, fontWeight = if (on) FontWeight.Bold else FontWeight.Normal, maxLines = 1, overflow = TextOverflow.Clip)
                     }
@@ -95,15 +102,15 @@ private val sectors = listOf(
     }
 }
 
-@Composable private fun Dashboard() = Column(Modifier.fillMaxSize().padding(12.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
-    Row(Modifier.fillMaxWidth().height(102.dp).card(), verticalAlignment = Alignment.CenterVertically) {
-        Box(Modifier.padding(start = 13.dp).size(78.dp), contentAlignment = Alignment.Center) {
+@Composable private fun Dashboard() = Column(Modifier.fillMaxSize().padding(horizontal = 9.dp, vertical = 7.dp), verticalArrangement = Arrangement.spacedBy(6.dp)) {
+    Row(Modifier.fillMaxWidth().height(89.dp).card(), verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.padding(start = 10.dp).size(70.dp), contentAlignment = Alignment.Center) {
             CircularProgressIndicator(progress = { .025f }, color = Red, trackColor = Color.White.copy(.08f), strokeWidth = 4.dp, modifier = Modifier.fillMaxSize())
-            Image(painterResource(R.drawable.avatar_masc), "Perfil", Modifier.size(66.dp).clip(CircleShape), contentScale = ContentScale.Crop)
+            Image(painterResource(R.drawable.avatar_masc), "Perfil", Modifier.size(59.dp).clip(CircleShape), contentScale = ContentScale.Crop)
         }
-        Spacer(Modifier.width(13.dp))
+        Spacer(Modifier.width(10.dp))
         Column(Modifier.weight(1f)) {
-            Text("UCHOA", color = Color.White, fontSize = 21.sp, lineHeight = 21.sp, fontWeight = FontWeight.Black)
+            Text("UCHOA", color = Color.White, fontSize = 19.sp, lineHeight = 19.sp, fontWeight = FontWeight.Black)
             Text("@felipeuchoa", color = Muted, fontSize = 12.sp)
             Spacer(Modifier.height(6.dp)); Surface(color = Red.copy(.14f), border = androidx.compose.foundation.BorderStroke(1.dp, Red.copy(.28f)), shape = RoundedCornerShape(50)) { Text("▲ Recruta · 20 XP", color = Color(0xFFFF7074), fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)) }
         }
@@ -111,15 +118,15 @@ private val sectors = listOf(
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
         Metric("19", "ANOS", Modifier.weight(1f)); Metric("89,0", "KG", Modifier.weight(1f)); Metric("1,78", "ALTURA", Modifier.weight(1f))
     }
-    Row(Modifier.fillMaxWidth().height(73.dp).card().padding(horizontal = 13.dp), verticalAlignment = Alignment.CenterVertically) {
-        Icon(Icons.Default.Security, null, tint = Color(0xFFB6C7CC), modifier = Modifier.size(37.dp)); Spacer(Modifier.width(12.dp))
+    Row(Modifier.fillMaxWidth().height(62.dp).card().padding(horizontal = 11.dp), verticalAlignment = Alignment.CenterVertically) {
+        Icon(Icons.Default.Security, null, tint = Color(0xFFB6C7CC), modifier = Modifier.size(31.dp)); Spacer(Modifier.width(10.dp))
         Column(Modifier.weight(1f)) {
             Text("Recruta  ⓘ", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Black)
             LinearProgressIndicator(progress = { .0025f }, color = Color(0xFF37D67A), trackColor = Color.White.copy(.08f), modifier = Modifier.fillMaxWidth().height(6.dp).clip(CircleShape))
             Text("20 XP · faltam 7.980 pra Soldado", color = Muted, fontSize = 9.sp)
         }
     }
-    Text("Resumo de hoje", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(start = 2.dp))
+    Text("Resumo de hoje", color = Color.White, fontSize = 13.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(start = 2.dp, top = 2.dp))
     Column(Modifier.fillMaxWidth().weight(1f), verticalArrangement = Arrangement.spacedBy(7.dp)) {
         SummaryRow(Icons.Default.FitnessCenter, "Treino de hoje", "Nenhuma sessão concluída", 0f, Modifier.weight(1f))
         SummaryRow(Icons.Default.School, "Estudos", "Nenhum conteúdo concluído", 0f, Modifier.weight(1f))
@@ -129,8 +136,8 @@ private val sectors = listOf(
 
 private fun Modifier.card() = background(Panel, RoundedCornerShape(17.dp)).border(1.dp, Edge, RoundedCornerShape(17.dp))
 
-@Composable private fun Metric(value: String, label: String, modifier: Modifier) = Column(modifier.height(59.dp).card(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
-    Text(value, color = Color.White, fontWeight = FontWeight.Black, fontSize = 16.sp); Text(label, color = Muted, fontSize = 8.sp)
+@Composable private fun Metric(value: String, label: String, modifier: Modifier) = Column(modifier.height(50.dp).card(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+    Text(value, color = Color.White, fontWeight = FontWeight.Black, fontSize = 15.sp); Text(label, color = Muted, fontSize = 8.sp)
 }
 
 @Composable private fun DashboardPanel(title: String, icon: ImageVector, rows: List<String>, modifier: Modifier) = Column(modifier.card().padding(11.dp)) {
@@ -153,16 +160,16 @@ private fun Modifier.card() = background(Panel, RoundedCornerShape(17.dp)).borde
 
 @Composable private fun ModulePage(sector: Sector, tabs: List<String>, title: String, cards: List<String>) {
     var tab by remember(sector.name) { mutableIntStateOf(0) }
-    Column(Modifier.fillMaxSize().padding(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+    Column(Modifier.fillMaxSize().padding(horizontal = 9.dp, vertical = 7.dp), verticalArrangement = Arrangement.spacedBy(7.dp)) {
         Row(verticalAlignment = Alignment.CenterVertically) { Icon(sector.icon, null, tint = Red, modifier = Modifier.size(25.dp)); Spacer(Modifier.width(8.dp)); Text(title, color = Color.White, fontSize = 21.sp, fontWeight = FontWeight.Black) }
         SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) { tabs.forEachIndexed { i, text -> SegmentedButton(tab == i, { tab = i }, SegmentedButtonDefaults.itemShape(i, tabs.size), label = { Text(text, fontSize = 10.sp, maxLines = 1) }) } }
-        Column(Modifier.fillMaxWidth().weight(1f).card().padding(12.dp)) {
+        Column(Modifier.fillMaxWidth().weight(1f).card().padding(10.dp)) {
             Text(tabs[tab].uppercase(), color = Red, fontWeight = FontWeight.Black, fontSize = 10.sp); Spacer(Modifier.height(8.dp))
             cards.forEach { CompactRow(it) }
             Spacer(Modifier.weight(1f))
             Text("Dados reais serão sincronizados com o servidor REDZONE na próxima etapa.", color = Muted, fontSize = 10.sp)
         }
-        Surface(onClick = {}, color = Red, shape = RoundedCornerShape(13.dp), modifier = Modifier.fillMaxWidth().height(46.dp)) {
+        Surface(onClick = {}, color = Red, shape = RoundedCornerShape(13.dp), modifier = Modifier.fillMaxWidth().height(42.dp)) {
             Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Default.Add, null); Spacer(Modifier.width(5.dp)); Text("ADICIONAR", fontWeight = FontWeight.Black) }
         }
     }
