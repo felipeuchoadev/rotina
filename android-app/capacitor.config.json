@@ -1,0 +1,9 @@
+{
+  "appId": "net.redsystems.redzone",
+  "appName": "REDZONE",
+  "webDir": "www",
+  "server": {
+    "url": "https://redsystems.ddns.net/rotina/",
+    "androidScheme": "https"
+  }
+}
