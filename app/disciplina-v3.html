@@ -817,7 +817,7 @@ setInterval(()=>{ if(authToken&&offQueue().length&&navigator.onLine) flushQueue(
 
 /* id único DESTE aparelho/aba — usado pra não ecoar de volta a própria escrita no sync ao vivo */
 const CLIENT_ID = (Math.random().toString(36).slice(2)+'-'+Date.now().toString(36));
-const APP_BUILD = 'redzone-v131';
+const APP_BUILD = 'redzone-v132';
 // evita re-render que rouba o foco enquanto a pessoa digita (o dado já foi aplicado em S de qualquer forma)
 function _syncPodeRender(){ const a=document.activeElement; return !(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||'')); }
 // ANTI-LOOP: ao aplicar uma mudança que VEIO do servidor, um re-render pode disparar escritas de
@@ -2477,8 +2477,9 @@ function posTreino(sess){
   `);
   let prova=null;
   const nomeEx=planoTreinoAtual(sess.dia).find(x=>x.id===sess.refId)?.nome||'Treino';
-  renderProvaPicker($('#provaArea'), (dataUrl,kind)=>{ prova={dataUrl,kind}; });
-  $('#finTreino').onclick=()=>{
+  const provaUpload=renderProvaPicker($('#provaArea'), (dataUrl,kind)=>{ prova={dataUrl,kind}; });
+  $('#finTreino').onclick=async()=>{
+    try{ await provaUpload.wait(); }catch(e){ return toast(e?.message||'O vídeo não terminou de enviar.'); }
     if(!podeExecutarDia(sess.dia)) return closeSheet();
     const legenda=$('#finLeg')?.value.trim()||'';
     S.treinoLogs.push({ exId:sess.refId, nome:nomeEx, dia:sess.dia, dateISO:todayISO(), ativoMs:sess.ativoMs, pausaMs:sess.pausedMs, prova:prova?.dataUrl, provaTipo:prova?.kind, legenda });
@@ -2505,17 +2506,22 @@ function renderProvaPicker(container, onReady){
       <button class="btn ghost" id="provaVideo"><span>🎥</span><small>Vídeo agora</small></button>
     </div>
     <div id="provaPreview"></div>`;
-  const enviar=async(arquivo)=>{ const f=arquivo?.files?arquivo.files[0]:arquivo; if(!f) return;
+  const estado={uploading:false,error:null,promise:Promise.resolve(),wait:async()=>{await estado.promise;if(estado.error)throw estado.error;}};
+  const enviar=(arquivo)=>{ const f=arquivo?.files?arquivo.files[0]:arquivo; if(!f) return Promise.resolve();
     const local=URL.createObjectURL(f), isVideo=f.type.startsWith('video/');
     $('#provaPreview').innerHTML=(isVideo?`<video src="${local}" controls playsinline preload="metadata" style="border-radius:12px;max-height:260px;width:100%"></video>`:`<img src="${local}" style="border-radius:12px;max-height:260px;max-width:100%">`)+`<p class="muted small" id="provaStatus">Enviando mídia… você já pode conferir a prévia.</p>`;
-    try{ const up=await uploadMedia(f);
+    estado.uploading=true;estado.error=null;container.dataset.uploading='1';
+    estado.promise=(async()=>{try{ const up=await uploadMedia(f);
       if($('#provaStatus')) $('#provaStatus').textContent='✅ Mídia pronta para publicar.';
       onReady(up.url, up.tipo);
-    }catch(e){ $('#provaPreview').innerHTML=`<p class="err">${esc(e?.message||'Falha ao enviar a mídia. Tente de novo.')}</p>`; }
+    }catch(e){estado.error=e;$('#provaPreview').innerHTML=`<p class="err">${esc(e?.message||'Falha ao enviar a mídia. Tente de novo.')}</p>`;throw e}
+    finally{estado.uploading=false;delete container.dataset.uploading;URL.revokeObjectURL(local)}})();
+    estado.promise.catch(()=>{});return estado.promise;
   };
   $('#provaGaleria').onclick=async()=>enviar(await escolherMidia('image/*,video/*'));
   $('#provaFoto').onclick=()=>abrirCameraChat(null,{modo:'foto',fixo:true,aoCapturar:enviar,fallback:()=>{ const inp=$('#capPhoto'); inp.value=''; inp.onchange=()=>enviar(inp); inp.click(); }});
   $('#provaVideo').onclick=()=>abrirCameraChat(null,{modo:'video',fixo:true,aoCapturar:enviar,fallback:()=>{ const inp=$('#capVideo'); inp.value=''; inp.onchange=()=>enviar(inp); inp.click(); }});
+  return estado;
 }
 
 /* =========================================================================
@@ -2819,8 +2825,9 @@ function posEstudo(sess){
     <button class="btn ok" id="finEstudo">✅ Finalizar e registrar</button>
   `);
   let prova=null;
-  renderProvaPicker($('#estProva'), (url,tipo)=>{ prova={url,tipo}; });
-  $('#finEstudo').onclick=()=>{
+  const provaUpload=renderProvaPicker($('#estProva'), (url,tipo)=>{ prova={url,tipo}; });
+  $('#finEstudo').onclick=async()=>{
+    try{ await provaUpload.wait(); }catch(e){ return toast(e?.message||'O vídeo não terminou de enviar.'); }
     if(!podeExecutarDia(sess.dia)) return closeSheet();
     const marcados=$$('#sheet [data-cid]').filter(c=>c.checked).map(c=>c.dataset.cid);
     if(m){
@@ -4186,13 +4193,15 @@ function composePost(prefill=''){
     <button class="btn ok" id="postPub">Publicar no feed</button>`);
   const ta=$('#postLeg'); autoGrow(ta); ta.oninput=()=>autoGrow(ta);
   let midiaUrl=null, midiaTipo=null;
-  renderProvaPicker($('#postProva'), (url,tipo)=>{ midiaUrl=url; midiaTipo=tipo; });
+  const postUpload=renderProvaPicker($('#postProva'), (url,tipo)=>{ midiaUrl=url; midiaTipo=tipo; });
   $('#postPub').onclick=async()=>{
+    const botao=$('#postPub');if(botao.disabled)return;botao.disabled=true;botao.textContent=postUpload.uploading?'Aguardando vídeo…':'Publicando…';
+    try{await postUpload.wait()}catch(e){botao.disabled=false;botao.textContent='Publicar no feed';return toast(e?.message||'O vídeo não terminou de enviar.')}
     const texto=$('#postLeg').value.trim();
-    if(!midiaUrl && !texto) return toast('Coloque uma foto/vídeo ou uma legenda.');
+    if(!midiaUrl && !texto){botao.disabled=false;botao.textContent='Publicar no feed';return toast('Coloque uma foto/vídeo ou uma legenda.');}
     try{ await api('/batalha/feed',{method:'POST',body:{texto, midiaUrl, midiaTipo, tipo:'manual'}});
       closeSheet(); toast(`Publicado, ${rankOf(computeXP()).name}! 📣`); renderBatalha(); }
-    catch(e){ toast('Falha ao publicar.'); }
+    catch(e){botao.disabled=false;botao.textContent='Publicar no feed';toast(e?.message||'Falha ao publicar.'); }
   };
 }
 async function gerarPublicacaoDoDia(){
