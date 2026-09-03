@@ -813,7 +813,7 @@ setInterval(()=>{ if(authToken&&offQueue().length&&navigator.onLine) flushQueue(
 
 /* id único DESTE aparelho/aba — usado pra não ecoar de volta a própria escrita no sync ao vivo */
 const CLIENT_ID = (Math.random().toString(36).slice(2)+'-'+Date.now().toString(36));
-const APP_BUILD = 'redzone-v125';
+const APP_BUILD = 'redzone-v126';
 // evita re-render que rouba o foco enquanto a pessoa digita (o dado já foi aplicado em S de qualquer forma)
 function _syncPodeRender(){ const a=document.activeElement; return !(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||'')); }
 // ANTI-LOOP: ao aplicar uma mudança que VEIO do servidor, um re-render pode disparar escritas de
@@ -3228,9 +3228,18 @@ function limparDiasRotinaSheet(dias){
   const marcados=()=>$$('#sheet [data-clear-item]:checked');
   const atualizar=()=>{const n=marcados().length,b=$('#rotClearSelected');b.disabled=!n;b.textContent=`Apagar atividades escolhidas (${n})`;$$('#sheet [data-clear-day]').forEach(d=>{const itens=$$(`#sheet [data-clear-item-day="${d.dataset.clearDay}"]`);d.checked=itens.length&&itens.every(x=>x.checked);d.indeterminate=itens.some(x=>x.checked)&&!d.checked;});};
   $$('#sheet [data-clear-item]').forEach(c=>c.onchange=atualizar);$$('#sheet [data-clear-day]').forEach(c=>c.onchange=()=>{$$(`#sheet [data-clear-item-day="${c.dataset.clearDay}"]`).forEach(x=>x.checked=c.checked);atualizar();});
-  $('#rotClearSelected').onclick=()=>{const selecionados=marcados().map(c=>{const g=grupos.find(x=>x.dia===c.dataset.clearItemDay),item=g?.itens.find(a=>String(a.id)===String(c.dataset.clearItem));return item?{dia:g.dia,item}:null;}).filter(Boolean);confirmarLimpezaRotina(selecionados,'as atividades escolhidas');};
+  $('#rotClearSelected').onclick=()=>{const selecionados=marcados().map(c=>{const g=grupos.find(x=>x.dia===c.dataset.clearItemDay),item=g?.itens.find(a=>String(a.id)===String(c.dataset.clearItem));return item?{dia:g.dia,item}:null;}).filter(Boolean);escolherEscopoLimpezaRotina(selecionados);};
   $('#rotClearAll').onclick=()=>confirmarLimpezaRotina(grupos.flatMap(g=>g.itens.map(item=>({dia:g.dia,item}))),'todas as atividades dos dias selecionados');
   $('#rotClearCancel').onclick=closeSheet;atualizar();
+}
+function expandirRepeticoesRotina(itens){
+  const vistos=new Set(),out=[];itens.forEach(({dia,item})=>ocorrenciasAtividadeRotina(dia,item).forEach(x=>{const k=`${x.dia}:${x.item.id}`;if(!vistos.has(k)){vistos.add(k);out.push(x);}}));return out;
+}
+function escolherEscopoLimpezaRotina(selecionados){
+  const todos=expandirRepeticoesRotina(selecionados);if(todos.length<=selecionados.length)return confirmarLimpezaRotina(selecionados,'as atividades escolhidas');
+  const grupos=new Map();selecionados.forEach(({item})=>{const k=item.serieId||chaveAtividadeRotina(item);if(!grupos.has(k))grupos.set(k,{nome:item.nome||'Atividade',hora:item.hora||'',total:0});});todos.forEach(({item})=>{const k=item.serieId||chaveAtividadeRotina(item),g=grupos.get(k);if(g)g.total++;});
+  openSheet(`<h3>Repetições encontradas automaticamente</h3><p class="muted small">Você não precisa selecionar os outros dias. O REDZONE encontrou a mesma atividade pela série, pelo nome e pelo horário.</p>${[...grupos.values()].map(g=>`<div class="rowitem"><div class="txt"><div class="t">${esc(g.nome)}</div><div class="s">${g.hora?`⏰ ${esc(g.hora)} · `:''}${g.total} ocorrência(s) atual(is) e futura(s)</div></div></div>`).join('')}<button class="btn danger-outline" id="rotScopeOne">Apagar somente o que marquei (${selecionados.length})</button><button class="btn" id="rotScopeAll" style="margin-top:10px">Apagar automaticamente todas as ${todos.length} ocorrências</button><button class="btn ghost" id="rotScopeCancel" style="margin-top:10px">Cancelar sem apagar</button>`);
+  $('#rotScopeOne').onclick=()=>confirmarLimpezaRotina(selecionados,'somente as ocorrências marcadas');$('#rotScopeAll').onclick=()=>confirmarLimpezaRotina(todos,'todas as repetições encontradas automaticamente');$('#rotScopeCancel').onclick=closeSheet;
 }
 function confirmarLimpezaRotina(itens,descricao){
   const dias=new Set(itens.map(x=>x.dia));openSheet(`<h3>Confirmar exclusão</h3><div class="rotina-clear-summary"><b>Você vai apagar ${itens.length} atividade(s) de ${dias.size} dia(s).</b><br><span class="small muted">Opção escolhida: ${esc(descricao)}. Uma cópia ficará disponível em “desfazer última limpeza”.</span></div><button class="btn" id="rotClearFinal" style="margin-top:14px">Sim, apagar ${itens.length} atividade(s)</button><button class="btn ghost" id="rotClearFinalCancel" style="margin-top:10px">Não, voltar sem apagar</button>`);

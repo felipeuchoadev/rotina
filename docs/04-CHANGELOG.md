@@ -1,5 +1,12 @@
 # Changelog
 
+## v126 (03/09/2026)
+- Ao apagar atividades pela Rotina, basta apontar uma ocorrência: o REDZONE reconhece automaticamente sua sequência pelo identificador da série ou, em registros antigos, pelo mesmo nome e horário.
+- Antes da exclusão, a pessoa escolhe entre apagar somente o que marcou ou todas as ocorrências atuais e futuras encontradas, sem selecionar manualmente cada dia.
+- A edição usa a mesma automação: alterações de nome, horário e descrição podem ser aplicadas somente naquele dia ou em toda a sequência, preservando o estado concluído de cada ocorrência.
+- A confirmação final continua mostrando exatamente quantas atividades e dias serão afetados e mantém a opção de desfazer a última limpeza.
+- Publicado como `redzone-v126`; testes de Rotina, ADM/notificações, XP e Estudos foram validados.
+
 ## v125 (02/09/2026)
 - A limpeza da Rotina deixou de apagar dias inteiros imediatamente: depois de escolher os dias, a pessoa marca atividades específicas; “apagar tudo” é uma opção separada com segunda confirmação e contagem exata.
 - Toda limpeza cria uma cópia local recuperável pelo botão “desfazer última limpeza”. A exclusão pelo ícone de lixeira também pergunta entre somente aquele dia e todas as ocorrências repetidas.
