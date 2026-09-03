@@ -117,7 +117,7 @@ a{color:var(--accent2);}
 .avatar{width:84px; height:84px; border-radius:20px; object-fit:cover; flex:0 0 84px; background:var(--surface2);}
 .avatar.sm{width:46px; height:46px; border-radius:13px; flex-basis:46px;}
 .avatar.xs{width:40px; height:40px; border-radius:12px; flex-basis:40px;}
-.profile-photo-button{border:0;padding:0;background:transparent;color:inherit;cursor:zoom-in;display:flex;border-radius:22px;flex:0 0 auto;}
+.profile-photo-button{border:0;padding:0;background:transparent;color:inherit;cursor:pointer;display:flex;border-radius:22px;flex:0 0 auto;touch-action:manipulation;-webkit-touch-callout:none;user-select:none;}
 .profile-photo-button:focus-visible{outline:3px solid var(--accent);outline-offset:4px;}
 .photo-viewer{min-height:min(72vh,680px);display:flex;align-items:center;justify-content:center;padding:16px 0 4px;}
 .photo-viewer img{display:block;max-width:100%;max-height:72vh;width:auto;height:auto;object-fit:contain;border-radius:18px;background:var(--surface2);box-shadow:0 18px 60px rgba(0,0,0,.5);}
@@ -421,6 +421,7 @@ html.chat-open,body.chat-open{overflow:hidden!important;overscroll-behavior:none
 .dm-delete-overlay{position:fixed;inset:0;z-index:130;background:rgba(0,0,0,.48);display:flex;align-items:flex-end;justify-content:center;padding:16px}.dm-delete-box{width:min(430px,100%);background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:12px;box-shadow:0 24px 70px rgba(0,0,0,.55)}.dm-delete-box h3{font-size:17px;margin:4px 6px 10px}.dm-delete-box button{display:block;width:100%;border:0;border-radius:13px;background:transparent;color:var(--text);padding:13px;text-align:left;font-size:15px}.dm-delete-box button:hover{background:var(--surface2)}.dm-delete-box .danger{color:var(--danger);font-weight:800}.dm-delete-box .cancel{text-align:center;color:var(--text-dim);border-top:1px solid var(--line);margin-top:4px}.dm-delete-overlay.context{background:transparent;display:block;padding:0}.dm-delete-overlay.context .dm-delete-box{position:fixed;width:250px;border-radius:12px;padding:7px;box-shadow:0 18px 55px rgba(0,0,0,.7)}.dm-reactions{display:flex!important;gap:2px;padding:5px!important;margin-bottom:4px;background:var(--surface2)!important;border-radius:999px!important}.dm-reactions button{padding:7px 5px!important;text-align:center!important;font-size:20px!important}
 .dm-tombstone{font-style:italic;color:var(--text-dim);display:inline-flex;align-items:center;gap:6px}.media-preview-overlay,.chat-viewer{position:fixed;inset:0;z-index:140;background:rgba(0,0,0,.96);display:flex;align-items:center;justify-content:center;padding:18px;overscroll-behavior:none;touch-action:none}.media-preview-box{width:min(620px,100%);max-height:94vh;background:var(--surface);border-radius:22px;padding:14px;display:flex;flex-direction:column;gap:12px}.media-preview-list{display:flex;gap:8px;overflow-x:auto;min-height:0}.media-preview-list img,.media-preview-list video{display:block;max-width:100%;width:auto;height:min(56vh,520px);object-fit:contain;border-radius:14px;background:#000}.media-preview-box textarea{width:100%;min-height:56px;resize:none;background:var(--surface2);border:1px solid var(--line);border-radius:14px;padding:12px;color:var(--text)}.media-preview-actions{display:flex;gap:8px}.media-preview-actions .btn{flex:1}.chat-viewer{z-index:150}.chat-viewer img,.chat-viewer video{max-width:96vw;max-height:92vh;object-fit:contain}.chat-viewer .close-viewer{position:fixed;top:calc(14px + env(safe-area-inset-top));right:16px;width:42px;height:42px;border:0;border-radius:50%;background:rgba(255,255,255,.14);color:#fff;font-size:25px}
 .comment-item{display:flex;gap:9px;padding:10px 4px;border-bottom:1px solid var(--line)}
+.chat-reply{border-left-width:3px!important;background:rgba(0,0,0,.16)!important;border-radius:7px!important;padding:6px 8px!important;margin-bottom:7px!important;font-size:11.5px!important;box-shadow:none!important}
 .comment-item.reply{margin-left:34px;border-left:2px solid var(--line);padding-left:10px}
 .comment-body{min-width:0;flex:1}.comment-text{overflow-wrap:anywhere;line-height:1.45}
 .comment-actions{display:flex;gap:14px;margin-top:6px;font-size:12px;color:var(--text-dim)}
@@ -516,11 +517,13 @@ html.chat-open,body.chat-open{overflow:hidden!important;overscroll-behavior:none
 .calc.empty{background:transparent; border:none;}
 .calc.futuro{background:color-mix(in srgb,#fff 8%, var(--surface)); color:var(--text-dim);}
 .calc.sem{background:var(--surface); color:var(--text);}
+.calc.passado{background:color-mix(in srgb,var(--surface) 72%,#000);color:color-mix(in srgb,var(--text-dim) 70%,#000);border-color:transparent}
 .calc.ok{background:color-mix(in srgb,var(--ok) 26%, var(--surface)); color:var(--ok); border-color:transparent;}
 .calc.fail{background:color-mix(in srgb,var(--accent) 26%, var(--surface)); color:var(--accent2); border-color:transparent;}
 .calc.hoje{box-shadow:0 0 0 2px var(--accent);}
-.callegend{display:flex; gap:12px; margin-top:12px; font-size:11px; color:var(--text-dim); flex-wrap:wrap;}
+.callegend{display:flex;gap:7px;margin-top:14px;font-size:11px;color:var(--text-dim);flex-wrap:wrap}
 .callegend span{display:inline-flex; align-items:center; gap:4px;}
+.callegend span{padding:5px 8px;border:1px solid var(--line);border-radius:999px;background:var(--surface)}
 .callegend i{display:inline-block; width:12px; height:12px; border-radius:3px;}
 .callegend .lok{background:var(--ok);} .callegend .lfail{background:var(--accent);} .callegend .lfut{background:var(--line);}
 .callegend .ldot{background:var(--accent); border-radius:50%; width:8px; height:8px;}
@@ -835,7 +838,7 @@ setInterval(()=>{ if(authToken&&offQueue().length&&navigator.onLine) flushQueue(
 
 /* id único DESTE aparelho/aba — usado pra não ecoar de volta a própria escrita no sync ao vivo */
 const CLIENT_ID = (Math.random().toString(36).slice(2)+'-'+Date.now().toString(36));
-const APP_BUILD = 'redzone-v139';
+const APP_BUILD = 'redzone-v140';
 // evita re-render que rouba o foco enquanto a pessoa digita (o dado já foi aplicado em S de qualquer forma)
 function _syncPodeRender(){ const a=document.activeElement; return !(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||'')); }
 // ANTI-LOOP: ao aplicar uma mudança que VEIO do servidor, um re-render pode disparar escritas de
@@ -1947,9 +1950,9 @@ function patenteSheet(){
 }
 function avatarPadrao(genero){ return (genero==='f'||genero==='m') ? `avatar-${genero==='f'?'fem':'masc'}.png` : null; }
 function avatarHTML(p, cls){
-  if(p.foto) return `<img class="${cls}" src="${p.foto}" alt="">`;
+  if(p.foto) return `<img class="${cls}" src="${p.foto}" alt="" draggable="false">`;
   const ap=avatarPadrao(p.genero);
-  if(ap) return `<img class="${cls}" src="${ap}" alt="" style="object-fit:cover;background:#0c0d11">`;
+  if(ap) return `<img class="${cls}" src="${ap}" alt="" draggable="false" style="object-fit:cover;background:#0c0d11">`;
   const fs = cls==='avatar'?30:(cls.includes('sm')?16:14);
   return `<div class="${cls}" style="display:flex;align-items:center;justify-content:center;font-weight:800;font-size:${fs}px;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#fff">${esc((p.nome||'?')[0].toUpperCase())}</div>`;
 }
@@ -3202,6 +3205,7 @@ function renderAlimRelatorio(){
 ========================================================================= */
 let rotClearMode=false; let rotClearSel=new Set();
 let rotAddMode=false; let rotAddSel=new Set();
+let rotCalIgnorarCliqueAte=0;
 function renderRotina(){
   const edit=S.config.editMode;
   const podeDesfazer=!!ultimoBackupLimpezaRotina();
@@ -3316,7 +3320,7 @@ function renderCalendarioRotina(){
     else { // passado
       if(st.total>0 && st.done>=st.total){ cls='full'; content='✅'; }          // 100%: ✅
       else if(st.total>0){ cls='inc'; content='✕'; }                            // incompleto: X
-      else { cls='sem'; }
+      else { cls='passado'; }
     }
     if(iso===hoje) cls+=' hoje';
     if((rotClearMode&&rotClearSel.has(iso))||(rotAddMode&&rotAddSel.has(iso))) cls+=' selc';
@@ -3330,14 +3334,15 @@ function renderCalendarioRotina(){
     </div>
     <div class="calgrid caldow">${['D','S','T','Q','Q','S','S'].map(x=>`<div class="caldw">${x}</div>`).join('')}</div>
     <div class="calgrid">${cells}</div>
-    <div class="callegend"><span><i class="lok"></i>Concluído</span><span><i class="lfail"></i>Incompleto</span><span><i class="lfut"></i>Futuro</span></div>
+    <div class="callegend"><span><i class="lok"></i>Concluído</span><span><i class="lfail"></i>Incompleto</span><span><i class="lfut"></i>Futuro</span><span>Passado sem registro</span></div>
     ${rotAddMode?`<button class="btn" id="rotAddConfirm" style="margin-top:12px">＋ Planejar várias atividades${rotAddSel.size?` em ${rotAddSel.size} dia(s)`:''}</button>`:''}
     ${rotClearMode?`<button class="btn" id="rotLimparConfirm" style="margin-top:12px">Continuar e escolher atividades (${rotClearSel.size} dia(s))</button>`:''}
   </div>`;
   $('#rotPrev').onclick=()=>{ rotCalM--; if(rotCalM<0){ rotCalM=11; rotCalY--; } renderCalendarioRotina(); };
   $('#rotNext').onclick=()=>{ rotCalM++; if(rotCalM>11){ rotCalM=0; rotCalY++; } renderCalendarioRotina(); };
-  {const cal=$('#rotinaCal .calbox');let x0=null,y0=null;cal.addEventListener('pointerdown',e=>{if(e.target.closest('button,.calc'))return;x0=e.clientX;y0=e.clientY});cal.addEventListener('pointerup',e=>{if(x0===null)return;const dx=e.clientX-x0,dy=e.clientY-y0;x0=y0=null;if(Math.abs(dx)<55||Math.abs(dx)<Math.abs(dy)*1.3)return;if(dx<0)$('#rotNext').click();else $('#rotPrev').click()});cal.addEventListener('pointercancel',()=>{x0=y0=null});}
+  {const cal=$('#rotinaCal .calbox');let x0=null,y0=null;cal.addEventListener('pointerdown',e=>{if(e.target.closest('button'))return;x0=e.clientX;y0=e.clientY});cal.addEventListener('pointerup',e=>{if(x0===null)return;const dx=e.clientX-x0,dy=e.clientY-y0;x0=y0=null;if(Math.abs(dx)<55||Math.abs(dx)<Math.abs(dy)*1.3)return;rotCalIgnorarCliqueAte=Date.now()+500;if(dx<0)$('#rotNext').click();else $('#rotPrev').click()});cal.addEventListener('pointercancel',()=>{x0=y0=null});}
   $$('#rotinaCal [data-caldia]').forEach(c=>c.onclick=()=>{
+    if(Date.now()<rotCalIgnorarCliqueAte)return;
     const iso=c.dataset.caldia;
     if(rotClearMode){ if(rotClearSel.has(iso)) rotClearSel.delete(iso); else rotClearSel.add(iso); renderCalendarioRotina(); }
     else if(rotAddMode){ if(rotAddSel.has(iso)) rotAddSel.delete(iso); else rotAddSel.add(iso); renderCalendarioRotina(); }
@@ -3534,10 +3539,12 @@ function renderRotinaList(){
     return `<div class="rowitem ${done?'done':''}" ${!r.hora?`data-rot-order="${r.id}"`:''}>
       ${edit&&!r.hora?`<button type="button" class="rotina-drag" data-rot-drag="${r.id}" aria-label="Arrastar ${esc(r.nome)} para reordenar" title="Arraste para mudar a ordem">≡</button>`:''}
       <div class="chk" data-togh="${r.id}">${done?'✓':''}</div>
-      <div class="txt"><div class="t">${esc(r.nome)}</div><div class="s mono">${r.hora||'--:--'}</div>${r.descricao?`<div class="activity-description">${esc(r.descricao)}</div>`:''}${r.midiaUrl?`<img class="chat-media" src="${esc(r.midiaUrl)}" alt="Comprovação da atividade">`:''}</div>
+      <div class="txt"><div class="t">${esc(r.nome)}</div><div class="s mono">${r.hora||'--:--'}</div>${r.descricao?`<div class="activity-description">${esc(r.descricao)}</div>`:''}${r.provaUrl?(r.provaTipo==='video'?`<video class="chat-media" src="${esc(r.provaUrl)}" controls playsinline></video>`:`<img class="chat-media" src="${esc(r.provaUrl)}" alt="Registro da atividade" draggable="false">`):''}</div>
+      ${!done?`<button class="pencil" data-toghmedia="${r.id}" aria-label="Concluir com foto ou vídeo" title="Concluir com mídia">📷</button>`:''}
       ${edit?`<button class="pencil" data-edh="${r.id}">✏️</button><button class="pencil" data-delh="${r.id}">🗑️</button>`:''}
     </div>`; }).join('') : `<p class="muted small">Sem hábitos. ${edit?'Adicione (ex: Tomar banho 06:30).':'Ative o modo edição pra montar.'}</p>`;
   $$('#rotinaList [data-togh]').forEach(b=>b.onclick=()=>{ const r=(S.rotinaDias[hoje]||[]).find(x=>x.id===b.dataset.togh); if(!r) return; r.done=!r.done; r.updatedAt=Date.now()+(typeof _serverClockOffset==='number'?_serverClockOffset:0); atualizaRotinaHist(); renderRotinaList(); manageSiren(); if($('#rotinaCal')) renderCalendarioRotina(); save('rotina:dias'); });
+  $$('#rotinaList [data-toghmedia]').forEach(b=>b.onclick=()=>{const r=(S.rotinaDias[hoje]||[]).find(x=>x.id===b.dataset.toghmedia);if(!r)return;const input=document.createElement('input');input.type='file';input.accept='image/*,video/*';input.onchange=async()=>{const f=input.files?.[0];if(!f)return;toast('Enviando registro…');try{const up=await uploadMedia(f);r.provaUrl=up.url;r.provaTipo=up.tipo;r.done=true;r.updatedAt=Date.now()+(typeof _serverClockOffset==='number'?_serverClockOffset:0);atualizaRotinaHist();renderRotinaList();manageSiren();if($('#rotinaCal'))renderCalendarioRotina();await save('rotina:dias');toast('Atividade concluída com mídia. ✅')}catch(e){toast(e.message||'Não foi possível enviar a mídia.')}};input.click()});
   if(edit){
     $$('#rotinaList [data-edh]').forEach(b=>b.onclick=()=>editHabitoSheet(b.dataset.edh));
     $$('#rotinaList [data-delh]').forEach(b=>b.onclick=()=>{const a=(S.rotinaDias[hoje]||[]).find(x=>String(x.id)===String(b.dataset.delh));if(a)excluirAtividadeRotinaSheet(hoje,a);});
@@ -3750,7 +3757,7 @@ async function pullRefreshFeed(){
 }
 // puxar-pra-baixo no topo do feed (celular)
 let _ptStartY=null, _ptPull=false;
-window.addEventListener('touchstart', e=>{ if(activeTab==='batalha' && !$('#overlay')?.classList.contains('show') && !$('#storyview')?.classList.contains('on') && (window.scrollY||document.documentElement.scrollTop||0)<=2){ _ptStartY=e.touches[0].clientY; _ptPull=false; } else _ptStartY=null; }, {passive:true});
+window.addEventListener('touchstart', e=>{ if(activeTab==='batalha' && !document.documentElement.classList.contains('chat-open') && !$('#overlay')?.classList.contains('show') && !$('#storyview')?.classList.contains('on') && !document.querySelector('.media-lightbox,.chat-viewer,.system-notice') && (window.scrollY||document.documentElement.scrollTop||0)<=2){ _ptStartY=e.touches[0].clientY; _ptPull=false; } else _ptStartY=null; }, {passive:true});
 window.addEventListener('touchmove', e=>{ if(_ptStartY!=null){ const dy=e.touches[0].clientY-_ptStartY; if(dy>70) _ptPull=true; } }, {passive:true});
 window.addEventListener('touchend', ()=>{ if(_ptPull){ _ptPull=false; _ptStartY=null; pullRefreshFeed(); } else _ptStartY=null; });
 async function renderBatalha(){
