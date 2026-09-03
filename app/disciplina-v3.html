@@ -813,7 +813,7 @@ setInterval(()=>{ if(authToken&&offQueue().length&&navigator.onLine) flushQueue(
 
 /* id único DESTE aparelho/aba — usado pra não ecoar de volta a própria escrita no sync ao vivo */
 const CLIENT_ID = (Math.random().toString(36).slice(2)+'-'+Date.now().toString(36));
-const APP_BUILD = 'redzone-v126';
+const APP_BUILD = 'redzone-v127';
 // evita re-render que rouba o foco enquanto a pessoa digita (o dado já foi aplicado em S de qualquer forma)
 function _syncPodeRender(){ const a=document.activeElement; return !(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||'')); }
 // ANTI-LOOP: ao aplicar uma mudança que VEIO do servidor, um re-render pode disparar escritas de
@@ -2215,18 +2215,20 @@ function provaDoDia(iso){
 function renderTreinoWeeks(){
   const now=brasiliaNow(); now.setHours(0,0,0,0);
   const cwi=currentWeekIndex();
+  const edit=!!S.config.editMode;
   const atuais=[], futuras=[], passadas=[];
   S.treinoWeeks.forEach((w,i)=>{
     const start=new Date(w.startISO); start.setHours(0,0,0,0);
     const end=new Date(start); end.setDate(end.getDate()+7);
-    const locked = start>now;
+    const future = start>now;
     // dias feitos derivados dos LOGS (não do exec, que podia dessincronizar)
     const diasFeitos = DIAS.map((d,di)=> treinouNoDia(weekDayISO(w.startISO,di)));
     const done = diasFeitos.filter(Boolean).length;
-    const concluida = !locked && done>=7;            // ✅ SÓ quando treinou os 7 dias
-    const encerrada = !locked && !concluida && end<=now;   // janela passou mas NÃO fez tudo
-    const meta={w,i,start,end,locked,diasFeitos,done,concluida,encerrada};
-    if(locked) futuras.push(meta); else if(end<=now){ if(done>0) passadas.push(meta); } else atuais.push(meta);
+    const locked = !edit && future;
+    const concluida = !future && done>=7;            // ✅ SÓ quando treinou os 7 dias
+    const encerrada = !future && !concluida && end<=now;   // janela passou mas NÃO fez tudo
+    const meta={w,i,start,end,future,locked,diasFeitos,done,concluida,encerrada};
+    if(future) futuras.push(meta); else if(end<=now){ if(done>0) passadas.push(meta); } else atuais.push(meta);
   });
   let h='';
   atuais.forEach(({w,i,diasFeitos,done})=>{
@@ -2235,8 +2237,14 @@ function renderTreinoWeeks(){
     h+=`<div class="week atual" data-weekview="${i}"><div class="week-head"><h3>Semana ${i+1} • ATUAL</h3><span class="small muted">${done}/7 dias</span></div>
       <div class="weekstrip">${strip}</div><div style="padding:2px 14px 12px" class="small muted">Início ${new Date(w.startISO+'T00:00:00').toLocaleDateString('pt-BR')}. Toque para ver tempos, exercícios e comprovações.</div></div>`;
   });
-  if(futuras.length) h+='<div class="weeks-block-title">🔒 Próximas semanas</div>';
-  futuras.forEach(({i,start})=>{
+  if(futuras.length) h+=`<div class="weeks-block-title">${edit?'✏️':'🔒'} Próximas semanas${edit?' · LIBERADAS PARA EDIÇÃO':''}</div>`;
+  futuras.forEach(({i,start,locked,diasFeitos,done})=>{
+    if(edit){
+      const strip=DIAS.map((d,di)=>`<div class="wd ${diasFeitos[di]?'ok':''}"><b>${diasFeitos[di]?'✓':DIAS_AB[d][0]}</b>${DIAS_AB[d]}</div>`).join('');
+      h+=`<div class="week atual" data-weekview="${i}"><div class="week-head"><h3>Semana ${i+1}</h3><span class="small" style="color:var(--accent2)">✏️ EDITAR</span></div>
+        <div class="weekstrip">${strip}</div><div style="padding:2px 14px 12px" class="small muted">Modo edição: semana liberada para preparar a rotina.</div></div>`;
+      return;
+    }
       const esc1=ESC_LOCKED[i%ESC_LOCKED.length];
       const secs=Math.max(0,Math.floor((start-new Date())/1000));
       h+=`<div class="week locked" data-lockedweek="${i}"><div class="week-head"><h3>Semana ${i+1}</h3><span>🔒</span></div>
