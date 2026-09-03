@@ -813,7 +813,7 @@ setInterval(()=>{ if(authToken&&offQueue().length&&navigator.onLine) flushQueue(
 
 /* id único DESTE aparelho/aba — usado pra não ecoar de volta a própria escrita no sync ao vivo */
 const CLIENT_ID = (Math.random().toString(36).slice(2)+'-'+Date.now().toString(36));
-const APP_BUILD = 'redzone-v127';
+const APP_BUILD = 'redzone-v128';
 // evita re-render que rouba o foco enquanto a pessoa digita (o dado já foi aplicado em S de qualquer forma)
 function _syncPodeRender(){ const a=document.activeElement; return !(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||'')); }
 // ANTI-LOOP: ao aplicar uma mudança que VEIO do servidor, um re-render pode disparar escritas de
@@ -1928,7 +1928,7 @@ function verFotoPerfil(){
 }
 function resumoHojeHTML(){
   const dia = hojeDia();
-  const treinoPlan = (S.treinoTemplate[dia]||[]);
+  const treinoPlan = planoTreinoAtual(dia);
   const treinoFeitos = treinoPlan.filter(ex=>treinoFeitoHoje(ex.id)).length;
   const estudoPlan = (S.estudoSemana[dia]||[]);
   const estudoFeitos = estudoPlan.filter(mid=>estudoFeitoHoje(mid)).length;
@@ -1961,7 +1961,7 @@ function resumoDetalheSheet(tipo){
   let titulo='', corpo='';
   if(tipo==='treino'){
     titulo='Treino de hoje';
-    const plan=(S.treinoTemplate[dia]||[]);
+    const plan=planoTreinoAtual(dia);
     corpo = plan.length ? plan.map(ex=>{ const logs=(S.treinoLogs||[]).filter(l=>l.dateISO===hoje&&l.exId===ex.id),f=logs.length>0,min=f?minsHojeItem(S.treinoLogs,'exId',ex.id):0,logMidia=[...logs].reverse().find(l=>l.prova);
       return `<div class="rowitem ${f?'done':''}"><div class="chk">${f?'✓':''}</div><div class="txt"><div class="t">${esc(ex.nome)}</div><div class="s">${f?`✅ Feito · ${min} min`:'⏳ Ainda não feito hoje'}</div></div>${miniaturaRegistro(logMidia)}</div>`;
     }).join('') : '<p class="muted small">Nenhum treino planejado pra hoje.</p>';
@@ -2028,6 +2028,20 @@ function editToggleHint(){ return S.config.editMode ? `<button class="chip" oncl
    TREINOS
 ========================================================================= */
 let treinoDiaSel = hojeDia();
+let treinoSemanaSel = -1;
+function clonarPlanoTreino(plano){
+  return Object.fromEntries(DIAS.map(d=>[d,(plano?.[d]||[]).map(ex=>({...ex}))]));
+}
+function planoTreinoDaSemana(i,criar=false){
+  const w=S.treinoWeeks?.[i];
+  if(!w) return S.treinoTemplate;
+  if(!w.template&&criar) w.template=clonarPlanoTreino(S.treinoTemplate);
+  return w.template||S.treinoTemplate;
+}
+function planoTreinoAtual(dia){
+  const wi=weekContainingToday();
+  return (planoTreinoDaSemana(wi,false)?.[dia]||[]);
+}
 // segunda-feira (ISO) da semana que contém `iso` — as semanas de treino são Seg→Dom
 function mondayOfISO(iso){ const d=new Date(iso+'T00:00:00'); const dow=(d.getDay()+6)%7; d.setDate(d.getDate()-dow); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
 function addDiasISO(iso,n){ const d=new Date(iso+'T00:00:00'); d.setDate(d.getDate()+n); return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`; }
@@ -2057,6 +2071,8 @@ function renderTreinos(){
   treinoDiaSel=hojeDia();
   ensureWeeksCoverToday();
   const edit=S.config.editMode;
+  const atual=weekContainingToday();
+  if(!edit||treinoSemanaSel<0||!S.treinoWeeks[treinoSemanaSel]) treinoSemanaSel=Math.max(0,atual);
   const wk = S.treinoWeeks;
   const html = `
     ${topbar('TREINOS')}
@@ -2076,7 +2092,7 @@ function renderTreinos(){
     <div id="treinoRelatorio"></div>
   `;
   $('#scr-treinos').innerHTML=html;
-  $$('#treinoDays .day').forEach(c=> c.onclick=()=>{ const dia=c.dataset.d; if(!podeExecutarDia(dia,true,'TREINOS')) return; treinoDiaSel=dia; renderTreinoDia(); $$('#treinoDays .day').forEach(x=>x.classList.toggle('sel',x.dataset.d===treinoDiaSel)); });
+  $$('#treinoDays .day').forEach(c=> c.onclick=()=>{ const dia=c.dataset.d; if(!edit&&!podeExecutarDia(dia,true,'TREINOS')) return; treinoDiaSel=dia; renderTreinoDia(); $$('#treinoDays .day').forEach(x=>x.classList.toggle('sel',x.dataset.d===treinoDiaSel)); });
   if(edit) $('#addWeek').onclick=addTreinoWeek;
   $('#addRec').onclick=()=>editRecordeSheet(null);
   renderTreinoDia(); renderTreinoWeeks(); renderRecordes(); renderRelatorio('treinoRelatorio','treino');
@@ -2138,8 +2154,10 @@ function podeExecutarDia(dia, avisar=true, area=''){
 
 function renderTreinoDia(){
   const edit=S.config.editMode; const d=treinoDiaSel;
-  const list=S.treinoTemplate[d]||[];
-  let h=`<div class="card"><div class="h">${DIAS_NOME[d]} — objetivo do dia ${edit?`<button class="btn sm" id="addExec">＋ exercício</button>`:''}</div>`;
+  const plano=edit?planoTreinoDaSemana(treinoSemanaSel,true):planoTreinoDaSemana(weekContainingToday(),false);
+  const list=plano[d]||[];
+  const semana=edit?`Semana ${treinoSemanaSel+1} · `:'';
+  let h=`<div class="card"><div class="h">${semana}${DIAS_NOME[d]} — objetivo do dia ${edit?`<button class="btn sm" id="addExec">＋ exercício</button>`:''}</div>`;
   if(!list.length) h+=`<p class="muted small">Nada definido pra ${DIAS_NOME[d]}. ${edit?'Adicione um exercício.':'Ative o modo edição pra montar.'}</p>`;
   list.forEach(ex=>{
     const feito = treinoFeitoHoje(ex.id);
@@ -2161,13 +2179,14 @@ function renderTreinoDia(){
   ativarMiniaturasRegistro($('#treinoDia'));
   if(edit){ $('#addExec').onclick=()=>editExecSheet(d,null);
     $$('#treinoDia [data-edex]').forEach(b=>b.onclick=()=>editExecSheet(d,b.dataset.edex));
-    $$('#treinoDia [data-delex]').forEach(b=>b.onclick=()=>{ S.treinoTemplate[d]=S.treinoTemplate[d].filter(x=>x.id!==b.dataset.delex); save('treino:tpl'); renderTreinoDia(); });
+    $$('#treinoDia [data-delex]').forEach(b=>b.onclick=()=>{ plano[d]=plano[d].filter(x=>x.id!==b.dataset.delex); save('treino:weeks'); renderTreinoDia(); });
   } else {
     $$('#treinoDia [data-startex]').forEach(b=>b.onclick=()=>{ if(!podeExecutarDia(d)) return; startSession('treino', d, b.dataset.startex); });
   }
 }
 function editExecSheet(dia, exId){
-  const ex = exId ? S.treinoTemplate[dia].find(x=>x.id===exId) : {nome:'',desc:''};
+  const plano=planoTreinoDaSemana(treinoSemanaSel,true);
+  const ex = exId ? plano[dia].find(x=>x.id===exId) : {nome:'',desc:''};
   openSheet(`
     <h3>${exId?'Editar':'Novo'} exercício — ${DIAS_NOME[dia]}</h3>
     <div class="field"><label>Nome do exercício</label><input id="exNome" value="${esc(ex.nome)}" placeholder="Ex: Corrida 5km"></div>
@@ -2190,14 +2209,14 @@ function editExecSheet(dia, exId){
     const nome=$('#exNome').value.trim(), desc=$('#exDesc').value.trim();
     if(!nome) return toast('Dê um nome ao exercício.');
     if(exId){ ex.nome=nome; ex.desc=desc; ex.videoUrl=videoUrl; }
-    else S.treinoTemplate[dia].push({id:uid(), nome, desc, videoUrl});
-    save('treino:tpl'); closeSheet(); renderTreinoDia();
+    else plano[dia].push({id:uid(), nome, desc, videoUrl});
+    save('treino:weeks'); closeSheet(); renderTreinoDia();
   };
 }
 function addTreinoWeek(){
   const last=S.treinoWeeks[S.treinoWeeks.length-1];
   const start=new Date(last.startISO); start.setDate(start.getDate()+7);
-  S.treinoWeeks.push({id:uid(), startISO:start.toISOString().slice(0,10), exec:{}});
+  S.treinoWeeks.push({id:uid(), startISO:start.toISOString().slice(0,10), exec:{}, template:clonarPlanoTreino(last.template||S.treinoTemplate)});
   save('treino:weeks'); renderTreinoWeeks();
 }
 // data ISO do dia `di` (0=seg..6=dom) de uma semana que começa em startISO
@@ -2260,7 +2279,16 @@ function renderTreinoWeeks(){
   }
   $('#treinoWeeks').innerHTML=h;
   $$('#treinoWeeks [data-lockedweek]').forEach(el=> el.onclick=()=>esculachoTravada(el, +el.dataset.lockedweek));
-  $$('#treinoWeeks [data-weekview]').forEach(el=> el.onclick=()=>weekProgressSheet(+el.dataset.weekview));
+  $$('#treinoWeeks [data-weekview]').forEach(el=> el.onclick=()=>{
+    const i=+el.dataset.weekview;
+    if(S.config.editMode){
+      treinoSemanaSel=i; treinoDiaSel='seg';
+      $$('#treinoDays .day').forEach(x=>x.classList.toggle('sel',x.dataset.d===treinoDiaSel));
+      renderTreinoDia();
+      $('#treinoDia')?.scrollIntoView({behavior:'smooth',block:'center'});
+      toast(`Semana ${i+1} selecionada para edição.`);
+    } else weekProgressSheet(i);
+  });
   clearInterval(window._cdTimer); window._cdTimer=setInterval(updateCountdowns,1000);
 }
 // ao tocar na semana travada: tremor + esculacho por ~5s
@@ -2335,7 +2363,7 @@ let timerRAF=null;
 function startSession(tipo, dia, refId, grupoId=null){
   if(!podeExecutarDia(dia)) return;
   timerSession = { tipo, dia, refId, grupoId, startedAt:Date.now(), elapsedMs:0, pausedMs:0, pausedAt:null, running:true };
-  const nome = tipo==='treino' ? (S.treinoTemplate[dia].find(x=>x.id===refId)?.nome||'Treino')
+  const nome = tipo==='treino' ? (planoTreinoAtual(dia).find(x=>x.id===refId)?.nome||'Treino')
                                : (S.materias.find(m=>m.id===refId)?.nome||'Estudo');
   const m=tipo==='estudo'?S.materias.find(x=>x.id===refId):null, grupo=grupoId?gruposMateria(m).find(g=>String(g.id)===String(grupoId)):null;
   $('#timerTitle').textContent = (tipo==='treino'?'SESSÃO DE TREINO — ':'SESSÃO DE ESTUDO — ')+nome.toUpperCase()+(grupo?' · '+grupo.nome.toUpperCase():'');
@@ -2392,7 +2420,7 @@ function posTreino(sess){
     <button class="btn ok" id="finTreino">✅ Marcar treino como concluído</button>
   `);
   let prova=null;
-  const nomeEx=S.treinoTemplate[sess.dia]?.find(x=>x.id===sess.refId)?.nome||'Treino';
+  const nomeEx=planoTreinoAtual(sess.dia).find(x=>x.id===sess.refId)?.nome||'Treino';
   renderProvaPicker($('#provaArea'), (dataUrl,kind)=>{ prova={dataUrl,kind}; });
   $('#finTreino').onclick=()=>{
     if(!podeExecutarDia(sess.dia)) return closeSheet();
