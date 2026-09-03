@@ -14,4 +14,6 @@ assert.match(html,/function editarDescricaoSemana\(i\)/);
 assert.match(html,/function duplicarSemanaTreino\(i\)/);
 assert.match(html,/function moverSemanaTreino\(i,dir\)/);
 assert.match(html,/function excluirSemanaTreino\(i\)/);
+assert.match(html,/chave==='treino:weeks'/);
+assert.match(html,/dias planejados/);
 console.log('TREINOS_SEMANAS_TEST=OK');

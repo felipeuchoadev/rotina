@@ -815,7 +815,7 @@ setInterval(()=>{ if(authToken&&offQueue().length&&navigator.onLine) flushQueue(
 
 /* id único DESTE aparelho/aba — usado pra não ecoar de volta a própria escrita no sync ao vivo */
 const CLIENT_ID = (Math.random().toString(36).slice(2)+'-'+Date.now().toString(36));
-const APP_BUILD = 'redzone-v129';
+const APP_BUILD = 'redzone-v130';
 // evita re-render que rouba o foco enquanto a pessoa digita (o dado já foi aplicado em S de qualquer forma)
 function _syncPodeRender(){ const a=document.activeElement; return !(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||'')); }
 // ANTI-LOOP: ao aplicar uma mudança que VEIO do servidor, um re-render pode disparar escritas de
@@ -2005,6 +2005,10 @@ function detalhesHistorico(chave,v){
   else if(chave==='rotina:dias')Object.entries(v||{}).sort().slice(-14).reverse().forEach(([d,a])=>add(`${d} — ${(Array.isArray(a)?a:[]).map(x=>`${x.done?'✅':'◻️'} ${x.nome}${x.hora?' ('+x.hora+')':''}`).join(' · ')||'sem atividades'}`));
   else if(chave==='estudo:materias')(Array.isArray(v)?v:Object.values(v||{})).forEach(x=>add(`${x.nome||x.materia||'Matéria'}${Array.isArray(x.grupos)&&x.grupos.length?' — '+x.grupos.map(g=>g.nome).join(' / '):''}${Array.isArray(x.conteudos)?' — '+x.conteudos.map(c=>c.nome||c).join(', '):''}`));
   else if(chave==='treino:tpl')Object.entries(v||{}).forEach(([dia,a])=>add(`${dia.toUpperCase()} — ${(Array.isArray(a)?a:[]).map(x=>x.nome||x).join(', ')||'descanso'}`));
+  else if(chave==='treino:weeks')(Array.isArray(v)?v:[]).forEach((w,i)=>{
+    const plano=w.template||{}, dias=DIAS.filter(d=>Array.isArray(plano[d])&&plano[d].length), total=dias.reduce((n,d)=>n+plano[d].length,0);
+    add(`Semana ${i+1}${w.descricao?' — '+w.descricao:''} · ${w.startISO?new Date(w.startISO+'T00:00:00').toLocaleDateString('pt-BR'):'sem data'} · ${dias.length}/7 dias planejados · ${total} exercício${total===1?'':'s'}`);
+  });
   else if(Array.isArray(v))v.slice(-10).forEach(x=>add(typeof x==='object'?(x.nome||x.titulo||x.dateISO||JSON.stringify(x)):x));
   else if(chave==='perfil:dados'){ add(`Nome: ${v?.nome||'não informado'}`); add(`Usuário: @${v?.username||'não informado'}`); add(`Peso: ${v?.peso??'-'} kg`); add(`Altura: ${v?.altura?Number(v.altura/100).toFixed(2).replace('.',','):'-'} m`); }
   else if(chave==='config'){ const nomes={notif:'Notificações',tryHard:'Modo Try Hard',editMode:'Modo de edição'}; Object.entries(nomes).forEach(([k,n])=>{if(v&&k in v)add(`${n}: ${v[k]?'ativado':'desativado'}`)}); }
