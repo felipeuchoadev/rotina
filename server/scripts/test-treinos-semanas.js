@@ -18,4 +18,7 @@ assert.match(html,/function excluirSemanaTreino\(i\)/);
 assert.match(html,/chave==='treino:weeks'/);
 assert.match(html,/dias planejados/);
 assert.match(html,/class="natural-video"/);
+assert.match(html,/id="timerDemoVideo"/);
+assert.match(html,/exercicio\?\.videoUrl/);
+assert.match(html,/classList\.add\('has-demo'\)/);
 console.log('TREINOS_SEMANAS_TEST=OK');
