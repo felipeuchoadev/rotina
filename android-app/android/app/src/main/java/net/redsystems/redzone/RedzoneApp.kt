@@ -1,8 +1,10 @@
 package net.redsystems.redzone
 
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -10,19 +12,27 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.delay
+import java.time.LocalTime
+import java.time.format.DateTimeFormatter
 
-private val Red = Color(0xFFFF5358)
-private val Dark = Color(0xFF090A0E)
-private val Panel = Color(0xFF17191F)
-private val Line = Color(0xFF292C35)
-private val Muted = Color(0xFFA6A8B1)
+private val Bg = Color(0xFF08090C)
+private val Panel = Color(0xFF15171D)
+private val Panel2 = Color(0xFF1C1F27)
+private val Edge = Color(0xFF292C35)
+private val Red = Color(0xFFFF5559)
+private val DeepRed = Color(0xFF3A090C)
+private val Muted = Color(0xFF9B9DA7)
 private data class Sector(val name: String, val icon: ImageVector)
 private val sectors = listOf(
     Sector("Início", Icons.Default.Home), Sector("Treinos", Icons.Default.FitnessCenter),
@@ -32,82 +42,109 @@ private val sectors = listOf(
 )
 
 @Composable fun RedzoneApp() {
-    var selected by remember { mutableIntStateOf(0) }
-    MaterialTheme(colorScheme = darkColorScheme(primary = Red, background = Dark, surface = Panel)) {
-        Scaffold(containerColor = Dark, topBar = { Header(sectors[selected].name) },
-            bottomBar = { BottomSectors(selected) { selected = it } }) { inset ->
-            Box(Modifier.fillMaxSize().padding(inset).background(Dark)) {
-                if (selected == 0) Home() else SectorPage(sectors[selected])
-            }
-        }
-    }
-}
-
-@Composable private fun Header(section: String) = Surface(color = Color(0xFF0E0F13), shadowElevation = 8.dp) {
-    Row(Modifier.fillMaxWidth().statusBarsPadding().height(58.dp).padding(horizontal = 15.dp), verticalAlignment = Alignment.CenterVertically) {
-        Text("RED", color = Red, fontSize = 21.sp, fontWeight = FontWeight.Black)
-        Text("ZONE", color = Color.White, fontSize = 21.sp, fontWeight = FontWeight.Black)
-        Spacer(Modifier.width(10.dp)); Box(Modifier.width(1.dp).height(22.dp).background(Line)); Spacer(Modifier.width(10.dp))
-        Text(section.uppercase(), color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Bold)
-        Spacer(Modifier.weight(1f)); Icon(Icons.Default.Notifications, "Notificações", tint = Color.White)
-    }
-}
-
-@Composable private fun BottomSectors(selected: Int, choose: (Int) -> Unit) = Surface(color = Color(0xFF101116), shadowElevation = 10.dp) {
-    Row(Modifier.fillMaxWidth().navigationBarsPadding().height(64.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
-        sectors.forEachIndexed { i, item ->
-            IconButton({ choose(i) }, Modifier.weight(1f).fillMaxHeight()) {
-                Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Icon(item.icon, item.name, tint = if (i == selected) Red else Muted, modifier = Modifier.size(20.dp))
-                    Text(item.name, color = if (i == selected) Red else Muted, fontSize = 7.5.sp, maxLines = 1, overflow = TextOverflow.Clip)
+    var page by remember { mutableIntStateOf(0) }
+    MaterialTheme(colorScheme = darkColorScheme(primary = Red, background = Bg, surface = Panel)) {
+        Scaffold(containerColor = Bg, topBar = { Header(sectors[page].name) }, bottomBar = { BottomNav(page) { page = it } }) { inset ->
+            Box(Modifier.fillMaxSize().padding(inset).background(Brush.verticalGradient(listOf(DeepRed.copy(.38f), Bg), endY = 420f))) {
+                when (page) {
+                    0 -> Dashboard()
+                    1 -> ModulePage(sectors[1], listOf("Hoje", "Plano", "Histórico"), "Treino de hoje", listOf("Aquecimento", "Exercícios", "Progresso"))
+                    2 -> ModulePage(sectors[2], listOf("Hoje", "Plano", "Água"), "Alimentação de hoje", listOf("Refeições", "Água", "Metas"))
+                    3 -> ModulePage(sectors[3], listOf("Hoje", "Matérias", "Relatório"), "Estudos", listOf("Próximo conteúdo", "Banco de matérias", "Horas estudadas"))
+                    4 -> ModulePage(sectors[4], listOf("Hoje", "Calendário", "Alarmes"), "Rotina de hoje", listOf("Atividades", "Calendário", "Despertadores"))
+                    5 -> ModulePage(sectors[5], listOf("Feed", "Conversas", "Ranking"), "Batalha", listOf("Publicações", "Mensagens", "Competições"))
+                    else -> ModulePage(sectors[6], listOf("Resumo", "Conquistas", "Ajustes"), "Seu perfil", listOf("Patente", "Histórico de XP", "Configurações"))
                 }
             }
         }
     }
 }
 
-@Composable private fun Home() = Column(Modifier.fillMaxSize().padding(13.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
-    Text("Olá, recruta", color = Color.White, fontSize = 23.sp, fontWeight = FontWeight.Black)
-    Text("Seu dia em uma única visão", color = Muted, fontSize = 12.sp)
+@Composable private fun Header(section: String) {
+    var time by remember { mutableStateOf(LocalTime.now()) }
+    LaunchedEffect(Unit) { while (true) { time = LocalTime.now(); delay(1000) } }
+    Surface(color = Color(0xFF0A0B0F), shadowElevation = 10.dp) {
+        Row(Modifier.fillMaxWidth().statusBarsPadding().height(61.dp).padding(horizontal = 13.dp), verticalAlignment = Alignment.CenterVertically) {
+            Image(painterResource(R.drawable.redzone_wordmark), "REDZONE", Modifier.width(126.dp).height(38.dp), contentScale = ContentScale.Fit)
+            Spacer(Modifier.width(9.dp)); Box(Modifier.width(1.dp).height(24.dp).background(Edge)); Spacer(Modifier.width(9.dp))
+            Text(section.uppercase(), color = Color.White, fontWeight = FontWeight.Black, fontSize = 13.sp, maxLines = 1)
+            Spacer(Modifier.weight(1f))
+            Column(horizontalAlignment = Alignment.End) {
+                Text(time.format(DateTimeFormatter.ofPattern("HH:mm")), color = Color.White, fontWeight = FontWeight.Black, fontSize = 18.sp)
+                Text("REDZONE", color = Red, fontWeight = FontWeight.Bold, fontSize = 8.sp)
+            }
+        }
+    }
+}
+
+@Composable private fun BottomNav(active: Int, select: (Int) -> Unit) = Surface(color = Color(0xFF0E0F14), shadowElevation = 14.dp) {
+    Row(Modifier.fillMaxWidth().navigationBarsPadding().height(67.dp), horizontalArrangement = Arrangement.SpaceEvenly) {
+        sectors.forEachIndexed { i, item ->
+            val on = i == active
+            Box(Modifier.weight(1f).fillMaxHeight(), contentAlignment = Alignment.Center) {
+                IconButton({ select(i) }, Modifier.fillMaxSize()) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+                        Box(Modifier.size(31.dp).clip(CircleShape).background(if (on) Red.copy(.17f) else Color.Transparent), contentAlignment = Alignment.Center) {
+                            Icon(item.icon, item.name, tint = if (on) Red else Muted, modifier = Modifier.size(19.dp))
+                        }
+                        Text(item.name, color = if (on) Red else Muted, fontSize = 7.5.sp, fontWeight = if (on) FontWeight.Bold else FontWeight.Normal, maxLines = 1, overflow = TextOverflow.Clip)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable private fun Dashboard() = Column(Modifier.fillMaxSize().padding(12.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
+    Row(Modifier.fillMaxWidth().height(98.dp).card(), verticalAlignment = Alignment.CenterVertically) {
+        Image(painterResource(R.drawable.redzone_logo), "Patente", Modifier.padding(10.dp).size(76.dp).clip(CircleShape), contentScale = ContentScale.Crop)
+        Column(Modifier.weight(1f)) {
+            Text("UCHOA", color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.Black)
+            Text("@felipeuchoa", color = Muted, fontSize = 11.sp)
+            Spacer(Modifier.height(7.dp)); Surface(color = Red.copy(.12f), shape = RoundedCornerShape(50)) { Text("▲ RECRUTA · 20 XP", color = Red, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)) }
+        }
+        Icon(Icons.Default.ChevronRight, null, tint = Muted, modifier = Modifier.padding(10.dp))
+    }
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
-        Stat("20", "XP", Modifier.weight(1f)); Stat("0/2500", "Água", Modifier.weight(1f)); Stat("0 dias", "Sequência", Modifier.weight(1f))
+        Metric("19", "ANOS", Modifier.weight(1f)); Metric("89,0", "KG", Modifier.weight(1f)); Metric("1,78", "ALTURA", Modifier.weight(1f))
     }
-    Column(Modifier.fillMaxWidth().background(Brush.horizontalGradient(listOf(Color(0xFF541417), Panel)), RoundedCornerShape(15.dp)).border(1.dp, Color(0xFF6A262A), RoundedCornerShape(15.dp)).padding(13.dp)) {
-        Text("PRÓXIMA MISSÃO", color = Red, fontSize = 10.sp, fontWeight = FontWeight.Black)
-        Text("Organize seu primeiro objetivo", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-        Text("O essencial fica visível sem abrir menus.", color = Muted, fontSize = 11.sp)
+    Row(Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        DashboardPanel("RESUMO DE HOJE", Icons.Default.Bolt, listOf("Treino", "Estudo", "Rotina"), Modifier.weight(1f))
+        DashboardPanel("MISSÕES", Icons.Default.Flag, listOf("Água 0%", "XP +0", "Sequência 0"), Modifier.weight(1f))
     }
-    Row(Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(9.dp)) {
-        Panel("HOJE", listOf("Treino pendente", "Estudo pendente", "Rotina 0%"), Modifier.weight(1f))
-        Panel("ATALHOS", listOf("+ Treino", "+ Estudo", "+ Atividade"), Modifier.weight(1f))
+    Surface(onClick = {}, color = Red, shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth().height(48.dp)) {
+        Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Default.Add, null); Spacer(Modifier.width(6.dp)); Text("REGISTRAR ATIVIDADE", fontWeight = FontWeight.Black) }
     }
 }
 
-@Composable private fun Stat(value: String, label: String, modifier: Modifier) = Column(modifier.background(Panel, RoundedCornerShape(13.dp)).border(1.dp, Line, RoundedCornerShape(13.dp)).padding(9.dp)) {
-    Text(value, color = Color.White, fontWeight = FontWeight.Black, fontSize = 15.sp, maxLines = 1); Text(label, color = Muted, fontSize = 9.sp)
+private fun Modifier.card() = background(Panel, RoundedCornerShape(17.dp)).border(1.dp, Edge, RoundedCornerShape(17.dp))
+
+@Composable private fun Metric(value: String, label: String, modifier: Modifier) = Column(modifier.height(59.dp).card(), horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.Center) {
+    Text(value, color = Color.White, fontWeight = FontWeight.Black, fontSize = 16.sp); Text(label, color = Muted, fontSize = 8.sp)
 }
 
-@Composable private fun Panel(title: String, rows: List<String>, modifier: Modifier) = Column(modifier.background(Panel, RoundedCornerShape(15.dp)).border(1.dp, Line, RoundedCornerShape(15.dp)).padding(11.dp)) {
-    Text(title, color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Black); Spacer(Modifier.height(7.dp))
-    rows.forEach { Surface(onClick = {}, color = Color(0xFF20232B), shape = RoundedCornerShape(9.dp), modifier = Modifier.fillMaxWidth().padding(bottom = 6.dp)) {
-        Text(it, color = Color.White, fontSize = 11.sp, modifier = Modifier.padding(9.dp), maxLines = 1)
-    } }
+@Composable private fun DashboardPanel(title: String, icon: ImageVector, rows: List<String>, modifier: Modifier) = Column(modifier.card().padding(11.dp)) {
+    Row(verticalAlignment = Alignment.CenterVertically) { Icon(icon, null, tint = Red, modifier = Modifier.size(17.dp)); Spacer(Modifier.width(6.dp)); Text(title, color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Black) }
+    Spacer(Modifier.height(8.dp)); rows.forEach { CompactRow(it) }
 }
 
-@Composable private fun SectorPage(sector: Sector) {
+@Composable private fun CompactRow(text: String) = Surface(onClick = {}, color = Panel2, shape = RoundedCornerShape(10.dp), modifier = Modifier.fillMaxWidth().padding(bottom = 7.dp)) {
+    Row(Modifier.padding(9.dp), verticalAlignment = Alignment.CenterVertically) { Box(Modifier.size(7.dp).background(Red, CircleShape)); Spacer(Modifier.width(7.dp)); Text(text, color = Color.White, fontSize = 11.sp, maxLines = 1); Spacer(Modifier.weight(1f)); Icon(Icons.Default.ChevronRight, null, tint = Muted, modifier = Modifier.size(16.dp)) }
+}
+
+@Composable private fun ModulePage(sector: Sector, tabs: List<String>, title: String, cards: List<String>) {
     var tab by remember(sector.name) { mutableIntStateOf(0) }
-    val tabs = when (sector.name) {
-        "Treinos" -> listOf("Hoje", "Plano", "Histórico"); "Alimentação" -> listOf("Hoje", "Plano", "Água")
-        "Estudos" -> listOf("Hoje", "Matérias", "Relatório"); "Rotina" -> listOf("Hoje", "Calendário", "Alarmes")
-        "Batalha" -> listOf("Feed", "Conversas", "Ranking"); else -> listOf("Resumo", "Conquistas", "Ajustes")
-    }
-    Column(Modifier.fillMaxSize().padding(13.dp), verticalArrangement = Arrangement.spacedBy(11.dp)) {
-        Row(verticalAlignment = Alignment.CenterVertically) { Icon(sector.icon, null, tint = Red, modifier = Modifier.size(27.dp)); Spacer(Modifier.width(9.dp)); Text(sector.name, color = Color.White, fontSize = 23.sp, fontWeight = FontWeight.Black) }
-        SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) { tabs.forEachIndexed { i, name -> SegmentedButton(tab == i, { tab = i }, SegmentedButtonDefaults.itemShape(i, tabs.size), label = { Text(name, fontSize = 10.sp, maxLines = 1) }) } }
-        Column(Modifier.fillMaxWidth().weight(1f).background(Panel, RoundedCornerShape(17.dp)).border(1.dp, Line, RoundedCornerShape(17.dp)).padding(15.dp)) {
-            Text(tabs[tab].uppercase(), color = Red, fontSize = 10.sp, fontWeight = FontWeight.Black); Spacer(Modifier.height(7.dp))
-            Text("Estrutura nativa pronta", color = Color.White, fontSize = 18.sp, fontWeight = FontWeight.Bold)
-            Text("Esta área será conectada diretamente ao servidor REDZONE.", color = Muted, fontSize = 12.sp)
+    Column(Modifier.fillMaxSize().padding(12.dp), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+        Row(verticalAlignment = Alignment.CenterVertically) { Icon(sector.icon, null, tint = Red, modifier = Modifier.size(25.dp)); Spacer(Modifier.width(8.dp)); Text(title, color = Color.White, fontSize = 21.sp, fontWeight = FontWeight.Black) }
+        SingleChoiceSegmentedButtonRow(Modifier.fillMaxWidth()) { tabs.forEachIndexed { i, text -> SegmentedButton(tab == i, { tab = i }, SegmentedButtonDefaults.itemShape(i, tabs.size), label = { Text(text, fontSize = 10.sp, maxLines = 1) }) } }
+        Column(Modifier.fillMaxWidth().weight(1f).card().padding(12.dp)) {
+            Text(tabs[tab].uppercase(), color = Red, fontWeight = FontWeight.Black, fontSize = 10.sp); Spacer(Modifier.height(8.dp))
+            cards.forEach { CompactRow(it) }
+            Spacer(Modifier.weight(1f))
+            Text("Dados reais serão sincronizados com o servidor REDZONE na próxima etapa.", color = Muted, fontSize = 10.sp)
+        }
+        Surface(onClick = {}, color = Red, shape = RoundedCornerShape(13.dp), modifier = Modifier.fillMaxWidth().height(46.dp)) {
+            Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Default.Add, null); Spacer(Modifier.width(5.dp)); Text("ADICIONAR", fontWeight = FontWeight.Black) }
         }
     }
 }
