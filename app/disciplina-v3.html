@@ -691,10 +691,10 @@ body.th-shake{animation:thshake .55s;}
 .alarm-wheel{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center;width:min(100%,390px);margin:auto}.alarm-wheel-col{display:grid;gap:8px;text-align:center}.alarm-wheel-value{font:900 clamp(48px,13vw,72px)/1 'JetBrains Mono',monospace;color:var(--text);padding:14px;border-radius:18px;background:var(--surface2);border:1px solid var(--line)}.alarm-wheel-sep{font:900 52px/1 'JetBrains Mono',monospace;color:var(--accent)}.alarm-wheel input{width:100%;accent-color:var(--accent);cursor:grab}.alarm-wheel input:active{cursor:grabbing}.alarm-wheel small{color:var(--text-dim);font-weight:800}
 .alarm-push-status{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 14px;margin:10px 0 14px;border:1px solid var(--line);border-radius:16px;background:var(--surface)}.alarm-push-status .txt{min-width:0}.alarm-push-status b,.alarm-push-status span{display:block}.alarm-push-status span{font-size:12px;color:var(--text-dim);margin-top:3px}.alarm-push-status.ready{border-color:rgba(55,214,122,.34)}.alarm-push-status.warn{border-color:rgba(255,179,0,.4)}
 @media(max-width:700px){.admin-head{display:grid;grid-template-columns:minmax(0,1fr) auto}.admin-brand{grid-column:1/-1;height:46px}.admin-head>strong{text-align:left;font-size:18px}.admin-head .homeclock{transform:scale(.88);transform-origin:right center}.admin-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-tools{grid-template-columns:1fr}.admin-search{display:grid;grid-template-columns:minmax(0,1fr) auto}.support-banner{top:calc(8px + env(safe-area-inset-top));bottom:auto;width:calc(100vw - 20px);justify-content:space-between}}
-.admin-head{display:grid;grid-template-columns:minmax(150px,220px) minmax(0,1fr) auto;gap:18px;align-items:center}.admin-heading{min-width:0}.admin-heading .eyebrow{display:block;margin-bottom:3px}.admin-heading strong{display:block;font-size:clamp(20px,2.3vw,28px);line-height:1.08;overflow-wrap:anywhere}.admin-heading span:last-child{display:block;margin-top:5px}.admin-head-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px;min-width:0}.admin-refresh{width:44px;height:44px;border-radius:13px;border:1px solid var(--line);background:var(--surface);color:var(--text);font-size:20px;cursor:pointer}.admin-refresh:active{transform:rotate(-30deg)}
+.admin-head{display:grid;grid-template-columns:minmax(150px,220px) minmax(0,1fr) auto;gap:18px;align-items:center;background:linear-gradient(135deg,color-mix(in srgb,var(--accent) 7%,var(--surface)),var(--surface));padding:18px;border:1px solid var(--line);border-radius:20px;margin-top:10px}.admin-heading{min-width:0}.admin-heading .eyebrow{display:block;margin-bottom:3px}.admin-heading strong{display:block;font-size:clamp(20px,2.3vw,28px);line-height:1.08;overflow-wrap:anywhere}.admin-heading span:last-child{display:block;margin-top:5px}.admin-head-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px;min-width:0}.admin-refresh{width:44px;height:44px;border-radius:13px;border:1px solid var(--line);background:var(--surface);color:var(--text);font-size:20px;cursor:pointer}.admin-refresh:active{transform:rotate(-30deg)}
 .admin-live{display:flex;align-items:center;gap:7px;margin:12px 0 4px;color:var(--text-dim);font-size:12px}.admin-live::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 12px color-mix(in srgb,var(--ok) 75%,transparent)}
 .admin-stat{position:relative;min-height:118px;display:flex;flex-direction:column;justify-content:space-between;transition:.18s ease}.admin-stat .admin-stat-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}.admin-stat .admin-stat-icon{font-size:21px}.admin-stat .admin-stat-arrow{color:var(--text-dim);font-size:18px}.admin-stat small{color:var(--text-dim);font-size:11px;margin-top:5px}.admin-tool{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:11px;align-items:center}.admin-tool>i{font-style:normal;font-size:21px}.admin-tool>em{font-style:normal;color:var(--text-dim);font-size:20px}.admin-tool .admin-tool-copy{min-width:0}.admin-tool:hover{border-color:var(--accent)}
-@media(max-width:700px){.admin-head{grid-template-columns:minmax(0,1fr) auto;padding-top:16px;gap:12px}.admin-brand{grid-column:1/-1;width:min(230px,72vw);height:44px}.admin-heading strong{font-size:21px}.admin-heading .eyebrow{font-size:10px}.admin-heading span:last-child{font-size:11px}.admin-head-actions .homeclock{display:none}.admin-stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.admin-stat{min-height:108px;padding:14px}.admin-stat b{font-size:25px}.admin-stat:nth-child(5){grid-column:1/-1}.admin-tool{padding:14px}.admin-search{grid-template-columns:1fr}.admin-search .btn{width:100%}.rotina-clear-day-head{align-items:flex-start;flex-direction:column}.rotina-clear-day-head label{width:100%;justify-content:flex-start}}
+@media(max-width:700px){.admin-head{grid-template-columns:minmax(0,1fr) auto;padding:15px;gap:12px}.admin-brand{grid-column:1/-1;width:min(230px,72vw);height:44px}.admin-heading{grid-column:1/2}.admin-heading strong{font-size:21px}.admin-heading .eyebrow{font-size:10px}.admin-heading span:last-child{font-size:11px;line-height:1.35}.admin-head-actions{grid-column:2/3}.admin-head-actions .homeclock{display:none}.admin-stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.admin-stat{min-height:108px;padding:14px}.admin-stat b{font-size:25px}.admin-stat:nth-child(5){grid-column:1/-1}.admin-tool{padding:14px}.admin-search{grid-template-columns:1fr}.admin-search .btn{width:100%}.rotina-clear-day-head{align-items:flex-start;flex-direction:column}.rotina-clear-day-head label{width:100%;justify-content:flex-start}}
 </style>
 </head>
 <body>
@@ -786,7 +786,10 @@ body.th-shake{animation:thshake .55s;}
 /* ---------- API (backend Node + PostgreSQL na VM) ---------- */
 const API_BASE = location.pathname.includes('/rotina') ? '/rotina/api' : 'https://redsystems.ddns.net/rotina/api';
 let authToken = localStorage.getItem('disc:token') || null;
-function tokenOwner(t=authToken){ try{ const p=String(t||'').split('.')[1].replace(/-/g,'+').replace(/_/g,'/'); return JSON.parse(atob(p)).sub||null; }catch{ return null; } }
+function tokenPayload(t=authToken){try{const p=String(t||'').split('.')[1].replace(/-/g,'+').replace(/_/g,'/');return JSON.parse(atob(p))}catch{return {}}}
+function tokenOwner(t=authToken){ return tokenPayload(t).sub||null; }
+function emModoSuporte(){return !!tokenPayload().supportAdminId||!!sessionStorage.getItem('rz:admin:returnToken')}
+if(tokenPayload().supportAdminId&&!sessionStorage.getItem('rz:admin:returnToken'))sessionStorage.setItem('rz:admin:returnToken','__server__');
 function userStorageKey(nome){ const dono=tokenOwner(); return dono?`disc:user:${dono}:${nome}`:`disc:sem-conta:${nome}`; }
 function limparLocalDoUsuario(dono){ if(!dono) return; try{ const ks=Array.from({length:localStorage.length},(_,i)=>localStorage.key(i)).filter(Boolean); ks.filter(k=>k.startsWith(`disc:user:${dono}:`)).forEach(k=>localStorage.removeItem(k)); }catch{} }
 function limparLegadoGlobal(){ try{ const ks=Array.from({length:localStorage.length},(_,i)=>localStorage.key(i)).filter(Boolean); ['disc:queue','disc:cache:me','disc:cache:st',...ks.filter(k=>k.startsWith('disc:local:'))].forEach(k=>localStorage.removeItem(k)); }catch{} }
@@ -829,7 +832,7 @@ setInterval(()=>{ if(authToken&&offQueue().length&&navigator.onLine) flushQueue(
 
 /* id único DESTE aparelho/aba — usado pra não ecoar de volta a própria escrita no sync ao vivo */
 const CLIENT_ID = (Math.random().toString(36).slice(2)+'-'+Date.now().toString(36));
-const APP_BUILD = 'redzone-v137';
+const APP_BUILD = 'redzone-v138';
 // evita re-render que rouba o foco enquanto a pessoa digita (o dado já foi aplicado em S de qualquer forma)
 function _syncPodeRender(){ const a=document.activeElement; return !(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||'')); }
 // ANTI-LOOP: ao aplicar uma mudança que VEIO do servidor, um re-render pode disparar escritas de
@@ -1362,7 +1365,7 @@ async function signupFinish(){
     setToken(r.token);
     const f=$('#suFoto').files[0];
     if(f){ try{ const up=await uploadMedia(f); await api('/perfil',{method:'PATCH',body:{fotoUrl:up.url}}); }catch(e){} }
-    toast(`Bem-vindo à Batalha, ${nome}. Foco no seu objetivo.`);
+    toast(`Seja bem-vindo à Batalha, ${nome}. Mantenha o foco no seu objetivo.`);
     await enterApp();
   }catch(e){ if(btn){ btn.disabled=false; btn.textContent='Criar conta'; }
     err.textContent = e.status===409 ? (e.data?.erro||'E-mail ou username já cadastrado.') : (e.data?.erro||'Falha no cadastro. Sem conexão?'); }
@@ -1451,7 +1454,7 @@ const NAV_ICO = {inicio:'i-home', treinos:'i-treino', alimentacao:'i-alim', estu
 function svgIcon(id){ return `<svg viewBox="0 0 24 24"><use href="#${id}"/></svg>`; }
 
 function renderNav(){
-  const adminPuro=!!S?.profile?.isAdmin&&!sessionStorage.getItem('rz:admin:returnToken');
+  const adminPuro=!!S?.profile?.isAdmin&&!emModoSuporte();
   const tabs=adminPuro?TABS.filter(t=>t.admin):TABS.filter(t=>!t.admin);
   $('#navInner').innerHTML = tabs.map(t=>`
     <button data-tab="${t.id}" class="${activeTab===t.id?'active':''}">
@@ -1520,7 +1523,7 @@ function go(tab, isBack, restaurarSalvo=false){
 function chavePermissoesIniciais(){ return `rz:permissions:v1:${currentUser||S?.profile?.username||'usuario'}`; }
 function permissoesIniciaisConcluidas(){ try{return !!localStorage.getItem(chavePermissoesIniciais())}catch(e){return false} }
 async function solicitarPermissoesIniciais(){
-  if(!S||S.profile.isAdmin||sessionStorage.getItem('rz:admin:returnToken')||permissoesIniciaisConcluidas()) return;
+  if(!S||S.profile.isAdmin||emModoSuporte()||permissoesIniciaisConcluidas()) return;
   openSheet(`<div class="permission-onboarding">
     <div style="font-size:44px;margin-bottom:8px">🛡️</div>
     <h3>Preparar o REDZONE</h3>
@@ -1560,7 +1563,7 @@ async function enterApp(){
   await loadUserData();
   $('#auth').classList.add('hidden');
   $('#app').classList.remove('hidden');
-  $('#app').classList.toggle('admin-mode',!!S.profile.isAdmin&&!sessionStorage.getItem('rz:admin:returnToken'));
+  $('#app').classList.toggle('admin-mode',!!S.profile.isAdmin&&!emModoSuporte());
   let abaSalva=S.profile.isAdmin?'admin':'inicio';
   try{ const x=sessionStorage.getItem(`rz:view:${currentUser||'anon'}:tab`); if(TABS.some(t=>t.id===x&&(!t.admin||S.profile.isAdmin))) abaSalva=x; }catch(e){}
   activeTab=abaSalva; renderNav(); go(abaSalva,true,true);
@@ -4348,8 +4351,8 @@ async function entrarComoUsuario(id,nome){
   try{const r=await api('/admin/usuarios/'+encodeURIComponent(id)+'/entrar-como',{method:'POST'});sessionStorage.setItem('rz:admin:returnToken',authToken);sessionStorage.setItem('rz:admin:supportName',nome);setToken(r.token);location.reload()}catch(e){toast(e.data?.erro||'Não foi possível iniciar o suporte.')}
 }
 function renderSupportBanner(){
-  document.querySelector('.support-banner')?.remove();const token=sessionStorage.getItem('rz:admin:returnToken');if(!token)return;
-  const el=document.createElement('div');el.className='support-banner';el.innerHTML=`<b>Modo suporte: ${esc(sessionStorage.getItem('rz:admin:supportName')||currentUser)}</b><button>Voltar ao painel</button>`;el.querySelector('button').onclick=()=>{const t=sessionStorage.getItem('rz:admin:returnToken');sessionStorage.removeItem('rz:admin:returnToken');sessionStorage.removeItem('rz:admin:supportName');setToken(t);location.reload()};document.body.appendChild(el);
+  document.querySelector('.support-banner')?.remove();const token=sessionStorage.getItem('rz:admin:returnToken');if(!emModoSuporte())return;
+  const el=document.createElement('div');el.className='support-banner';el.innerHTML=`<b>Modo suporte: ${esc(sessionStorage.getItem('rz:admin:supportName')||currentUser)}</b><button>Voltar ao painel ADM</button>`;el.querySelector('button').onclick=async()=>{try{const t=token&&token!=='__server__'?token:(await api('/admin/retornar-suporte',{method:'POST'})).token;sessionStorage.removeItem('rz:admin:returnToken');sessionStorage.removeItem('rz:admin:supportName');setToken(t);location.reload()}catch(e){toast('Não foi possível voltar ao ADM.')}};document.body.appendChild(el);
 }
 async function adminAuditoriaSheet(){
   openSheet('<h3>🕘 Histórico de ações</h3><p class="small muted">Registro legível das alterações feitas pelo painel.</p><div id="adAudit"><p class="muted">Carregando…</p></div>');
@@ -4592,7 +4595,7 @@ function tryOpts(){ if(!S.config.tryOpts) S.config.tryOpts={som:'alarme', vibrar
 const NOTIF_CATS=[['mensagens','Mensagens'],['lembretes','Lembretes'],['social','Curtidas e comentários'],['sistema','Avisos do REDZONE']];
 function sonsNotif(){const o=tryOpts();if(!o.sonsNotif){o.sonsNotif={};NOTIF_CATS.forEach(([k])=>o.sonsNotif[k]={ativo:o.somNotif!==false,url:o.somNotifCustom||null});}return o.sonsNotif;}
 // som que toca em CADA notificação do app (personalizável pela pessoa)
-function tocarSomNotif(tipo='lembretes'){ const o=tryOpts(),c=sonsNotif()[tipo]||sonsNotif().lembretes; if(o.somNotif===false||c?.ativo===false)return; if(c?.url){try{const a=new Audio(c.url);a.volume=1;a.play().catch(()=>{});}catch(e){}}else tocarSom('sino'); }
+function tocarSomNotif(tipo='lembretes'){ if(S?.profile?.isAdmin||emModoSuporte())return;const o=tryOpts(),c=sonsNotif()[tipo]||sonsNotif().lembretes; if(o.somNotif===false||c?.ativo===false)return; if(c?.url){try{const a=new Audio(c.url);a.volume=1;a.play().catch(()=>{});}catch(e){}}else tocarSom('sino'); }
 // motor de som (WebAudio) — sons diferentes; 'alarme' é a sirene chata do Try Hard
 let _actx=null; function audioCtx(){ try{ _actx=_actx||new (window.AudioContext||window.webkitAudioContext)(); if(_actx.state==='suspended') _actx.resume(); return _actx; }catch(e){ return null; } }
 function tocarSom(tipo){

@@ -1,13 +1,19 @@
 import { Router } from 'express';
 import { z } from 'zod';
 import { prisma } from '../lib/db.js';
-import { exigirAuth, hashSenha, assinarTokenSuporte } from '../lib/auth.js';
+import { exigirAuth, hashSenha, assinarTokenSuporte, assinarToken } from '../lib/auth.js';
 import { publico } from './auth.js';
 import { emitFeed, emitToUser } from '../realtime.js';
 import { validarEmailPadrao } from '../lib/email.js';
 
 export const adminRouter = Router();
 adminRouter.use(exigirAuth);
+adminRouter.post('/retornar-suporte',async(req,res)=>{
+  if(!req.supportAdminId)return res.status(403).json({erro:'Esta sessão não está em modo suporte.'});
+  const admin=await prisma.usuario.findUnique({where:{id:req.supportAdminId}});
+  if(!admin?.isAdmin||admin.bloqueado)return res.status(403).json({erro:'Administrador indisponível.'});
+  res.json({token:assinarToken(admin)});
+});
 adminRouter.use(async (req, res, next) => {
   const admin = await prisma.usuario.findUnique({ where: { id: req.userId }, select: { isAdmin: true, bloqueado: true } });
   if (!admin?.isAdmin || admin.bloqueado) return res.status(403).json({ erro: 'Acesso exclusivo do proprietário.' });
