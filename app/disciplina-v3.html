@@ -262,8 +262,9 @@ button.rowitem{width:100%;text-align:left;font:inherit}
 .pencil{opacity:.8; font-size:16px; padding:6px 9px; border-radius:10px; background:rgba(255,255,255,.05); border:1px solid var(--line);}
 
 /* Dias da semana */
-.days{display:flex; gap:8px; overflow-x:auto; padding:4px 0 8px; scrollbar-width:none;}
+.days{display:flex;justify-content:center;gap:8px;overflow-x:auto;padding:4px 0 8px;margin-inline:auto;max-width:900px;scrollbar-width:none;}
 .days::-webkit-scrollbar{display:none;}
+@media(max-width:680px){.days{justify-content:flex-start}}
 .day{flex:0 0 auto; min-width:62px; text-align:center; padding:12px 10px; border-radius:16px; border:1px solid var(--line); background:var(--surface);}
 .day.sel{border-color:transparent; background:linear-gradient(135deg,var(--accent),var(--accent2)); color:#fff;}
 .day.today{box-shadow:0 0 0 2px color-mix(in srgb,var(--accent) 55%, transparent);}
@@ -814,7 +815,7 @@ function offQueue(){ try{ return JSON.parse(localStorage.getItem(userStorageKey(
 function setQueue(q){ try{ localStorage.setItem(userStorageKey('queue'), JSON.stringify(q)); }catch{} }
 const _stateVersoes={};
 let _accountResetId=null;
-function novaVersao(chave){ const v=Math.max(Date.now(),Number(_stateVersoes[chave]||0)+1); _stateVersoes[chave]=v; return v; }
+function novaVersao(chave){ const agora=Date.now()+(typeof _serverClockOffset==='number'?_serverClockOffset:0),v=Math.max(agora,Number(_stateVersoes[chave]||0)+1); _stateVersoes[chave]=v; return v; }
 let _flushando=false;
 async function flushQueue(){
   if(_flushando || !authToken) return; _flushando=true;
@@ -828,7 +829,7 @@ setInterval(()=>{ if(authToken&&offQueue().length&&navigator.onLine) flushQueue(
 
 /* id único DESTE aparelho/aba — usado pra não ecoar de volta a própria escrita no sync ao vivo */
 const CLIENT_ID = (Math.random().toString(36).slice(2)+'-'+Date.now().toString(36));
-const APP_BUILD = 'redzone-v136';
+const APP_BUILD = 'redzone-v137';
 // evita re-render que rouba o foco enquanto a pessoa digita (o dado já foi aplicado em S de qualquer forma)
 function _syncPodeRender(){ const a=document.activeElement; return !(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||'')); }
 // ANTI-LOOP: ao aplicar uma mudança que VEIO do servidor, um re-render pode disparar escritas de
@@ -843,8 +844,7 @@ const Store = {
   async set(key,val){
     const versao=novaVersao(key);
     try{ localStorage.setItem(userStorageKey('local:'+key), JSON.stringify(val)); }catch{}   // espelho local
-    if(_syncBusy()) return true;   // veio do servidor agora → não reescreve (anti-loop)
-    try{ const r=await api('/state/'+encodeURIComponent(key),{method:'PUT',body:{valor:val,versao,clientId:CLIENT_ID,resetId:_accountResetId}}); if(Number.isFinite(r?.xp))S.profile.xp=r.xp; if(r?.ignorada){ applyRemoteState(key,r.valor,r.versao); } else if(key==='rotina:dias'&&r?.valor){ S.rotinaDias=r.valor; try{ localStorage.setItem(userStorageKey('local:'+key),JSON.stringify(r.valor)); }catch{} } return true; }
+    try{ const r=await api('/state/'+encodeURIComponent(key),{method:'PUT',body:{valor:val,versao,clientId:CLIENT_ID,resetId:_accountResetId}}); if(Number.isFinite(r?.xp))S.profile.xp=r.xp; if(r?.ignorada){ applyRemoteState(key,r.valor,r.versao); } else if(key==='rotina:dias'&&r?.valor&&Number(r.versao||versao)>=Number(_stateVersoes[key]||0)){ S.rotinaDias=r.valor; try{ localStorage.setItem(userStorageKey('local:'+key),JSON.stringify(r.valor)); }catch{} } return true; }
     catch(e){
       if(e?.status===409&&e?.data?.reset){ setQueue([]); location.reload(); return false; }
       const q=offQueue().filter(i=>i.chave!==key); q.push({chave:key, valor:val}); setQueue(q);  // enfileira (última escrita vence)
@@ -1575,12 +1575,23 @@ async function enterApp(){
   if(!window._dlBound){ window._dlBound=true; window.addEventListener('hashchange', handleDeepLink); }
 }
 let _syncWatchBusy=false;
+let _reconcileBusy=false,_reconcileAt=0;
+async function reconciliarEstadoServidor(){
+  if(_reconcileBusy||!S||!authToken||offQueue().length||Date.now()-_reconcileAt<1200)return;
+  _reconcileBusy=true;_reconcileAt=Date.now();
+  try{
+    const remoto=await api('/state');
+    Object.entries(remoto||{}).forEach(([chave,valor])=>{const prop=cameMap(chave);if(!prop||valor==null)return;S[prop]=valor;try{localStorage.setItem(userStorageKey('local:'+chave),JSON.stringify(valor))}catch{}});
+    try{localStorage.setItem(userStorageKey('cache:st'),JSON.stringify(remoto))}catch{}
+    if(activeTab&&_syncPodeRender())go(activeTab);
+  }catch(e){}finally{_reconcileBusy=false;}
+}
 function startSyncWatchdog(){
   clearInterval(window._syncWatchTimer);
   window._syncWatchTimer=setInterval(async()=>{
     if(_syncWatchBusy||!S||!authToken||document.visibilityState==='hidden'||(_socket&&_socket.connected)) return;
     _syncWatchBusy=true;
-    try{ const remoto=await Store.get('rotina:dias'); if(remoto&&JSON.stringify(remoto)!==JSON.stringify(S.rotinaDias)) applyRemoteState('rotina:dias',remoto); }catch(e){} finally{ _syncWatchBusy=false; }
+    try{ await reconciliarEstadoServidor(); }catch(e){} finally{ _syncWatchBusy=false; }
   },2000);
 }
 
@@ -3520,7 +3531,7 @@ function renderRotinaList(){
       <div class="txt"><div class="t">${esc(r.nome)}</div><div class="s mono">${r.hora||'--:--'}</div>${r.descricao?`<div class="activity-description">${esc(r.descricao)}</div>`:''}${r.midiaUrl?`<img class="chat-media" src="${esc(r.midiaUrl)}" alt="Comprovação da atividade">`:''}</div>
       ${edit?`<button class="pencil" data-edh="${r.id}">✏️</button><button class="pencil" data-delh="${r.id}">🗑️</button>`:''}
     </div>`; }).join('') : `<p class="muted small">Sem hábitos. ${edit?'Adicione (ex: Tomar banho 06:30).':'Ative o modo edição pra montar.'}</p>`;
-  $$('#rotinaList [data-togh]').forEach(b=>b.onclick=async()=>{ const r=(S.rotinaDias[hoje]||[]).find(x=>x.id===b.dataset.togh); if(!r) return; r.done=!r.done; r.updatedAt=Date.now(); await save('rotina:dias'); atualizaRotinaHist(); renderRotinaList(); manageSiren(); if($('#rotinaCal')) renderCalendarioRotina(); });
+  $$('#rotinaList [data-togh]').forEach(b=>b.onclick=()=>{ const r=(S.rotinaDias[hoje]||[]).find(x=>x.id===b.dataset.togh); if(!r) return; r.done=!r.done; r.updatedAt=Date.now()+(typeof _serverClockOffset==='number'?_serverClockOffset:0); atualizaRotinaHist(); renderRotinaList(); manageSiren(); if($('#rotinaCal')) renderCalendarioRotina(); save('rotina:dias'); });
   if(edit){
     $$('#rotinaList [data-edh]').forEach(b=>b.onclick=()=>editHabitoSheet(b.dataset.edh));
     $$('#rotinaList [data-delh]').forEach(b=>b.onclick=()=>{const a=(S.rotinaDias[hoje]||[]).find(x=>String(x.id)===String(b.dataset.delh));if(a)excluirAtividadeRotinaSheet(hoje,a);});
@@ -4788,7 +4799,7 @@ function connectSocket(){
   const src = origin + base + '/socket.io/socket.io.js';
   const boot=()=>{ try{
     _socket = io(origin, { path: base + '/socket.io', auth:{ token:authToken,build:APP_BUILD }, transports:['websocket','polling'],reconnection:true,reconnectionDelay:500,reconnectionDelayMax:3000 });
-    _socket.on('connect',()=>{ atualizarMinhaPresenca(); clearInterval(_presenceTimer); _presenceTimer=setInterval(()=>{if(document.visibilityState==='visible')atualizarMinhaPresenca()},5000); });
+    _socket.on('connect',()=>{ atualizarMinhaPresenca(); reconciliarEstadoServidor(); clearInterval(_presenceTimer); _presenceTimer=setInterval(()=>{if(document.visibilityState==='visible')atualizarMinhaPresenca()},5000); });
     _socket.on('disconnect',()=>clearInterval(_presenceTimer));
     if(!_presenceBound){
       _presenceBound=true;
@@ -4895,7 +4906,7 @@ document.addEventListener('visibilitychange',renovarPushEmSegundoPlano);
     // checa por atualização periodicamente (app aberto por muito tempo)
     // O socket entrega deploy em tempo real; esta checagem é só contingência e não deve gastar dados a cada 5s.
     const checarVersao=()=>{if(document.visibilityState==='visible')navigator.serviceWorker.getRegistration().then(r=>r&&r.update()).catch(()=>{});};
-    setInterval(checarVersao,900000);document.addEventListener('visibilitychange',()=>{checarVersao();if(document.visibilityState==='visible')sincronizarRelogioBrasilia();});
+    setInterval(checarVersao,900000);document.addEventListener('visibilitychange',()=>{checarVersao();if(document.visibilityState==='visible'){sincronizarRelogioBrasilia();reconciliarEstadoServidor();}});window.addEventListener('pageshow',()=>{sincronizarRelogioBrasilia();reconciliarEstadoServidor();});
   }
 })();
 </script>
