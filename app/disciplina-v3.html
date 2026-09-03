@@ -194,6 +194,14 @@ button.rowitem{width:100%;text-align:left;font:inherit}
 .rotina-batch-item{display:grid;grid-template-columns:minmax(0,1fr) minmax(110px,.35fr) 40px;gap:8px;align-items:start;padding:10px;border:1px solid var(--line);border-radius:15px;background:var(--surface2)}
 .rotina-batch-item textarea{grid-column:1/-1;min-height:58px;resize:vertical}
 @media(max-width:520px){.rotina-batch-item{grid-template-columns:minmax(0,1fr) 40px}.rotina-batch-item .batch-hora{grid-column:1}.rotina-batch-item textarea{grid-column:1/-1}}
+.rotina-clear-summary{padding:12px 14px;border:1px solid rgba(255,90,90,.28);border-radius:15px;background:rgba(255,90,90,.08);line-height:1.45}
+.rotina-clear-day{margin-top:12px;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--surface2)}
+.rotina-clear-day-head{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.rotina-clear-day-head label{display:flex;align-items:center;gap:8px;font-weight:800;cursor:pointer}
+.rotina-clear-day-head input,.rotina-clear-item input{width:21px;height:21px;accent-color:var(--danger);flex:0 0 auto}
+.rotina-clear-items{display:grid}.rotina-clear-item{display:flex;align-items:flex-start;gap:11px;padding:11px 14px;cursor:pointer}.rotina-clear-item+.rotina-clear-item{border-top:1px solid var(--line)}
+.rotina-clear-item span{min-width:0}.rotina-clear-item b{display:block;overflow-wrap:anywhere}.rotina-clear-item small{display:block;color:var(--text-dim);margin-top:2px}
+.btn.danger-outline{background:transparent!important;border-color:rgba(255,90,90,.55);color:var(--danger);box-shadow:none}
 .materia-editor-list{display:grid;gap:10px;margin:10px 0 12px}
 .materia-editor-item{display:grid;gap:8px;padding:11px;border:1px solid var(--line);border-radius:16px;background:var(--surface2)}
 .materia-editor-row{display:flex;align-items:flex-start;gap:9px;min-width:0}
@@ -665,7 +673,12 @@ body.th-shake{animation:thshake .55s;}
 .alarm-editor-head{display:flex;align-items:flex-start;justify-content:space-between;gap:16px}.alarm-editor-head h3{margin:3px 0 0}.alarm-status-dot{color:var(--accent);font-size:12px;font-weight:900;white-space:nowrap}.alarm-time-editor{display:grid;gap:13px}.alarm-time-editor>label{text-align:center;color:var(--text-dim);font-weight:800}.alarm-time-editor>input{justify-self:center}.alarm-drawer-title{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}.alarm-drawer-title span{display:block;margin-top:3px;color:var(--text-dim);font-size:12px;font-weight:500}.alarm-sound-list{display:grid;gap:7px}.alarm-day-list label span:first-child{flex:1}.alarm-sound-row>span{display:grid;flex:1;min-width:0}.alarm-sound-row small{color:var(--text-dim)}.alarm-range{height:30px;cursor:pointer}.alarm-empty{display:grid;gap:5px;padding:22px;text-align:center;border:1px dashed var(--line);border-radius:18px;color:var(--text-dim)}.alarm-empty b{color:var(--text)}.alarm-save{min-height:56px}.account-created{margin-top:18px;text-align:center;color:var(--text-dim);font-size:12px;opacity:.82}
 .admin-head{gap:18px}.admin-head>strong{flex:1;text-align:center;white-space:nowrap}.admin-head .homeclock{flex:0 0 auto}.admin-audit-action{font-weight:800}.admin-audit-detail{overflow-wrap:anywhere}.admin-recipient-search{margin-bottom:8px}.activity-description{white-space:pre-wrap;color:var(--text-dim);font-size:13px;margin-top:4px}
 .alarm-wheel{display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center;width:min(100%,390px);margin:auto}.alarm-wheel-col{display:grid;gap:8px;text-align:center}.alarm-wheel-value{font:900 clamp(48px,13vw,72px)/1 'JetBrains Mono',monospace;color:var(--text);padding:14px;border-radius:18px;background:var(--surface2);border:1px solid var(--line)}.alarm-wheel-sep{font:900 52px/1 'JetBrains Mono',monospace;color:var(--accent)}.alarm-wheel input{width:100%;accent-color:var(--accent);cursor:grab}.alarm-wheel input:active{cursor:grabbing}.alarm-wheel small{color:var(--text-dim);font-weight:800}
+.alarm-push-status{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 14px;margin:10px 0 14px;border:1px solid var(--line);border-radius:16px;background:var(--surface)}.alarm-push-status .txt{min-width:0}.alarm-push-status b,.alarm-push-status span{display:block}.alarm-push-status span{font-size:12px;color:var(--text-dim);margin-top:3px}.alarm-push-status.ready{border-color:rgba(55,214,122,.34)}.alarm-push-status.warn{border-color:rgba(255,179,0,.4)}
 @media(max-width:700px){.admin-head{display:grid;grid-template-columns:minmax(0,1fr) auto}.admin-brand{grid-column:1/-1;height:46px}.admin-head>strong{text-align:left;font-size:18px}.admin-head .homeclock{transform:scale(.88);transform-origin:right center}.admin-stats{grid-template-columns:repeat(2,minmax(0,1fr))}.admin-tools{grid-template-columns:1fr}.admin-search{display:grid;grid-template-columns:minmax(0,1fr) auto}.support-banner{top:calc(8px + env(safe-area-inset-top));bottom:auto;width:calc(100vw - 20px);justify-content:space-between}}
+.admin-head{display:grid;grid-template-columns:minmax(150px,220px) minmax(0,1fr) auto;gap:18px;align-items:center}.admin-heading{min-width:0}.admin-heading .eyebrow{display:block;margin-bottom:3px}.admin-heading strong{display:block;font-size:clamp(20px,2.3vw,28px);line-height:1.08;overflow-wrap:anywhere}.admin-heading span:last-child{display:block;margin-top:5px}.admin-head-actions{display:flex;align-items:center;justify-content:flex-end;gap:10px;min-width:0}.admin-refresh{width:44px;height:44px;border-radius:13px;border:1px solid var(--line);background:var(--surface);color:var(--text);font-size:20px;cursor:pointer}.admin-refresh:active{transform:rotate(-30deg)}
+.admin-live{display:flex;align-items:center;gap:7px;margin:12px 0 4px;color:var(--text-dim);font-size:12px}.admin-live::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 12px color-mix(in srgb,var(--ok) 75%,transparent)}
+.admin-stat{position:relative;min-height:118px;display:flex;flex-direction:column;justify-content:space-between;transition:.18s ease}.admin-stat .admin-stat-top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px}.admin-stat .admin-stat-icon{font-size:21px}.admin-stat .admin-stat-arrow{color:var(--text-dim);font-size:18px}.admin-stat small{color:var(--text-dim);font-size:11px;margin-top:5px}.admin-tool{display:grid;grid-template-columns:auto minmax(0,1fr) auto;gap:11px;align-items:center}.admin-tool>i{font-style:normal;font-size:21px}.admin-tool>em{font-style:normal;color:var(--text-dim);font-size:20px}.admin-tool .admin-tool-copy{min-width:0}.admin-tool:hover{border-color:var(--accent)}
+@media(max-width:700px){.admin-head{grid-template-columns:minmax(0,1fr) auto;padding-top:16px;gap:12px}.admin-brand{grid-column:1/-1;width:min(230px,72vw);height:44px}.admin-heading strong{font-size:21px}.admin-heading .eyebrow{font-size:10px}.admin-heading span:last-child{font-size:11px}.admin-head-actions .homeclock{display:none}.admin-stats{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.admin-stat{min-height:108px;padding:14px}.admin-stat b{font-size:25px}.admin-stat:nth-child(5){grid-column:1/-1}.admin-tool{padding:14px}.admin-search{grid-template-columns:1fr}.admin-search .btn{width:100%}.rotina-clear-day-head{align-items:flex-start;flex-direction:column}.rotina-clear-day-head label{width:100%;justify-content:flex-start}}
 </style>
 </head>
 <body>
@@ -764,7 +777,7 @@ limparLegadoGlobal();
 async function api(path,{method='GET',body,auth=true}={}){
   const headers={}; if(body!==undefined) headers['Content-Type']='application/json';
   if(auth && authToken) headers['Authorization']='Bearer '+authToken;
-  const res=await fetch(API_BASE+path,{method,headers,body:body!==undefined?JSON.stringify(body):undefined});
+  const res=await fetch(API_BASE+path,{method,headers,body:body!==undefined?JSON.stringify(body):undefined,cache:'no-store'});
   const txt=await res.text(); let data=null; try{ data=txt?JSON.parse(txt):null; }catch{ data=txt; }
   if(!res.ok){ const e=new Error((data&&data.erro)||('HTTP '+res.status)); e.status=res.status; e.data=data; throw e; }
   return data;
@@ -800,7 +813,7 @@ setInterval(()=>{ if(authToken&&offQueue().length&&navigator.onLine) flushQueue(
 
 /* id único DESTE aparelho/aba — usado pra não ecoar de volta a própria escrita no sync ao vivo */
 const CLIENT_ID = (Math.random().toString(36).slice(2)+'-'+Date.now().toString(36));
-const APP_BUILD = 'redzone-v124';
+const APP_BUILD = 'redzone-v125';
 // evita re-render que rouba o foco enquanto a pessoa digita (o dado já foi aplicado em S de qualquer forma)
 function _syncPodeRender(){ const a=document.activeElement; return !(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||'')); }
 // ANTI-LOOP: ao aplicar uma mudança que VEIO do servidor, um re-render pode disparar escritas de
@@ -3050,6 +3063,7 @@ let rotClearMode=false; let rotClearSel=new Set();
 let rotAddMode=false; let rotAddSel=new Set();
 function renderRotina(){
   const edit=S.config.editMode;
+  const podeDesfazer=!!ultimoBackupLimpezaRotina();
   $('#scr-rotina').innerHTML=`
     ${topbar('ROTINA')}
     <div style="display:flex;justify-content:space-between;align-items:center;margin:4px 2px">
@@ -3063,21 +3077,24 @@ function renderRotina(){
           <span style="line-height:1.3">Calendário — sua rotina por dia</span>
           <span style="display:flex;gap:10px;flex-wrap:wrap;justify-content:flex-start;width:100%">
             ${edit?`<button class="btn sm" id="rotAdicionarDias" style="padding:6px 10px">${rotAddMode?'✖ cancelar':'＋ planejar vários dias'}</button>`:''}
-            <button class="btn sm ghost" id="rotLimpar" style="padding:6px 10px">${rotClearMode?'✖ cancelar':'🗑️ limpar dias'}</button>
+            <button class="btn sm ghost" id="rotLimpar" style="padding:6px 10px">${rotClearMode?'✖ cancelar':'🗑️ limpar atividades'}</button>
+            ${podeDesfazer?'<button class="btn sm ghost" id="rotDesfazerLimpeza" style="padding:6px 10px">↩️ desfazer última limpeza</button>':''}
           </span>
         </div>
-        <p class="small muted" style="margin:0 2px 8px">${rotClearMode?'Selecione os dias que quer remover e confirme abaixo.':rotAddMode?'Selecione dias manualmente ou confirme sem selecionar para usar regras como “todas as segundas” e “próximos X dias”.':edit?'Toque num dia para editar ou use “＋ planejar vários dias”. Atividades sem horário podem ser arrastadas.':'Toque num dia pra ver o que tem planejado.'}</p>
+        <p class="small muted" style="margin:0 2px 8px">${rotClearMode?'Selecione os dias. Na próxima tela você escolherá exatamente quais atividades apagar — nada será removido agora.':rotAddMode?'Selecione dias manualmente ou confirme sem selecionar para usar regras como “todas as segundas” e “próximos X dias”.':edit?'Toque num dia para editar ou use “＋ planejar vários dias”. Atividades sem horário podem ser arrastadas.':'Toque num dia pra ver o que tem planejado.'}</p>
         <div id="rotinaCal"></div>
       </div>
     </div>
     <div class="section-title" style="margin-top:24px"><span>⏰ Alarmes</span><button class="btn sm" id="novoAlarme">＋ Novo alarme</button></div>
-    <p class="small muted">No aplicativo aberto, toca continuamente até você desligar. Fechado, envia aviso persistente no aparelho.</p>
+    <p class="small muted">No aplicativo aberto, toca continuamente até você desligar. Fechado, envia uma notificação persistente se este aparelho estiver autorizado.</p>
+    <div id="alarmPushStatus"></div>
     <div id="alarmList" class="alarm-list"></div>`;
   if(edit) $('#addHabito').onclick=()=>editHabitoSheet(null);
   if($('#rotAdicionarDias')) $('#rotAdicionarDias').onclick=()=>{ rotAddMode=!rotAddMode; rotAddSel=new Set(); rotClearMode=false; rotClearSel=new Set(); renderRotina(); };
   if($('#rotLimpar')) $('#rotLimpar').onclick=()=>{ rotClearMode=!rotClearMode; rotClearSel=new Set(); rotAddMode=false; rotAddSel=new Set(); renderRotina(); };
+  if($('#rotDesfazerLimpeza')) $('#rotDesfazerLimpeza').onclick=desfazerUltimaLimpezaRotinaSheet;
   $('#novoAlarme').onclick=()=>alarmeSheet();
-  renderRotinaList(); renderCalendarioRotina(); renderAlarmes();
+  renderRotinaList(); renderCalendarioRotina(); renderAlarmes(); renderStatusPushAlarmes();
 }
 
 const ALARM_DIAS=['Dom','Seg','Ter','Qua','Qui','Sex','Sáb'];
@@ -3111,15 +3128,15 @@ function alarmeSheet(id){
   $('#alCustomPick').onclick=e=>{e.preventDefault();$('#alCustomFile').click()};
   $('#alCustomFile').onchange=async e=>{const f=e.target.files?.[0];if(!f)return;const pick=$('#alCustomPick');pick.disabled=true;pick.textContent='Enviando…';try{const up=await uploadMedia(f);customUrl=up.url;customNome=f.name;$('#alCustomName').textContent=f.name;$('#sheet [name="alSom"][value="custom"]').checked=true;pick.textContent='Trocar áudio'}catch(err){$('#alErr').textContent='Não foi possível enviar esse áudio.';pick.textContent='＋ Escolher'}finally{pick.disabled=false}};
   $('#alInt').oninput=e=>$('#alIntVal').textContent=e.target.value+'%';
-  $('#alSalvar').onclick=async()=>{stopPreview();const nome=$('#alNome').value.trim(),hora=$('#alHora').value,dias=$$('#sheet [data-al-dia]:checked').map(x=>+x.dataset.alDia),som=$('#sheet [name="alSom"]:checked')?.value||'original',intensidade=+$('#alInt').value;if(!nome||!/^([01]\d|2[0-3]):[0-5]\d$/.test(hora))return $('#alErr').textContent='Preencha o nome e o horário corretamente.';if(!dias.length)return $('#alErr').textContent='Escolha pelo menos um dia.';if(som==='custom'&&!customUrl)return $('#alErr').textContent='Escolha seu áudio personalizado.';Object.assign(a,{nome,hora,dias,som,intensidade,customUrl,customNome,ativo:a.ativo!==false,lastFired:null});delete a.volume;if(!id)(S.alarmes||(S.alarmes=[])).push(a);await save('rotina:alarmes');closeSheet();renderAlarmes();toast('Alarme salvo.');};
+  $('#alSalvar').onclick=async()=>{stopPreview();const nome=$('#alNome').value.trim(),hora=$('#alHora').value,dias=$$('#sheet [data-al-dia]:checked').map(x=>+x.dataset.alDia),som=$('#sheet [name="alSom"]:checked')?.value||'original',intensidade=+$('#alInt').value;if(!nome||!/^([01]\d|2[0-3]):[0-5]\d$/.test(hora))return $('#alErr').textContent='Preencha o nome e o horário corretamente.';if(!dias.length)return $('#alErr').textContent='Escolha pelo menos um dia.';if(som==='custom'&&!customUrl)return $('#alErr').textContent='Escolha seu áudio personalizado.';Object.assign(a,{nome,hora,dias,som,intensidade,customUrl,customNome,ativo:a.ativo!==false,lastFired:null});delete a.volume;if(!id)(S.alarmes||(S.alarmes=[])).push(a);const push=await subscribePush({solicitar:true});await save('rotina:alarmes');closeSheet();renderAlarmes();renderStatusPushAlarmes();toast(push?.ok?'Alarme salvo e notificações externas prontas.':'Alarme salvo. Autorize as notificações para ele avisar com o aplicativo fechado.');};
 }
 function alarmOccurrence(a){return `${todayISO()}:${a.hora}`;}
 async function dispararAlarme(a){if(_alarmActive)return;_alarmActive=a;a.lastFired=alarmOccurrence(a);save('rotina:alarmes');$('#alarmClock').textContent=a.hora;$('#alarmTitle').textContent=a.nome||'ALARME';$('#alarmOverlay').classList.add('show');try{const intensidade=Math.max(20,Math.min(100,Number(a.intensidade)||({normal:55,alto:82,maximo:100}[a.volume]||100)));_alarmAudio=criarSomAlarme(a.som,intensidade)||new Audio(a.som==='custom'&&a.customUrl?a.customUrl:'siren.mp3');if(_alarmAudio instanceof Audio){_alarmAudio.loop=true;_alarmAudio.playbackRate=a.som==='grave'?.78:a.som==='rapida'?1.22:1;_alarmAudio.preservesPitch=false;_alarmAudio.volume=intensidade/100}await _alarmAudio.play();}catch(e){toast('Toque em DESLIGAR para confirmar o alarme.');}if(navigator.vibrate)_alarmVib=setInterval(()=>navigator.vibrate([900,200,900]),2200);try{_alarmWake=await navigator.wakeLock?.request('screen');}catch(e){}}
 function pararAlarme(){if(!_alarmActive)return;try{_alarmAudio?.pause();if(_alarmAudio)_alarmAudio.currentTime=0;}catch(e){}clearInterval(_alarmVib);navigator.vibrate?.(0);try{_alarmWake?.release();}catch(e){}$('#alarmOverlay').classList.remove('show');_alarmAudio=null;_alarmActive=null;_alarmWake=null;}
 $('#alarmStop').onclick=pararAlarme;
 $('#alarmOverlay').addEventListener('pointerdown',async()=>{if(_alarmActive&&_alarmAudio?.paused){try{await _alarmAudio.play();}catch(e){}}});
-function checkAlarmes(){if(!S||_alarmActive)return;const n=brasiliaNow(),min=n.getHours()*60+n.getMinutes();const a=(S.alarmes||[]).find(x=>{if(x.ativo===false||!/^([01]\d|2[0-3]):[0-5]\d$/.test(x.hora))return false;if((x.dias||[]).length&&!(x.dias||[]).includes(n.getDay()))return false;const [h,m]=x.hora.split(':').map(Number),late=min-(h*60+m);return late>=0&&late<=5&&x.lastFired!==alarmOccurrence(x);});if(a)dispararAlarme(a);}
-function startAlarmes(){clearInterval(window._alarmTimer);window._alarmTimer=setInterval(checkAlarmes,1000);checkAlarmes();}
+function checkAlarmes(){if(!S||S.profile?.isAdmin||sessionStorage.getItem('rz:admin:returnToken')||_alarmActive)return;const n=brasiliaNow(),min=n.getHours()*60+n.getMinutes();const a=(S.alarmes||[]).find(x=>{if(x.ativo===false||!/^([01]\d|2[0-3]):[0-5]\d$/.test(x.hora))return false;if((x.dias||[]).length&&!(x.dias||[]).includes(n.getDay()))return false;const [h,m]=x.hora.split(':').map(Number),late=min-(h*60+m);return late>=0&&late<=5&&x.lastFired!==alarmOccurrence(x);});if(a)dispararAlarme(a);}
+function startAlarmes(){clearInterval(window._alarmTimer);if(!S||S.profile?.isAdmin||sessionStorage.getItem('rz:admin:returnToken')){pararAlarme();return;}window._alarmTimer=setInterval(checkAlarmes,1000);checkAlarmes();}
 // status de um dia: sempre usa as mesmas atividades exibidas no calendário
 function diaStatusRotina(iso){
   const acts=(S.rotinaDias&&S.rotinaDias[iso])||[];
@@ -3174,7 +3191,7 @@ function renderCalendarioRotina(){
     <div class="calgrid">${cells}</div>
     <div class="callegend"><span><i class="lok"></i>Concluído</span><span><i class="lfail"></i>Incompleto</span><span><i class="lfut"></i>Futuro</span></div>
     ${rotAddMode?`<button class="btn" id="rotAddConfirm" style="margin-top:12px">＋ Planejar várias atividades${rotAddSel.size?` em ${rotAddSel.size} dia(s)`:''}</button>`:''}
-    ${rotClearMode?`<button class="btn" id="rotLimparConfirm" style="margin-top:12px;background:linear-gradient(135deg,var(--accent),var(--accent2))">🗑️ Limpar ${rotClearSel.size} dia(s) selecionado(s)</button>`:''}
+    ${rotClearMode?`<button class="btn" id="rotLimparConfirm" style="margin-top:12px">Continuar e escolher atividades (${rotClearSel.size} dia(s))</button>`:''}
   </div>`;
   $('#rotPrev').onclick=()=>{ rotCalM--; if(rotCalM<0){ rotCalM=11; rotCalY--; } renderCalendarioRotina(); };
   $('#rotNext').onclick=()=>{ rotCalM++; if(rotCalM>11){ rotCalM=0; rotCalY++; } renderCalendarioRotina(); };
@@ -3186,13 +3203,43 @@ function renderCalendarioRotina(){
     else diaRotinaSheet(iso);
   });
   if(rotAddMode && $('#rotAddConfirm')) $('#rotAddConfirm').onclick=()=>adicionarAtividadeDiasSheet([...rotAddSel]);
-  if(rotClearMode && $('#rotLimparConfirm')) $('#rotLimparConfirm').onclick=async()=>{
+  if(rotClearMode && $('#rotLimparConfirm')) $('#rotLimparConfirm').onclick=()=>{
     if(!rotClearSel.size) return toast('Selecione os dias que quer limpar.');
-    if(!S.rotinaDias) S.rotinaDias={};
-    rotClearSel.forEach(iso=>{ delete S.rotinaDias[iso]; });
-    await save('rotina:dias'); const n=rotClearSel.size; rotClearMode=false; rotClearSel=new Set();
-    toast(`${n} dia(s) limpo(s).`); renderRotina();
+    limparDiasRotinaSheet([...rotClearSel]);
   };
+}
+function dataRotinaPorExtenso(iso){return new Date(iso+'T12:00:00').toLocaleDateString('pt-BR',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});}
+function chaveBackupLimpezaRotina(){return userStorageKey('rotina:lastDelete');}
+function ultimoBackupLimpezaRotina(){try{const b=JSON.parse(localStorage.getItem(chaveBackupLimpezaRotina())||'null');return b&&Array.isArray(b.itens)&&b.itens.length?b:null}catch{return null}}
+function salvarBackupLimpezaRotina(itens){try{localStorage.setItem(chaveBackupLimpezaRotina(),JSON.stringify({id:uid(),removidoEm:new Date().toISOString(),itens:structuredClone(itens)}));}catch{}}
+async function executarLimpezaRotina(itens){
+  if(!Array.isArray(itens)||!itens.length)return toast('Nenhuma atividade foi escolhida.');
+  if(!S.rotinaDias)S.rotinaDias={};salvarBackupLimpezaRotina(itens);
+  const porDia=new Map();itens.forEach(x=>{if(!porDia.has(x.dia))porDia.set(x.dia,new Set());porDia.get(x.dia).add(String(x.item.id));});
+  porDia.forEach((ids,dia)=>{const lista=(S.rotinaDias[dia]||[]).filter(a=>!ids.has(String(a.id)));if(lista.length)S.rotinaDias[dia]=lista;else delete S.rotinaDias[dia];});
+  await save('rotina:dias');rotClearMode=false;rotClearSel=new Set();closeSheet();renderRotina();toast(`${itens.length} atividade(s) removida(s). Você pode desfazer a última limpeza.`);
+}
+function limparDiasRotinaSheet(dias){
+  dias=[...new Set(dias)].sort();const grupos=dias.map(dia=>({dia,itens:Array.isArray(S.rotinaDias?.[dia])?S.rotinaDias[dia]:[]})).filter(g=>g.itens.length),total=grupos.reduce((n,g)=>n+g.itens.length,0);
+  if(!total)return toast('Os dias selecionados não têm atividades para apagar.');
+  openSheet(`<h3>Escolha o que deseja apagar</h3><div class="rotina-clear-summary"><b>Nada será apagado sem sua confirmação.</b><br><span class="small muted">Você selecionou ${grupos.length} dia(s), com ${total} atividade(s). Marque somente o que realmente quer remover.</span></div>
+    <div id="rotClearLista">${grupos.map(g=>`<section class="rotina-clear-day"><div class="rotina-clear-day-head"><b style="text-transform:capitalize">${esc(dataRotinaPorExtenso(g.dia))}</b><label><input type="checkbox" data-clear-day="${g.dia}"> todas deste dia</label></div><div class="rotina-clear-items">${g.itens.map(a=>`<label class="rotina-clear-item"><input type="checkbox" data-clear-item="${esc(a.id)}" data-clear-item-day="${g.dia}"><span><b>${esc(a.nome||'Atividade')}</b><small>${a.hora?`⏰ ${esc(a.hora)}`:'Sem horário'}${a.done?' · concluída':''}</small></span></label>`).join('')}</div></section>`).join('')}</div>
+    <button class="btn" id="rotClearSelected" disabled style="margin-top:14px">Apagar atividades escolhidas (0)</button><button class="btn danger-outline" id="rotClearAll" style="margin-top:10px">Apagar todas as ${total} atividades destes dias…</button><button class="btn ghost" id="rotClearCancel" style="margin-top:10px">Cancelar sem apagar</button>`);
+  const marcados=()=>$$('#sheet [data-clear-item]:checked');
+  const atualizar=()=>{const n=marcados().length,b=$('#rotClearSelected');b.disabled=!n;b.textContent=`Apagar atividades escolhidas (${n})`;$$('#sheet [data-clear-day]').forEach(d=>{const itens=$$(`#sheet [data-clear-item-day="${d.dataset.clearDay}"]`);d.checked=itens.length&&itens.every(x=>x.checked);d.indeterminate=itens.some(x=>x.checked)&&!d.checked;});};
+  $$('#sheet [data-clear-item]').forEach(c=>c.onchange=atualizar);$$('#sheet [data-clear-day]').forEach(c=>c.onchange=()=>{$$(`#sheet [data-clear-item-day="${c.dataset.clearDay}"]`).forEach(x=>x.checked=c.checked);atualizar();});
+  $('#rotClearSelected').onclick=()=>{const selecionados=marcados().map(c=>{const g=grupos.find(x=>x.dia===c.dataset.clearItemDay),item=g?.itens.find(a=>String(a.id)===String(c.dataset.clearItem));return item?{dia:g.dia,item}:null;}).filter(Boolean);confirmarLimpezaRotina(selecionados,'as atividades escolhidas');};
+  $('#rotClearAll').onclick=()=>confirmarLimpezaRotina(grupos.flatMap(g=>g.itens.map(item=>({dia:g.dia,item}))),'todas as atividades dos dias selecionados');
+  $('#rotClearCancel').onclick=closeSheet;atualizar();
+}
+function confirmarLimpezaRotina(itens,descricao){
+  const dias=new Set(itens.map(x=>x.dia));openSheet(`<h3>Confirmar exclusão</h3><div class="rotina-clear-summary"><b>Você vai apagar ${itens.length} atividade(s) de ${dias.size} dia(s).</b><br><span class="small muted">Opção escolhida: ${esc(descricao)}. Uma cópia ficará disponível em “desfazer última limpeza”.</span></div><button class="btn" id="rotClearFinal" style="margin-top:14px">Sim, apagar ${itens.length} atividade(s)</button><button class="btn ghost" id="rotClearFinalCancel" style="margin-top:10px">Não, voltar sem apagar</button>`);
+  $('#rotClearFinal').onclick=()=>executarLimpezaRotina(itens);$('#rotClearFinalCancel').onclick=closeSheet;
+}
+function desfazerUltimaLimpezaRotinaSheet(){
+  const b=ultimoBackupLimpezaRotina();if(!b)return toast('Não há uma limpeza recente para desfazer.');const dias=new Set(b.itens.map(x=>x.dia));
+  openSheet(`<h3>Desfazer última limpeza?</h3><p class="muted">Serão recuperadas até <b>${b.itens.length} atividade(s)</b> em ${dias.size} dia(s). Atividades que já existirem não serão duplicadas.</p><button class="btn" id="rotUndoConfirm">Recuperar atividades</button><button class="btn ghost" id="rotUndoCancel" style="margin-top:10px">Cancelar</button>`);
+  $('#rotUndoConfirm').onclick=async()=>{if(!S.rotinaDias)S.rotinaDias={};let restauradas=0;b.itens.forEach(({dia,item})=>{const lista=S.rotinaDias[dia]||(S.rotinaDias[dia]=[]);if(!lista.some(a=>String(a.id)===String(item.id))){lista.push(item);restauradas++;}});await save('rotina:dias');localStorage.removeItem(chaveBackupLimpezaRotina());closeSheet();renderRotina();toast(`${restauradas} atividade(s) recuperada(s).`);};$('#rotUndoCancel').onclick=closeSheet;
 }
 function adicionarAtividadeDiasSheet(dias){
   dias=[...new Set(dias)].sort();
@@ -3299,7 +3346,7 @@ function diaRotinaSheet(iso){
     $('#actRep').onchange=()=>$('#actRepXWrap').style.display=$('#actRep').value==='x'?'block':'none';
     $('#actAdd').onclick=async()=>{ const nome=$('#actNome').value.trim(); if(!nome) return toast('Qual a atividade?'); const descricao=$('#actDesc').value.trim(); const hora=normalizarHorario($('#actHora').value); if(hora===null) return toast('Horário inválido. Use HH:MM, por exemplo 08:00.'); const tipo=$('#actRep').value, n=tipo==='x'?Math.min(366,Math.max(0,parseInt($('#actRepX').value||'0',10))):0; if(tipo==='x'&&!n) return toast('Informe de 1 a 366 dias.'); const count=adicionarAtividadeRepetida(iso,{nome,hora,descricao},tipo,n); await save('rotina:dias'); if(iso===hoje){ atualizaRotinaHist(); renderRotinaList(); } toast(count>1?`Atividade aplicada a ${count} dias.`:'Atividade adicionada.'); diaRotinaSheet(iso); renderCalendarioRotina(); };
     $$('#sheet [data-actedit]').forEach(b=>b.onclick=()=>editHabitoSheet(b.dataset.actedit,iso));
-    $$('#sheet [data-actdel]').forEach(b=>b.onclick=()=>{ S.rotinaDias[iso]=(S.rotinaDias[iso]||[]).filter(x=>x.id!==b.dataset.actdel); if(!S.rotinaDias[iso].length) delete S.rotinaDias[iso]; save('rotina:dias'); if(iso===hoje){ atualizaRotinaHist(); renderRotinaList(); } diaRotinaSheet(iso); renderCalendarioRotina(); });
+    $$('#sheet [data-actdel]').forEach(b=>b.onclick=()=>{const a=(S.rotinaDias[iso]||[]).find(x=>String(x.id)===String(b.dataset.actdel));if(a)excluirAtividadeRotinaSheet(iso,a);});
     $$('#sheet [data-fill]').forEach(b=>b.onclick=()=>aplicarRotinaDias(iso, b.dataset.fill));
   }
 }
@@ -3343,7 +3390,7 @@ function renderRotinaList(){
   $$('#rotinaList [data-togh]').forEach(b=>b.onclick=async()=>{ const r=(S.rotinaDias[hoje]||[]).find(x=>x.id===b.dataset.togh); if(!r) return; r.done=!r.done; r.updatedAt=Date.now(); await save('rotina:dias'); atualizaRotinaHist(); renderRotinaList(); manageSiren(); if($('#rotinaCal')) renderCalendarioRotina(); });
   if(edit){
     $$('#rotinaList [data-edh]').forEach(b=>b.onclick=()=>editHabitoSheet(b.dataset.edh));
-    $$('#rotinaList [data-delh]').forEach(b=>b.onclick=()=>{ S.rotinaDias[hoje]=(S.rotinaDias[hoje]||[]).filter(x=>x.id!==b.dataset.delh); if(!S.rotinaDias[hoje].length) delete S.rotinaDias[hoje]; save('rotina:dias'); atualizaRotinaHist(); renderRotinaList(); renderCalendarioRotina(); });
+    $$('#rotinaList [data-delh]').forEach(b=>b.onclick=()=>{const a=(S.rotinaDias[hoje]||[]).find(x=>String(x.id)===String(b.dataset.delh));if(a)excluirAtividadeRotinaSheet(hoje,a);});
     ativarOrdenacaoRotinaSemHorario(hoje);
   }
 }
@@ -3359,6 +3406,13 @@ function ocorrenciasAtividadeRotina(iso,atividade){
   Object.entries(S.rotinaDias||{}).forEach(([dia,lista])=>{if(dia<hoje||!Array.isArray(lista))return;lista.forEach(item=>{if((serie&&item.serieId===serie)||(!serie&&chaveAtividadeRotina(item)===chave))encontradas.push({dia,item});});});
   if(!encontradas.some(x=>x.dia===iso&&x.item.id===atividade.id))encontradas.push({dia:iso,item:atividade});
   return encontradas;
+}
+function excluirAtividadeRotinaSheet(iso,atividade){
+  const ocorrencias=ocorrenciasAtividadeRotina(iso,atividade),soDia=[{dia:iso,item:atividade}];
+  openSheet(`<h3>Apagar “${esc(atividade.nome||'atividade')}”?</h3><p class="muted small">Escolha o alcance antes de confirmar. Você poderá desfazer esta exclusão na tela da rotina.</p><button class="btn danger-outline" id="delRotDia">Somente deste dia</button>${ocorrencias.length>1?`<button class="btn danger-outline" id="delRotTodas" style="margin-top:10px">De todos os ${ocorrencias.length} dias em que aparece</button>`:''}<button class="btn ghost" id="delRotCancelar" style="margin-top:10px">Cancelar sem apagar</button>`);
+  $('#delRotDia').onclick=()=>confirmarLimpezaRotina(soDia,'esta atividade somente neste dia');
+  if($('#delRotTodas'))$('#delRotTodas').onclick=()=>confirmarLimpezaRotina(ocorrencias,'esta atividade em todos os dias em que aparece');
+  $('#delRotCancelar').onclick=closeSheet;
 }
 function editHabitoSheet(id,iso=todayISO()){
   const hoje=todayISO(); if(!S.rotinaDias) S.rotinaDias={}; if(!S.rotinaDias[iso]) S.rotinaDias[iso]=[];
@@ -3381,7 +3435,7 @@ function editHabitoSheet(id,iso=todayISO()){
       else S.rotinaDias[iso].push({id:uid(),serieId:uid(),...dados,midiaUrl,midiaTipo,done:false,updatedAt:Date.now()});
       await save('rotina:dias');if(iso===hoje)atualizaRotinaHist();closeSheet();renderRotinaList();renderCalendarioRotina();toast(todas?'Alteração aplicada a todas as ocorrências.':'Atividade salva somente neste dia.');};
     if(!id)return finalizar(false);const ocorrencias=ocorrenciasAtividadeRotina(iso,r);if(ocorrencias.length<=1)return finalizar(false);
-    openSheet(`<h3>Onde aplicar esta edição?</h3><p class="muted small">Encontramos esta atividade em ${ocorrencias.length} dias. Escolha sem perder o que já foi marcado como concluído.</p><button class="btn" id="hbSoDia">Somente este dia</button><button class="btn ghost" id="hbTodas" style="margin-top:10px">Todos os ${ocorrencias.length} dias</button>`);
+    openSheet(`<h3>Onde aplicar esta edição?</h3><p class="muted small">Esta atividade também aparece em outros dias. Escolha antes de salvar; o que já foi marcado como concluído será preservado.</p><button class="btn" id="hbSoDia">Somente neste dia</button><button class="btn ghost" id="hbTodas" style="margin-top:10px">Em todos os ${ocorrencias.length} dias que têm esta atividade</button>`);
     $('#hbSoDia').onclick=()=>finalizar(false);$('#hbTodas').onclick=()=>finalizar(true);
   };
 }
@@ -4089,10 +4143,12 @@ let _adminUsuarios=[];
 async function renderAdmin(){
   const root=$('#scr-admin');
   if(!S?.profile?.isAdmin){ root.innerHTML=topbar('ACESSO NEGADO')+'<div class="card">Área exclusiva do proprietário.</div>'; return; }
-  root.innerHTML=`<div class="admin-head"><img class="admin-brand" src="redzone-wordmark.png" alt="REDZONE"><strong>🛡️ ADMINISTRAÇÃO</strong><div>${homeClockHTML()}</div></div>
-    <div class="hero"><div><div class="eyebrow">CENTRAL DO PROPRIETÁRIO</div><div class="hero-name">Controle e suporte</div><div class="muted small">Alterações sensíveis ficam registradas. Senhas antigas nunca são exibidas.</div></div></div>
+  root.innerHTML=`<div class="admin-head"><img class="admin-brand" src="redzone-wordmark.png" alt="REDZONE"><div class="admin-heading"><span class="eyebrow">CENTRAL DO PROPRIETÁRIO</span><strong>Administração</strong><span class="muted small">Controle, suporte e atividade do sistema</span></div><div class="admin-head-actions"><button class="admin-refresh" id="adminAtualizar" aria-label="Atualizar painel" title="Atualizar painel">↻</button><div>${homeClockHTML()}</div></div></div>
+    <div class="hero"><div><div class="hero-name">Visão geral</div><div class="muted small">Os números vêm diretamente do servidor. Toque em qualquer cartão para abrir os detalhes.</div></div></div>
+    <div class="admin-live" id="adminAtualizado">Carregando informações atuais…</div>
     <div id="adminStats" class="admin-stats"><div class="admin-stat"><span>Carregando dados…</span></div></div>
-    <div class="admin-tools"><button class="admin-tool" id="adminAvisos"><b>📢 Enviar aviso</b><span>Mensagem única para todos ou para um usuário.</span></button><button class="admin-tool" id="adminHistoricoAvisos"><b>🗂️ Avisos enviados</b><span>Veja conteúdo, destinatário, alcance e estado.</span></button><button class="admin-tool" id="adminAuditoria"><b>🕘 Histórico de ações</b><span>Veja em linguagem clara tudo o que foi alterado.</span></button><button class="admin-tool" id="adminSair"><b>↪ Sair</b><span>Encerrar a sessão administrativa.</span></button></div>
+    <div class="admin-tools"><button class="admin-tool" id="adminAvisos"><i>📢</i><span class="admin-tool-copy"><b>Enviar aviso</b><span>Para todos ou para uma pessoa.</span></span><em>›</em></button><button class="admin-tool" id="adminHistoricoAvisos"><i>🗂️</i><span class="admin-tool-copy"><b>Avisos enviados</b><span>Conteúdo, destinatário e estado.</span></span><em>›</em></button><button class="admin-tool" id="adminAuditoria"><i>🕘</i><span class="admin-tool-copy"><b>Histórico de ações</b><span>Alterações explicadas de forma clara.</span></span><em>›</em></button><button class="admin-tool" id="adminSair"><i>↪</i><span class="admin-tool-copy"><b>Sair</b><span>Encerrar a sessão administrativa.</span></span><em>›</em></button></div>
+    <h2 class="section-title">Usuários</h2>
     <div class="admin-search"><input id="adminQ" placeholder="Buscar por nome, usuário ou e-mail"><button class="btn sm" id="adminBuscar">Buscar</button></div>
     <div id="adminLista"><p class="muted">Carregando usuários…</p></div>`;
   $('#adminBuscar').onclick=()=>carregarAdminUsuarios($('#adminQ').value);
@@ -4100,13 +4156,19 @@ async function renderAdmin(){
   $('#adminHistoricoAvisos').onclick=adminHistoricoAvisosSheet;
   $('#adminAuditoria').onclick=adminAuditoriaSheet;
   $('#adminSair').onclick=logout;
+  $('#adminAtualizar').onclick=async()=>{const b=$('#adminAtualizar');b.disabled=true;await Promise.all([carregarAdminResumo(),carregarAdminUsuarios($('#adminQ').value)]);b.disabled=false;toast('Painel atualizado com os dados do servidor.');};
   $('#adminQ').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();carregarAdminUsuarios(e.target.value)}};
   try{
-    const r=await api('/admin/resumo');
-    $('#adminStats').innerHTML=[['Usuários',r.usuarios,'users'],['Bloqueados',r.bloqueados,'blocked'],['Publicações',r.posts,'posts'],['Mensagens',r.mensagens,'messages'],['Dados sincronizados',r.estados,'states']].map(x=>`<button class="admin-stat" role="button" data-admin-stat="${x[2]}"><b>${x[1]}</b><span>${x[0]}</span></button>`).join('');
-    $$('[data-admin-stat]').forEach(b=>b.onclick=()=>{const k=b.dataset.adminStat;if(k==='users'){$('#adminQ').value='';carregarAdminUsuarios('');$('#adminLista').scrollIntoView({behavior:'smooth'})}else if(k==='blocked'){$('#adminQ').value='';carregarAdminUsuarios('',true);$('#adminLista').scrollIntoView({behavior:'smooth'})}else adminConteudoSheet(k);});
+    await carregarAdminResumo();
     await carregarAdminUsuarios('');
   }catch(e){ $('#adminLista').innerHTML=`<div class="card"><b>Não foi possível abrir a administração.</b><div class="muted small">${esc(e.data?.erro||e.message||'Tente novamente.')}</div></div>`; }
+}
+async function carregarAdminResumo(){
+  const r=await api('/admin/resumo'),box=$('#adminStats');if(!box)return;
+  const cards=[['👥','Usuários',r.usuarios,'users','Contas ativas no sistema'],['🚫','Bloqueados',r.bloqueados,'blocked','Toque para filtrar'],['📰','Publicações',r.posts,'posts',`${r.postsHoje||0} enviada(s) hoje`],['💬','Mensagens',r.mensagens,'messages',`${r.mensagensHoje||0} enviada(s) hoje`],['☁️','Dados sincronizados',r.estados,'states','Registros pessoais salvos']];
+  box.innerHTML=cards.map(x=>`<button class="admin-stat" data-admin-stat="${x[3]}"><span class="admin-stat-top"><span class="admin-stat-icon">${x[0]}</span><span class="admin-stat-arrow">›</span></span><span><b>${Number(x[2]||0).toLocaleString('pt-BR')}</b><span>${x[1]}</span><small>${esc(x[4])}</small></span></button>`).join('');
+  const atualizado=$('#adminAtualizado');if(atualizado)atualizado.textContent=`Atualizado diretamente do servidor às ${new Date(r.atualizadoEm||Date.now()).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}`;
+  $$('[data-admin-stat]').forEach(b=>b.onclick=()=>{const k=b.dataset.adminStat;if(k==='users'){$('#adminQ').value='';carregarAdminUsuarios('');$('#adminLista').scrollIntoView({behavior:'smooth'})}else if(k==='blocked'){$('#adminQ').value='';carregarAdminUsuarios('',true);$('#adminLista').scrollIntoView({behavior:'smooth'})}else adminConteudoSheet(k);});
 }
 async function carregarAdminUsuarios(q='',somenteBloqueados=false){
   const box=$('#adminLista');if(!box)return;box.innerHTML='<p class="muted">Buscando…</p>';
@@ -4145,8 +4207,9 @@ function renderSupportBanner(){
 }
 async function adminAuditoriaSheet(){
   openSheet('<h3>🕘 Histórico de ações</h3><p class="small muted">Registro legível das alterações feitas pelo painel.</p><div id="adAudit"><p class="muted">Carregando…</p></div>');
-  const nomes={'usuario:editar':'Dados do usuário alterados','suporte:entrar':'Modo suporte iniciado','aviso:estado':'Estado do aviso alterado','aviso:publicar':'Aviso publicado','senha:redefinir':'Senha redefinida'};
-  try{const r=await api('/admin/auditoria');$('#adAudit').innerHTML=(r.itens||[]).length?r.itens.map(i=>`<div class="rowitem"><div class="txt"><div class="admin-audit-action">${esc(nomes[i.acao]||i.acao.replaceAll(':',' — '))}</div><div class="s">${new Date(i.criadoEm).toLocaleString('pt-BR')}${i.alvo?' · '+esc(i.alvo.nomeGuerra)+' (@'+esc(i.alvo.username)+')':i.alvoId?' · usuário removido':''}</div>${i.detalhes?`<div class="small muted admin-audit-detail">${esc(JSON.stringify(i.detalhes).replace(/[{}\"]+/g,' ').replaceAll(':',' '))}</div>`:''}</div></div>`).join(''):'<p class="muted">Nenhuma ação registrada.</p>'}catch(e){$('#adAudit').innerHTML='<p class="err">Não foi possível carregar o histórico.</p>'}
+  const nomes={'usuario:editar':'Dados do usuário alterados','suporte:entrar':'Modo suporte iniciado','aviso:estado':'Estado do aviso alterado','aviso:publicar':'Aviso publicado','senha:redefinir':'Senha redefinida'},campos={nomeGuerra:'nome de guerra',username:'nome de usuário',email:'e-mail',bloqueado:'estado de bloqueio',pesoKg:'peso',alturaCm:'altura',metaAgua:'meta de água',tema:'tema',privado:'privacidade'};
+  const detalhe=i=>{const d=i.detalhes||{};if(i.acao==='usuario:editar'&&Array.isArray(d.campos))return 'Campos alterados: '+d.campos.map(x=>campos[x]||x).join(', ')+'.';if(i.acao==='aviso:publicar')return d.publico?'Enviado para todos os usuários.':'Enviado para uma pessoa.';if(i.acao==='aviso:estado')return d.ativo?'O aviso foi reativado.':'O aviso foi desativado.';return '';};
+  try{const r=await api('/admin/auditoria');$('#adAudit').innerHTML=(r.itens||[]).length?r.itens.map(i=>`<div class="rowitem"><div class="txt"><div class="admin-audit-action">${esc(nomes[i.acao]||'Ação administrativa')}</div><div class="s">${new Date(i.criadoEm).toLocaleString('pt-BR')}${i.alvo?' · '+esc(i.alvo.nomeGuerra)+' (@'+esc(i.alvo.username)+')':i.alvoId?' · conta removida':''}</div>${detalhe(i)?`<div class="small muted admin-audit-detail">${esc(detalhe(i))}</div>`:''}</div></div>`).join(''):'<p class="muted">Nenhuma ação registrada.</p>'}catch(e){$('#adAudit').innerHTML='<p class="err">Não foi possível carregar o histórico.</p>'}
 }
 function adminSenhaSheet(id,nome){
   openSheet(`<h3>Redefinir senha</h3><p class="muted small">Crie uma senha temporária para ${esc(nome)}. A senha atual não pode ser vista.</p><div class="field"><label>Nova senha</label><input id="adNovaSenha" type="password" autocomplete="new-password"></div><div class="err" id="adSenhaErr"></div><button class="btn" id="adSenhaOk">Redefinir</button>`);
@@ -4438,7 +4501,7 @@ function manageSiren(){
   if(!S || !S.config.tryHard){ sirenStop(); return; }
   if(atrasadosAgora().length){ sirenPlay(); } else { sirenStop(); }
 }
-let _tryTick=0, _lastGentle=0;
+let _tryTick=0;const _avisosRotinaExatos=new Set();
 function startTryHard(){
   clearInterval(window._tryTimer); clearInterval(window._sirenTimer);
   if(!S||S.profile?.isAdmin||sessionStorage.getItem('rz:admin:returnToken')){sirenStop();return;}
@@ -4448,7 +4511,7 @@ function startTryHard(){
     if(!S) return;
     const now=brasiliaNow(); const hhmm=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0'); const hoje=todayISO();
     // 1) AVISO no minuto exato do horário das atividades planejadas no calendário de hoje
-    if(S.config.notif) ((S.rotinaDias&&S.rotinaDias[hoje])||[]).forEach(a=>{ if(a.hora===hhmm && !itemFeitoHoje(a.nome,a.done)){ notify('REDZONE — '+a.nome, 'Tá no horário. Cumpra agora, recruta.', 'rotina', true); if(o.vibrar&&navigator.vibrate) navigator.vibrate(200); } });
+    if(S.config.notif) ((S.rotinaDias&&S.rotinaDias[hoje])||[]).forEach(a=>{const chave=`${hoje}:${a.id||chaveAtividadeRotina(a)}:${a.hora}`;if(a.hora===hhmm&&!itemFeitoHoje(a.nome,a.done)&&!_avisosRotinaExatos.has(chave)){_avisosRotinaExatos.add(chave);if(_avisosRotinaExatos.size>500)_avisosRotinaExatos.clear();notify('REDZONE — '+a.nome,'Tá no horário. Cumpra agora, recruta.','rotina',true);if(o.vibrar&&navigator.vibrate)navigator.vibrate(200);}});
     // 2) TRY HARD BRUTAL (sirene+tremor+esculacho): SÓ pra itens com horário que já PASSOU
     const atrasados=atrasadosAgora();
     if(S.config.tryHard && atrasados.length){
@@ -4457,27 +4520,8 @@ function startTryHard(){
       const abre = ESC_ATRASO[_tryTick % ESC_ATRASO.length];
       const msg = `${abre} PASSOU DO HORÁRIO: ${nomes}. CUMPRE AGORA, RECRUTA!`;
       notify('🔥 MODO TRY HARD', msg, 'rotina');
-      if(S.config.notif) api('/push/try-hard',{method:'POST',body:{tarefa:nomes}}).catch(()=>{});
       toast('🔥 '+msg, 4000); tryHardFlash();
       if(navigator.vibrate) navigator.vibrate([400,120,400,120,400,120,600]);
-    }
-    // 3) LEMBRETE ÚTIL (sem tremor, sem sirene), ~10min: SÓ o que o usuário cadastrou/planejou pra HOJE.
-    //    Nada de informação inventada — cada linha vem de um dado real do próprio usuário.
-    if(S.config.notif && Date.now()-_lastGentle > 600000 && now.getHours()>=7 && now.getHours()<22){
-      // horário decente (7h–22h). Item COM horário só entra depois que o horário chegou — nada de
-      // "não deixe de correr (12:00)" às 2 da manhã. Item já feito NUNCA entra.
-      const dia=hojeDia();   // 'seg'..'dom' de hoje
-      const msgs=[];
-      // (a) atividades que VOCÊ marcou pra hoje e ainda não fez (se tem horário, só quando já chegou)
-      ((S.rotinaDias&&S.rotinaDias[hoje])||[]).forEach(a=>{ if(a && a.nome && !itemFeitoHoje(a.nome,a.done) && (!a.hora || a.hora<=hhmm)) msgs.push({t:`Não deixe de fazer: ${a.nome}${a.hora?` (${a.hora})`:''}.`, alvo:'rotina'}); });
-      // (b) ESTUDO: só as matérias que você AGENDOU pra hoje (estudo por dia da semana) e ainda não estudou
-      const estIdsHoje=new Set(S.estudoLogs.filter(l=>l.dateISO===hoje).map(l=>l.materiaId));
-      (S.estudoSemana[dia]||[]).forEach(mid=>{ const m=(S.materias||[]).find(x=>x.id===mid); if(m && m.nome && !estIdsHoje.has(mid)) msgs.push({t:`Você planejou estudar ${m.nome} hoje e ainda não abriu. Bora, recruta.`, alvo:'estudos'}); });
-      // (c) TREINO: só se há treino MONTADO pra hoje no template e você ainda não treinou
-      if((S.treinoTemplate[dia]||[]).length && !S.treinoLogs.some(l=>l.dateISO===hoje)) msgs.push({t:'Você tem treino marcado pra hoje e ainda não fez. Levanta, recruta.', alvo:'treinos'});
-      // (d) ÁGUA: só se tem meta definida e está abaixo dela
-      if(S.profile.metaAgua>0 && (S.agua[hoje]||0) < S.profile.metaAgua) msgs.push({t:`Falta água pra bater a meta de hoje (${S.agua[hoje]||0}/${S.profile.metaAgua}ml). Hidrata. 💧`, alvo:'alimentacao'});
-      if(msgs.length){ _lastGentle=Date.now(); const pick=msgs[Math.floor(Date.now()/600000) % msgs.length]; notify('REDZONE', pick.t, pick.alvo, true); }
     }
   }, Math.max(5,(o.intervaloS||20))*1000);
 }
@@ -4620,7 +4664,7 @@ function connectSocket(){
     _socket.on('post:novo',()=>{ if(activeTab==='batalha') atualizarFeedAoVivo(); });
     _socket.on('post:like',d=>{ if(!d)return; $$(`[data-post="${d.postId}"] [data-like]`).forEach(el=>{ const n=$('b',el); if(n)n.textContent=d.total; }); });
     _socket.on('post:comentario',d=>{ if(!d||d.total==null)return; $$(`[data-post="${d.postId}"] [data-comment]`).forEach(el=>{ const n=$('b',el); if(n)n.textContent=d.total; }); });
-    _socket.on('notif:nova',()=>{ tocarSomNotif('social'); const btn=$('#sinoBtn'); if(!btn)return; let b=$('.notif-badge',btn); if(!b){b=document.createElement('span');b.className='notif-badge';btn.appendChild(b);} const n=Math.min(99,(parseInt(b.textContent)||0)+1); b.textContent=n>9?'9+':n; });
+    _socket.on('notif:nova',()=>{if(S?.profile?.isAdmin||sessionStorage.getItem('rz:admin:returnToken'))return;tocarSomNotif('social'); const btn=$('#sinoBtn'); if(!btn)return; let b=$('.notif-badge',btn); if(!b){b=document.createElement('span');b.className='notif-badge';btn.appendChild(b);} const n=Math.min(99,(parseInt(b.textContent)||0)+1); b.textContent=n>9?'9+':n; });
     _socket.on('aviso:novo',()=>{if(S?.profile?.isAdmin||sessionStorage.getItem('rz:admin:returnToken'))return;tocarSomNotif('sistema');checarAvisosAdmin();});
     // SYNC AO VIVO ponta a ponta: mudou num aparelho → reflete nos outros na hora (sem F5)
     _socket.on('state:changed', (d)=>{ if(!d || d.src===CLIENT_ID) return; applyRemoteState(d.chave, d.valor,d.versao); });
@@ -4636,7 +4680,7 @@ function connectSocket(){
         $('#chatMsgs').insertAdjacentHTML('beforeend',bolhaChat({...m,meu:false,lida:true}));
         $('#chatMsgs').scrollTop=$('#chatMsgs').scrollHeight;
         api('/dm/'+encodeURIComponent(_chatUser)).then(atualizarBadgeDM).catch(()=>{}); limparNotifDM(_chatUser);
-      } else {
+      } else if(!S?.profile?.isAdmin&&!sessionStorage.getItem('rz:admin:returnToken')) {
         tocarSomNotif('mensagens');
         toast('💬 '+nome+': '+(m.texto||'Enviou uma mídia').slice(0,40));
         atualizarBadgeDM();
@@ -4657,17 +4701,24 @@ function connectSocket(){
    WEB PUSH — notificação com o app fechado (tipo WhatsApp)
 ========================================================================= */
 function urlB64ToUint8(b64){ const pad='='.repeat((4-b64.length%4)%4); const s=(b64+pad).replace(/-/g,'+').replace(/_/g,'/'); const raw=atob(s); return Uint8Array.from([...raw].map(c=>c.charCodeAt(0))); }
-async function subscribePush(){
+async function subscribePush({solicitar=false}={}){
   try{
-    if(!('serviceWorker' in navigator) || !('PushManager' in window)) return;
-    if(Notification.permission!=='granted'){ const p=await Notification.requestPermission(); if(p!=='granted') return; }
+    if(!('serviceWorker' in navigator)||!('PushManager' in window)||!('Notification' in window))return {ok:false,motivo:'incompativel'};
+    if(Notification.permission!=='granted'){if(!solicitar)return {ok:false,motivo:Notification.permission};const p=await Notification.requestPermission();if(p!=='granted')return {ok:false,motivo:p};}
     const reg=await navigator.serviceWorker.ready;
     const {key}=await api('/push/vapid',{auth:false});
-    if(!key) return; // servidor sem VAPID configurado
+    if(!key)return {ok:false,motivo:'servidor'}; // servidor sem VAPID configurado
     let sub=await reg.pushManager.getSubscription();
     if(!sub) sub=await reg.pushManager.subscribe({ userVisibleOnly:true, applicationServerKey:urlB64ToUint8(key) });
     await api('/push/subscribe',{method:'POST',body:sub.toJSON()});
-  }catch(e){ console.warn('push', e); }
+    return {ok:true};
+  }catch(e){console.warn('push',e);return {ok:false,motivo:'erro'};}
+}
+async function renderStatusPushAlarmes(){
+  const box=$('#alarmPushStatus');if(!box||S?.profile?.isAdmin)return;let status=null;try{status=await api('/push/status')}catch{}
+  const permissao=('Notification'in window)?Notification.permission:'incompativel',pronto=!!status?.pronto&&permissao==='granted';
+  box.innerHTML=`<div class="alarm-push-status ${pronto?'ready':'warn'}"><div class="txt"><b>${pronto?'✅ Aviso com aplicativo fechado: pronto':'⚠️ Aviso com aplicativo fechado: falta autorizar'}</b><span>${pronto?`${status.dispositivos} aparelho(s) conectado(s).`:'O alarme continua salvo, mas o Android só recebe fechado depois da autorização.'}</span></div><button class="btn sm ${pronto?'ghost':''}" id="alarmPushAction">${pronto?'Testar':'Autorizar'}</button></div>`;
+  $('#alarmPushAction').onclick=async()=>{const r=await subscribePush({solicitar:true});if(!r?.ok)return toast('O navegador não autorizou notificações. Libere nas configurações do site.');if(pronto){try{await api('/push/test',{method:'POST'});toast('Teste agendado para 8 segundos. Feche o aplicativo agora.')}catch(e){toast(e.data?.erro||'Não foi possível iniciar o teste.')}}else{S.config.notif=true;await save('config');toast('Notificações externas autorizadas.');renderStatusPushAlarmes();}};
 }
 let _pushRefreshAt=0;
 function renovarPushEmSegundoPlano(){

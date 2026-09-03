@@ -11,17 +11,18 @@ adminRouter.use(exigirAuth);
 adminRouter.use(async (req, res, next) => {
   const admin = await prisma.usuario.findUnique({ where: { id: req.userId }, select: { isAdmin: true, bloqueado: true } });
   if (!admin?.isAdmin || admin.bloqueado) return res.status(403).json({ erro: 'Acesso exclusivo do proprietário.' });
-  next();
+  res.set('Cache-Control','no-store');next();
 });
 
 const auditar = (adminId, alvoId, acao, detalhes = null) => prisma.adminAudit.create({ data: { adminId, alvoId, acao, detalhes } });
 
 adminRouter.get('/resumo', async (_req, res) => {
-  const [usuarios, bloqueados, posts, mensagens, estados] = await Promise.all([
+  const inicioHoje=new Date();inicioHoje.setHours(0,0,0,0);
+  const [usuarios, bloqueados, posts, mensagens, estados, mensagensHoje, postsHoje] = await Promise.all([
     prisma.usuario.count({ where:{isAdmin:false} }), prisma.usuario.count({ where: { bloqueado: true, isAdmin:false } }), prisma.feedPost.count(),
-    prisma.mensagem.count(), prisma.userState.count(),
+    prisma.mensagem.count(), prisma.userState.count(), prisma.mensagem.count({where:{criadoEm:{gte:inicioHoje}}}), prisma.feedPost.count({where:{criadoEm:{gte:inicioHoje}}}),
   ]);
-  res.json({ usuarios, bloqueados, posts, mensagens, estados });
+  res.json({ usuarios, bloqueados, posts, mensagens, estados, mensagensHoje, postsHoje, atualizadoEm:new Date().toISOString() });
 });
 
 adminRouter.get('/atividade', async (req,res)=>{

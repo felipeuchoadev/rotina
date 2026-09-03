@@ -1,6 +1,6 @@
 # REDZONE (ex-DISCIPLINA) — Status atual e roadmap (ponto de retomada)
 
-**Versão no ar: v124** — além do planejamento em lote e da ordenação da v123, o celular abre o menu arrastando a borda esquerda; a edição de atividades repetidas pergunta entre somente o dia e todas as ocorrências; e o total/histórico de XP usam o mesmo extrato oficial do servidor. Conteúdos concluídos aparecem com +40 mesmo em sessão inferior a um minuto, enquanto XP por minutos continua exigindo 60 segundos. HTML/SW/manifesto estão alinhados em v124. O recálculo seguro percorreu as 3 contas existentes e confirmou que os saldos oficiais já estavam corretos; a falha era somente a listagem visual. Nenhuma atividade fictícia foi criada.
+**Versão no ar: v125** — a limpeza da Rotina permite escolher atividades específicas, exige confirmação separada para apagar tudo e mantém “desfazer última limpeza”. Edições e exclusões repetidas perguntam o alcance. O painel ADM foi reorganizado para celular e lê os números sem cache. Alarmes fechados mostram se o aparelho está realmente autorizado, têm teste de 8 segundos e só são marcados como enviados após aceitação do push; repetições sonoras sem sentido e sons no ADM foram eliminados. Em 02/09, o histórico do servidor recuperou 169 atividades removidas acidentalmente de 13 domingos, preservando alterações posteriores e com backup anterior à recuperação.
 
 > Documento vivo pra QUALQUER sessão continuar sem perder contexto. Se o chat
 > zerar, leia isto + `docs/07`, `08`, `09` e os arquivos de memória.
@@ -55,7 +55,7 @@ Ver memória [[plano-redesign-login-download]] e [[assets-via-downloads]]. Pedir
 fontes/cores; manter wordmark transparente (`redzone-wordmark.png`) e emblema camuflado (`mix-blend-mode:screen`).
 
 ## PENDENTE DE VERDADE
-1. **Validação autenticada final no aparelho real**: v124 tem testes automatizados de planejamento, ordenação, escopo de edição, extrato de XP e árvore de Estudos. Confirmar no Android atual o gesto da borda, o arraste das atividades, o planejamento em lote e o push fechado. Bloqueio de captura do sistema exige futuro wrapper Android com `FLAG_SECURE`.
+1. **Validação autenticada final no aparelho real**: v125 tem testes automatizados de limpeza seletiva, confirmação/escopo, planejamento, ordenação, ADM/push, extrato de XP, Agenda e árvore de Estudos. No Android, abrir Rotina → Alarmes, tocar “Autorizar” e depois “Testar”; fechar o aplicativo durante os 8 segundos para confirmar a entrega pelo sistema. Bloqueio de captura exige futuro wrapper Android com `FLAG_SECURE`.
 2. **Redesign login/landing/app** (item ⭐ acima) — aguarda novo mockup específico do Felipe; não refazer sem referência.
 3. **Domínio pro e-mail** (~R$40/ano): sem domínio o Resend só entrega pro dono; recuperação por **pergunta de
    segurança** já cobre todos. Quando houver domínio, configurar SPF/DKIM no Resend e trocar `MAIL_FROM`.

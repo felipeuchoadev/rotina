@@ -10,6 +10,11 @@ pushRouter.get('/vapid', (req, res) => res.json({ key: pushAtivo ? vapidPublic :
 
 pushRouter.use(exigirAuth);
 
+pushRouter.get('/status', async (req,res)=>{
+  const dispositivos=await prisma.pushSub.count({where:{usuarioId:req.userId}});
+  res.set('Cache-Control','no-store').json({ativo:pushAtivo,dispositivos,pronto:pushAtivo&&dispositivos>0});
+});
+
 // Registrar/atualizar a inscrição de push deste dispositivo
 pushRouter.post('/subscribe', async (req, res) => {
   const s = req.body || {};
@@ -26,8 +31,16 @@ pushRouter.post('/subscribe', async (req, res) => {
 pushRouter.post('/try-hard', async (req,res)=>{
   const tarefa=String(req.body?.tarefa||'').trim().slice(0,160);
   if(!tarefa) return res.status(400).json({erro:'Informe a tarefa.'});
-  await enviarPush(req.userId,{title:'🔥 MODO TRY HARD',body:`PASSOU DO HORÁRIO: ${tarefa}. CUMPRA AGORA!`,tag:'try-hard-'+Date.now(),url:'/rotina/#tab=rotina',requireInteraction:true});
-  res.json({ok:true});
+  const entrega=await enviarPush(req.userId,{title:'🔥 MODO TRY HARD',body:`PASSOU DO HORÁRIO: ${tarefa}. CUMPRA AGORA!`,tag:'try-hard-'+Date.now(),url:'/rotina/#tab=rotina',requireInteraction:true});
+  res.json({ok:entrega.enviados>0,entrega});
+});
+
+pushRouter.post('/test', async (req,res)=>{
+  const dispositivos=await prisma.pushSub.count({where:{usuarioId:req.userId}});
+  if(!pushAtivo||!dispositivos)return res.status(409).json({erro:'Este aparelho ainda não está preparado para notificações com o aplicativo fechado.'});
+  const usuarioId=req.userId,tag=`teste-push-${Date.now()}`;
+  const timer=setTimeout(()=>enviarPush(usuarioId,{title:'✅ Teste REDZONE',body:'Funcionou com o aplicativo fechado. Este foi apenas um teste solicitado por você.',tag,url:'/rotina/#tab=rotina',requireInteraction:false}).catch(()=>{}),8000);
+  timer.unref?.();res.status(202).json({ok:true,emSegundos:8});
 });
 
 export default pushRouter;

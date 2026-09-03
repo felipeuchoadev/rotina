@@ -91,7 +91,7 @@ async function marcarEnviado(chave) {
 export async function rodarAgenda() {
   const agora = brasiliaAgora();
   const hoje = new Date(agora); hoje.setHours(0, 0, 0, 0);
-  const estados = await prisma.userState.findMany({ where: { chave: { in: ['datas', 'config'] } } }).catch(() => []);
+  const estados = await prisma.userState.findMany({ where: { chave: { in: ['datas', 'config'] }, usuario:{isAdmin:false,bloqueado:false} } }).catch(() => []);
   const porUsuario = new Map();
   for (const row of estados) {
     const atual = porUsuario.get(row.usuarioId) || {};
@@ -120,7 +120,7 @@ export async function rodarAgenda() {
 export async function rodarLembretesRotina() {
   const agora=brasiliaAgora(), iso=isoDe(agora);
   const minutoAgora=agora.getHours()*60+agora.getMinutes();
-  const estados=await prisma.userState.findMany({where:{chave:{in:['rotina:dias','config']}}}).catch(()=>[]);
+  const estados=await prisma.userState.findMany({where:{chave:{in:['rotina:dias','config']},usuario:{isAdmin:false,bloqueado:false}}}).catch(()=>[]);
   const porUsuario=new Map();
   for(const row of estados){const x=porUsuario.get(row.usuarioId)||{};x[row.chave]=row.valor;porUsuario.set(row.usuarioId,x);}
   let enviados=0;
@@ -133,15 +133,15 @@ export async function rodarLembretesRotina() {
       if(atraso<0)continue;
       const tryHard=config.tryHard===true;
       const intervalo=Math.max(1,Math.ceil(Number(config.tryOpts?.intervaloS||60)/60));
-      if(!tryHard&&atraso>1)continue;
+      if(!tryHard&&atraso>5)continue;
       const slot=tryHard?Math.floor(atraso/intervalo):0;
       if(tryHard&&atraso%intervalo>1)continue;
       const id=String(tarefa.id||`${tarefa.hora}-${tarefa.nome||'atividade'}`).replace(/[^a-zA-Z0-9_-]/g,'').slice(0,60);
       const dedupe=`rotina-push:${iso}:${usuarioId}:${id}:${slot}`;
       if(await jaEnviado(dedupe))continue;
       const nome=String(tarefa.nome||'atividade').slice(0,160);
-      await enviarPush(usuarioId,{title:tryHard?'🔥 MODO TRY HARD':'REDZONE',body:tryHard?`PASSOU DO HORÁRIO: ${nome}. CUMPRA AGORA!`:`Hora de ${nome}.`,tag:`rotina-${usuarioId}-${id}`,url:'/rotina/#tab=rotina',requireInteraction:tryHard});
-      await marcarEnviado(dedupe);enviados++;
+      const entrega=await enviarPush(usuarioId,{title:tryHard?'🔥 MODO TRY HARD':'REDZONE',body:tryHard?`PASSOU DO HORÁRIO: ${nome}. CUMPRA AGORA!`:`Hora de ${nome}.`,tag:`rotina-${usuarioId}-${id}`,url:'/rotina/#tab=rotina',requireInteraction:tryHard});
+      if(entrega.enviados>0){await marcarEnviado(dedupe);enviados++;}
     }
   }
   return {enviados};
@@ -151,7 +151,7 @@ export async function rodarLembretesRotina() {
 // Ao abrir o REDZONE, o toque contínuo assume até a pessoa pressionar DESLIGAR.
 export async function rodarAlarmes() {
   const agora=brasiliaAgora(), iso=isoDe(agora), minutoAgora=agora.getHours()*60+agora.getMinutes();
-  const estados=await prisma.userState.findMany({where:{chave:'rotina:alarmes'}}).catch(()=>[]);
+  const estados=await prisma.userState.findMany({where:{chave:'rotina:alarmes',usuario:{isAdmin:false,bloqueado:false}}}).catch(()=>[]);
   let enviados=0;
   for(const row of estados){
     const alarmes=Array.isArray(row.valor)?row.valor:[];
@@ -160,13 +160,13 @@ export async function rodarAlarmes() {
       const dias=Array.isArray(alarme.dias)?alarme.dias:[];
       if(dias.length&&!dias.includes(agora.getDay()))continue;
       const [h,m]=alarme.hora.split(':').map(Number), atraso=minutoAgora-(h*60+m);
-      if(atraso<0||atraso>1)continue;
+      if(atraso<0||atraso>5)continue;
       const id=String(alarme.id||alarme.hora).replace(/[^a-zA-Z0-9_-]/g,'').slice(0,60);
       const dedupe=`alarme:${iso}:${row.usuarioId}:${id}`;
       if(await jaEnviado(dedupe))continue;
       const nome=String(alarme.nome||'Alarme').slice(0,120);
-      await enviarPush(row.usuarioId,{title:`⏰ ${nome}`,body:'Abra o REDZONE e toque em DESLIGAR ALARME.',tag:`alarme-${row.usuarioId}-${id}`,url:`/rotina/#tab=rotina&alarm=${encodeURIComponent(id)}`,requireInteraction:true});
-      await marcarEnviado(dedupe);enviados++;
+      const entrega=await enviarPush(row.usuarioId,{title:`⏰ ${nome}`,body:'Abra o REDZONE e toque em DESLIGAR ALARME.',tag:`alarme-${row.usuarioId}-${id}`,url:`/rotina/#tab=rotina&alarm=${encodeURIComponent(id)}`,requireInteraction:true});
+      if(entrega.enviados>0){await marcarEnviado(dedupe);enviados++;}
     }
   }
   return {enviados};

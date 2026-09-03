@@ -1,5 +1,15 @@
 # Changelog
 
+## v125 (02/09/2026)
+- A limpeza da Rotina deixou de apagar dias inteiros imediatamente: depois de escolher os dias, a pessoa marca atividades específicas; “apagar tudo” é uma opção separada com segunda confirmação e contagem exata.
+- Toda limpeza cria uma cópia local recuperável pelo botão “desfazer última limpeza”. A exclusão pelo ícone de lixeira também pergunta entre somente aquele dia e todas as ocorrências repetidas.
+- A edição de atividades repetidas pergunta explicitamente entre “somente neste dia” e “em todos os dias que têm esta atividade”, preservando o estado concluído de cada ocorrência.
+- Incidente de 02/09: o histórico do servidor permitiu recuperar 169 atividades removidas de 13 domingos sem sobrescrever mudanças posteriores; foi criado backup anterior à recuperação.
+- Alarmes fechados agora exibem o estado real da autorização push e oferecem um teste solicitado de 8 segundos. O servidor só marca o envio após ao menos um dispositivo aceitar o push e tenta novamente por até cinco minutos.
+- Alarmes e sons foram bloqueados no painel administrativo. Avisos do mesmo horário são deduplicados no navegador, o envio Try Hard duplicado foi removido e os lembretes automáticos genéricos deixaram de disparar.
+- O painel ADM recebeu cabeçalho responsivo sem sobreposição, atualização manual, horário da última leitura, cartões integralmente clicáveis e histórico de ações em linguagem clara, sem UUIDs/JSON bruto.
+- Publicado como `redzone-v125`; sintaxe, testes de Rotina, ADM, push, XP, Estudos e Agenda foram validados, assim como serviço e endpoints públicos.
+
 ## v124 (02/09/2026)
 - No celular, arrastar a partir da borda esquerda abre a gaveta principal acompanhando o dedo; rolagens verticais e gestos iniciados fora da borda continuam livres.
 - Atividades repetidas recebem um identificador de série. Ao editar uma ocorrência, o aplicativo pergunta se deve alterar somente aquele dia ou todas as ocorrências atuais/futuras, preservando o estado concluído de cada dia.
