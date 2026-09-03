@@ -96,24 +96,34 @@ private val sectors = listOf(
 }
 
 @Composable private fun Dashboard() = Column(Modifier.fillMaxSize().padding(12.dp), verticalArrangement = Arrangement.spacedBy(9.dp)) {
-    Row(Modifier.fillMaxWidth().height(98.dp).card(), verticalAlignment = Alignment.CenterVertically) {
-        Image(painterResource(R.drawable.redzone_logo), "Patente", Modifier.padding(10.dp).size(76.dp).clip(CircleShape), contentScale = ContentScale.Crop)
-        Column(Modifier.weight(1f)) {
-            Text("UCHOA", color = Color.White, fontSize = 19.sp, fontWeight = FontWeight.Black)
-            Text("@felipeuchoa", color = Muted, fontSize = 11.sp)
-            Spacer(Modifier.height(7.dp)); Surface(color = Red.copy(.12f), shape = RoundedCornerShape(50)) { Text("▲ RECRUTA · 20 XP", color = Red, fontSize = 10.sp, fontWeight = FontWeight.Bold, modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)) }
+    Row(Modifier.fillMaxWidth().height(102.dp).card(), verticalAlignment = Alignment.CenterVertically) {
+        Box(Modifier.padding(start = 13.dp).size(78.dp), contentAlignment = Alignment.Center) {
+            CircularProgressIndicator(progress = { .025f }, color = Red, trackColor = Color.White.copy(.08f), strokeWidth = 4.dp, modifier = Modifier.fillMaxSize())
+            Image(painterResource(R.drawable.avatar_masc), "Perfil", Modifier.size(66.dp).clip(CircleShape), contentScale = ContentScale.Crop)
         }
-        Icon(Icons.Default.ChevronRight, null, tint = Muted, modifier = Modifier.padding(10.dp))
+        Spacer(Modifier.width(13.dp))
+        Column(Modifier.weight(1f)) {
+            Text("UCHOA", color = Color.White, fontSize = 21.sp, lineHeight = 21.sp, fontWeight = FontWeight.Black)
+            Text("@felipeuchoa", color = Muted, fontSize = 12.sp)
+            Spacer(Modifier.height(6.dp)); Surface(color = Red.copy(.14f), border = androidx.compose.foundation.BorderStroke(1.dp, Red.copy(.28f)), shape = RoundedCornerShape(50)) { Text("▲ Recruta · 20 XP", color = Color(0xFFFF7074), fontSize = 10.sp, fontWeight = FontWeight.ExtraBold, modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp)) }
+        }
     }
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(7.dp)) {
         Metric("19", "ANOS", Modifier.weight(1f)); Metric("89,0", "KG", Modifier.weight(1f)); Metric("1,78", "ALTURA", Modifier.weight(1f))
     }
-    Row(Modifier.fillMaxWidth().weight(1f), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-        DashboardPanel("RESUMO DE HOJE", Icons.Default.Bolt, listOf("Treino", "Estudo", "Rotina"), Modifier.weight(1f))
-        DashboardPanel("MISSÕES", Icons.Default.Flag, listOf("Água 0%", "XP +0", "Sequência 0"), Modifier.weight(1f))
+    Row(Modifier.fillMaxWidth().height(73.dp).card().padding(horizontal = 13.dp), verticalAlignment = Alignment.CenterVertically) {
+        Icon(Icons.Default.Security, null, tint = Color(0xFFB6C7CC), modifier = Modifier.size(37.dp)); Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f)) {
+            Text("Recruta  ⓘ", color = Color.White, fontSize = 16.sp, fontWeight = FontWeight.Black)
+            LinearProgressIndicator(progress = { .0025f }, color = Color(0xFF37D67A), trackColor = Color.White.copy(.08f), modifier = Modifier.fillMaxWidth().height(6.dp).clip(CircleShape))
+            Text("20 XP · faltam 7.980 pra Soldado", color = Muted, fontSize = 9.sp)
+        }
     }
-    Surface(onClick = {}, color = Red, shape = RoundedCornerShape(14.dp), modifier = Modifier.fillMaxWidth().height(48.dp)) {
-        Row(horizontalArrangement = Arrangement.Center, verticalAlignment = Alignment.CenterVertically) { Icon(Icons.Default.Add, null); Spacer(Modifier.width(6.dp)); Text("REGISTRAR ATIVIDADE", fontWeight = FontWeight.Black) }
+    Text("Resumo de hoje", color = Color.White, fontSize = 14.sp, fontWeight = FontWeight.Black, modifier = Modifier.padding(start = 2.dp))
+    Column(Modifier.fillMaxWidth().weight(1f), verticalArrangement = Arrangement.spacedBy(7.dp)) {
+        SummaryRow(Icons.Default.FitnessCenter, "Treino de hoje", "Nenhuma sessão concluída", 0f, Modifier.weight(1f))
+        SummaryRow(Icons.Default.School, "Estudos", "Nenhum conteúdo concluído", 0f, Modifier.weight(1f))
+        SummaryRow(Icons.Default.WaterDrop, "Água", "0 / 2500 ml", 0f, Modifier.weight(1f))
     }
 }
 
@@ -126,6 +136,15 @@ private fun Modifier.card() = background(Panel, RoundedCornerShape(17.dp)).borde
 @Composable private fun DashboardPanel(title: String, icon: ImageVector, rows: List<String>, modifier: Modifier) = Column(modifier.card().padding(11.dp)) {
     Row(verticalAlignment = Alignment.CenterVertically) { Icon(icon, null, tint = Red, modifier = Modifier.size(17.dp)); Spacer(Modifier.width(6.dp)); Text(title, color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Black) }
     Spacer(Modifier.height(8.dp)); rows.forEach { CompactRow(it) }
+}
+
+@Composable private fun SummaryRow(icon: ImageVector, title: String, subtitle: String, progress: Float, modifier: Modifier) = Row(modifier.fillMaxWidth().card().padding(horizontal = 12.dp), verticalAlignment = Alignment.CenterVertically) {
+    Box(Modifier.size(37.dp).background(Red.copy(.12f), RoundedCornerShape(11.dp)), contentAlignment = Alignment.Center) { Icon(icon, null, tint = Red, modifier = Modifier.size(20.dp)) }
+    Spacer(Modifier.width(11.dp)); Column(Modifier.weight(1f)) {
+        Text(title, color = Color.White, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+        Text(subtitle, color = Muted, fontSize = 9.sp, maxLines = 1)
+        LinearProgressIndicator(progress = { progress }, color = Red, trackColor = Color.White.copy(.07f), modifier = Modifier.fillMaxWidth().padding(top = 5.dp).height(4.dp).clip(CircleShape))
+    }; Spacer(Modifier.width(8.dp)); Text("${(progress * 100).toInt()}%", color = Color.White, fontSize = 10.sp, fontWeight = FontWeight.Bold)
 }
 
 @Composable private fun CompactRow(text: String) = Surface(onClick = {}, color = Panel2, shape = RoundedCornerShape(10.dp), modifier = Modifier.fillMaxWidth().padding(bottom = 7.dp)) {
