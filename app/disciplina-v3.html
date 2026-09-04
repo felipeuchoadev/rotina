@@ -282,6 +282,7 @@ button.rowitem{width:100%;text-align:left;font:inherit}
 .lock-body{padding:20px 16px; text-align:center; background:color-mix(in srgb,var(--accent) 6%, transparent);}
 .lock-body .lockico{font-size:32px;}
 .esculacho{position:relative; z-index:5; font-weight:800; font-size:15.5px; color:#fff; margin:10px 6px; line-height:1.4; text-shadow:0 1px 3px rgba(0,0,0,.95); background:rgba(0,0,0,.5); border:1px solid rgba(255,255,255,.12); border-radius:12px; padding:10px 12px;}
+.esculacho:empty{display:none}
 .countdown{font-weight:800; font-variant-numeric:tabular-nums; font-size:19px; color:var(--text);}
 /* Semana travada: correntes em X + cadeado */
 .week.locked{position:relative; cursor:pointer;}
@@ -311,8 +312,7 @@ button.rowitem{width:100%;text-align:left;font:inherit}
 .weekstrip .wd.ok{background:color-mix(in srgb,var(--ok) 22%, transparent); color:var(--ok); border-color:transparent;}
 .weekstrip .wd.today{box-shadow:0 0 0 2px var(--accent);}
 .weekstrip .wd b{display:block; font-size:15px; line-height:1.3;}
-.week-description{padding:0 16px 11px;color:var(--text);font-size:13px;font-weight:700}.week.locked .lock-body{display:grid;grid-template-columns:92px minmax(0,1fr) auto;align-items:center;gap:12px;padding:12px}.week.locked .chains{height:66px;margin:0}.week.locked .chains .strap{height:22px}.week.locked .chains .lockbig{font-size:30px}.week.locked .esculacho{margin:0;font-size:12px;padding:8px 10px}.week.locked .countdown{font-size:14px;white-space:nowrap}
-@media(max-width:600px){.week.locked .lock-body{grid-template-columns:65px minmax(0,1fr);gap:8px}.week.locked .countdown{grid-column:1/-1;text-align:center}.week.locked .chains{height:55px}.week.locked .esculacho{font-size:11px}}
+.week-description{padding:0 16px 11px;color:var(--text);font-size:13px;font-weight:700}.week.locked .lock-body{display:block;padding:20px 16px}.week.locked .chains{height:118px;margin-bottom:2px}.week.locked .chains .strap{height:30px}.week.locked .chains .lockbig{font-size:46px}.week.locked .esculacho{margin:10px 6px;font-size:15.5px;padding:10px 12px}.week.locked .countdown{font-size:19px;text-align:center}
 .week-plan-card{border:1px solid var(--line);border-radius:16px;background:var(--surface);padding:14px;margin:10px 0}.week-plan-card.selected{border-color:var(--accent);box-shadow:0 0 0 1px var(--accent)}
 .week-plan-top{display:flex;align-items:center;gap:10px}.week-plan-main{flex:1;min-width:0}.week-plan-main b,.week-plan-main span{display:block}.week-plan-main span{font-size:12px;color:var(--text-dim);margin-top:3px}.week-plan-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px}.week-plan-actions .btn{flex:1;min-width:88px}.week-plan-move{display:flex;gap:5px}.week-plan-move button{width:38px;height:38px;border-radius:11px;border:1px solid var(--line);background:var(--surface2);color:var(--text);font-weight:900}
 .natural-video{display:block;width:auto!important;height:auto!important;max-width:100%;max-height:min(68vh,720px)!important;margin:10px auto 0;border-radius:12px;background:#000;object-fit:contain}
@@ -754,6 +754,7 @@ body.th-shake{animation:thshake .55s;}
       <div class="clockbig mono" id="timerClock">00:00:00</div>
       <div class="paused-info" id="timerPaused">Pausado: 00:00:00</div>
       <div class="taunt" id="timerTaunt"></div>
+      <button class="btn sm ghost hidden" id="timerDemoToggle" style="max-width:220px;margin-bottom:12px">Ocultar vídeo</button>
       <div class="row"><button class="btn ghost" id="timerPauseBtn">Pausar</button><button class="btn ok" id="timerFinishBtn">Finalizar</button></div>
     </div>
     <aside class="timer-demo" id="timerDemo" hidden><div class="timer-demo-label">Como executar</div><video id="timerDemoVideo" controls playsinline preload="metadata"></video><div class="timer-demo-caption" id="timerDemoCaption"></div></aside>
@@ -838,7 +839,7 @@ setInterval(()=>{ if(authToken&&offQueue().length&&navigator.onLine) flushQueue(
 
 /* id único DESTE aparelho/aba — usado pra não ecoar de volta a própria escrita no sync ao vivo */
 const CLIENT_ID = (Math.random().toString(36).slice(2)+'-'+Date.now().toString(36));
-const APP_BUILD = 'redzone-v141';
+const APP_BUILD = 'redzone-v142';
 // evita re-render que rouba o foco enquanto a pessoa digita (o dado já foi aplicado em S de qualquer forma)
 function _syncPodeRender(){ const a=document.activeElement; return !(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||'')); }
 // ANTI-LOOP: ao aplicar uma mudança que VEIO do servidor, um re-render pode disparar escritas de
@@ -1751,7 +1752,7 @@ async function xpHistoricoSheet(){
   let extrato;
   try{extrato=await api('/state/xp/extrato');if(Number.isFinite(Number(extrato?.total)))S.profile.xp=Number(extrato.total);}
   catch(e){extrato=extratoXpLocal();toast('Sem conexão: mostrando o histórico salvo neste aparelho.');}
-  const itens=Array.isArray(extrato?.itens)?extrato.itens:[],total=Number(extrato?.total||0),ganhos=Number(extrato?.ganhos||0),perdas=Number(extrato?.perdas||0);
+  const itens=(Array.isArray(extrato?.itens)?extrato.itens:[]).map((item,ordem)=>({...item,_ordem:ordem})).sort((a,b)=>String(b.dateISO||'').localeCompare(String(a.dateISO||''))||(Number(b.at||b.criadoEm||b.createdAt||0)-Number(a.at||a.criadoEm||a.createdAt||0))||(a._ordem-b._ordem)),total=Number(extrato?.total||0),ganhos=Number(extrato?.ganhos||0),perdas=Number(extrato?.perdas||0);
   openSheet(`<h3>Histórico de XP</h3>
     <p class="small muted">Total atual: <b>${total.toLocaleString('pt-BR')} XP</b> · ganhos listados: <b style="color:var(--ok)">+${ganhos.toLocaleString('pt-BR')}</b> · perdas: <b style="color:var(--accent2)">${perdas.toLocaleString('pt-BR')}</b>. Cada linha informa exatamente a origem.</p>
     <div class="xp-folders">${[['geral','🗂️ Geral'],['treino','🏋️ Treinos'],['estudo','🎓 Estudos'],['agua','💧 Água'],['rotina','✅ Rotina'],['ajustes','⚖️ Ajustes']].map(([k,n])=>`<button class="xp-folder ${k==='geral'?'on':''}" data-xp-tipo="${k}">${n}</button>`).join('')}</div><div id="xpLinhas"></div>`);
@@ -2124,12 +2125,12 @@ function renderTreinos(){
     <div class="training-week-progress"><i style="width:${Math.round(diasFeitosAtual/7*100)}%"></i></div>
   </section>`:'';
   const editorSemana=`<div style="display:flex;justify-content:space-between;align-items:center;margin:4px 2px"><h2 class="section-title" style="margin:0">Editor da semana ${treinoSemanaSel+1}</h2>${editToggleHint()}</div>
-    <div class="days" id="treinoDays">${DIAS.map(d=>dayChip(d,treinoDiaSel)).join('')}</div><div id="treinoDia"></div>
+    <div class="days" id="treinoDays">${DIAS.map(d=>dayChip(d,treinoDiaSel,S.treinoWeeks[treinoSemanaSel]?.startISO)).join('')}</div><div id="treinoDia"></div>
     <button class="btn" id="saveTreinoWeek" style="margin-top:8px">✓ Salvar semana ${treinoSemanaSel+1}</button>`;
   const html = `
     ${topbar('TREINOS')}
     ${edit?`<div style="display:flex;justify-content:space-between;align-items:center;margin:4px 2px"><h2 class="section-title" style="margin:0">Planejamento das semanas</h2>${editToggleHint()}</div><div id="treinoWeeks"></div><button class="btn ghost" id="addWeek" style="margin:8px 0 22px">＋ Nova semana</button>${editorSemana}`:
-      `${heroSemana}<div style="display:flex;justify-content:flex-end;align-items:center;margin:4px 2px">${editToggleHint()}</div><div class="days" id="treinoDays">${DIAS.map(d=>dayChip(d,treinoDiaSel)).join('')}</div><div id="treinoDia"></div><h2 class="section-title">Jornada semanal</h2><div id="treinoWeeks"></div>`}
+      `${heroSemana}<div style="display:flex;justify-content:flex-end;align-items:center;margin:4px 2px">${editToggleHint()}</div><div class="days" id="treinoDays">${DIAS.map(d=>dayChip(d,treinoDiaSel,semanaAtual?.startISO)).join('')}</div><div id="treinoDia"></div><h2 class="section-title">Jornada semanal</h2><div id="treinoWeeks"></div>`}
     <div style="display:flex;justify-content:space-between;align-items:center;margin:22px 2px 4px">
       <h2 class="section-title" style="margin:0">Meus recordes</h2><button class="btn sm" id="addRec">＋ recorde</button>
     </div>
@@ -2181,8 +2182,8 @@ function editRecordeSheet(id){
     save('treino:recordes'); closeSheet(); renderRecordes();
   };
 }
-function dayChip(d, sel){ const today=hojeDia();
-  return `<div class="day ${d===sel?'sel':''} ${d===today?'today':''}" data-d="${d}"><div class="dn">${DIAS_AB[d]}</div><div class="dd">${d===today?'hoje':''}</div></div>`; }
+function dayChip(d, sel,weekStartISO=null){ const today=hojeDia(),di=DIAS.indexOf(d),iso=weekStartISO?weekDayISO(weekStartISO,di):null,isToday=iso?iso===todayISO():d===today,label=isToday?'hoje':(iso?new Date(iso+'T00:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'2-digit'}):'');
+  return `<div class="day ${d===sel?'sel':''} ${isToday?'today':''}" data-d="${d}"><div class="dn">${DIAS_AB[d]}</div><div class="dd">${label}</div></div>`; }
 function mensagemDiaBloqueado(dia){
   const alvo=DIAS.indexOf(dia), atual=DIAS.indexOf(hojeDia());
   return alvo<atual
@@ -2203,8 +2204,8 @@ function renderTreinoDia(){
   const edit=S.config.editMode; const d=treinoDiaSel;
   const plano=edit?planoTreinoDaSemana(treinoSemanaSel,true):planoTreinoDaSemana(weekContainingToday(),false);
   const list=plano[d]||[];
-  const semana=edit?`Semana ${treinoSemanaSel+1} · `:'';
-  let h=`<div class="card training-day-card"><div class="training-day-head"><strong>${semana}${DIAS_NOME[d]}</strong>${edit?`<button class="btn sm" id="addExec">＋ exercício</button>`:''}</div>`;
+  const wi=edit?treinoSemanaSel:weekContainingToday(),dataDia=S.treinoWeeks[wi]?.startISO?weekDayISO(S.treinoWeeks[wi].startISO,DIAS.indexOf(d)):todayISO(),semana=edit?`Semana ${treinoSemanaSel+1} · `:'';
+  let h=`<div class="card training-day-card"><div class="training-day-head"><strong>${semana}${DIAS_NOME[d]} · ${new Date(dataDia+'T00:00:00').toLocaleDateString('pt-BR')}</strong>${edit?`<button class="btn sm" id="addExec">＋ exercício</button>`:''}</div>`;
   if(!list.length) h+=`<p class="muted small">Nada definido pra ${DIAS_NOME[d]}. ${edit?'Adicione um exercício.':'Ative o modo edição pra montar.'}</p>`;
   list.forEach(ex=>{
     const feito = treinoFeitoHoje(ex.id);
@@ -2312,12 +2313,11 @@ function renderTreinoWeeks(){
         <div class="weekstrip">${strip}</div><div style="padding:2px 14px 12px" class="small muted">Modo edição: semana liberada para preparar a rotina.</div></div>`;
       return;
     }
-      const esc1=ESC_LOCKED[i%ESC_LOCKED.length];
       const secs=Math.max(0,Math.floor((start-new Date())/1000));
       h+=`<div class="week locked" data-lockedweek="${i}"><div class="week-head"><h3>Semana ${i+1}</h3><span>🔒</span></div>
         <div class="lock-body">
           <div class="chains" aria-hidden="true"><span class="strap s1"></span><span class="strap s2"></span><div class="lockbig">🔒</div></div>
-          <div class="esculacho" data-esc="${i}">${esc(esc1)}</div>
+          <div class="esculacho" data-esc="${i}"></div>
           <div class="countdown" data-cd="${start.getTime()}">${fmtDHM(secs)}</div>
         </div></div>`;
   });
@@ -2404,7 +2404,7 @@ function esculachoTravada(el, i){
   el.classList.remove('shake'); void el.offsetWidth; el.classList.add('shake');
   const msg=ESC_TRAVADA[Math.floor((Date.now()/1000+i)%ESC_TRAVADA.length)]; // varia a cada clique
   const escEl=el.querySelector('[data-esc]');
-  if(escEl){ escEl.textContent=msg; escEl.style.transition='none'; escEl.style.transform='scale(1.05)'; escEl.style.filter='brightness(1.5)';
+  if(escEl){ escEl.textContent=msg; escEl.style.display='block';escEl.style.transition='none'; escEl.style.transform='scale(1.05)'; escEl.style.filter='brightness(1.5)';
     setTimeout(()=>{ escEl.style.transition='transform .4s, filter 3s'; escEl.style.transform='scale(1)'; escEl.style.filter='brightness(1)'; },50); }
   toast('🔒 '+msg, 5000);
   try{ tocarSom&&tocarSom('apito'); }catch(e){}
@@ -2459,15 +2459,15 @@ let timerSession = null; // {tipo, dia, refId, grupoId, startedAt, elapsedMs, pa
 let timerRAF=null;
 function startSession(tipo, dia, refId, grupoId=null){
   if(!podeExecutarDia(dia)) return;
-  timerSession = { tipo, dia, refId, grupoId, startedAt:Date.now(), elapsedMs:0, pausedMs:0, pausedAt:null, running:true };
+  timerSession = { tipo, dia, refId, grupoId, startedAt:null, elapsedMs:0, pausedMs:0, pausedAt:null, running:false, awaitingStart:true };
   const exercicio=tipo==='treino'?planoTreinoAtual(dia).find(x=>x.id===refId):null;
   const nome = tipo==='treino' ? (exercicio?.nome||'Treino')
                                : (S.materias.find(m=>m.id===refId)?.nome||'Estudo');
   const m=tipo==='estudo'?S.materias.find(x=>x.id===refId):null, grupo=grupoId?gruposMateria(m).find(g=>String(g.id)===String(grupoId)):null;
   $('#timerTitle').textContent = (tipo==='treino'?'SESSÃO DE TREINO — ':'SESSÃO DE ESTUDO — ')+nome.toUpperCase()+(grupo?' · '+grupo.nome.toUpperCase():'');
-  const demo=$('#timerDemo'),video=$('#timerDemoVideo'),caption=$('#timerDemoCaption');
-  if(exercicio?.videoUrl){demo.hidden=false;video.src=exercicio.videoUrl;caption.textContent=exercicio.desc||'';$('#timer').classList.add('has-demo')}else{demo.hidden=true;video.pause();video.removeAttribute('src');video.load();caption.textContent='';$('#timer').classList.remove('has-demo')}
-  $('#timerPauseBtn').textContent='Pausar';
+  const demo=$('#timerDemo'),video=$('#timerDemoVideo'),caption=$('#timerDemoCaption'),toggle=$('#timerDemoToggle');
+  if(exercicio?.videoUrl){demo.hidden=false;video.src=exercicio.videoUrl;caption.textContent=exercicio.desc||'';toggle.classList.remove('hidden');toggle.textContent='Ocultar vídeo';$('#timer').classList.add('has-demo')}else{demo.hidden=true;video.pause();video.removeAttribute('src');video.load();caption.textContent='';toggle.classList.add('hidden');$('#timer').classList.remove('has-demo')}
+  $('#timerPauseBtn').textContent='Iniciar';
   rollTaunt();
   $('#timer').classList.add('show');
   tickTimer();
@@ -2487,9 +2487,11 @@ function tickTimer(){
 // listeners anexados UMA vez:
 $('#timerPauseBtn').addEventListener('click', ()=>{
   if(!timerSession) return;
+  if(timerSession.awaitingStart){timerSession.awaitingStart=false;timerSession.running=true;timerSession.startedAt=Date.now();$('#timerPauseBtn').textContent='Pausar';$('#timerTaunt').textContent='';return;}
   if(timerSession.running){ timerSession.running=false; timerSession.pausedAt=Date.now(); $('#timerPauseBtn').textContent='Retomar'; rollTaunt(); }
   else { timerSession.pausedMs += Date.now()-timerSession.pausedAt; timerSession.pausedAt=null; timerSession.running=true; $('#timerTaunt').textContent=''; $('#timerPauseBtn').textContent='Pausar'; }
 });
+$('#timerDemoToggle').addEventListener('click',()=>{const demo=$('#timerDemo'),ocultar=!demo.hidden;demo.hidden=ocultar;$('#timerDemoToggle').textContent=ocultar?'Mostrar vídeo':'Ocultar vídeo';$('#timer').classList.toggle('has-demo',!ocultar);if(ocultar)$('#timerDemoVideo').pause();});
 $('#timerFinishBtn').addEventListener('click', finishSession);
 function finishSession(){
   if(!timerSession) return;
@@ -2498,7 +2500,7 @@ function finishSession(){
     $('#timer').classList.remove('show'); $('#timerDemoVideo').pause(); timerSession=null; return;
   }
   if(!timerSession.running && timerSession.pausedAt){ timerSession.pausedMs+=Date.now()-timerSession.pausedAt; timerSession.pausedAt=null; }
-  const ativoMs = Math.max(0, (timerSession.running? Date.now()-timerSession.startedAt-timerSession.pausedMs : timerSession.elapsedMs));
+  const ativoMs = timerSession.awaitingStart?0:Math.max(0, (timerSession.running? Date.now()-timerSession.startedAt-timerSession.pausedMs : timerSession.elapsedMs));
   const sess = {...timerSession, ativoMs};
   cancelAnimationFrame(timerRAF); clearInterval(window._tauntTimer);
   $('#timer').classList.remove('show');
@@ -3069,8 +3071,8 @@ function renderAlimHistGrafico(){
 function renderAlimDia(){
   const edit=S.config.editMode;
   const d=alimDiaSel; const list=S.alimSemana[d]||[];
-  let h=`<div class="card"><div class="h">${DIAS_NOME[d]} ${edit?`<button class="btn sm" id="addRefeicao">＋ refeição</button>`:''}</div>`;
-  if(!list.length) h+=`<p class="muted small">Sem refeições. ${edit?'Adicione (ex: Café da manhã).':'Ative o modo edição pra montar a semana.'}</p>`;
+  let h=`<div class="card"><div class="h">${DIAS_NOME[d]} <button class="btn sm" id="addRefeicao">＋ refeição</button></div>`;
+  if(!list.length) h+=`<p class="muted small">Sem refeições. Adicione, por exemplo, café da manhã ou almoço.</p>`;
   list.forEach(r=>{
     const done = r.done===todayISO();
     const q = qualidadeAuto(r);
@@ -3096,8 +3098,8 @@ function renderAlimDia(){
       catch(e){ toast('Falha ao enviar.'); }
     });
   });
+  $('#addRefeicao').onclick=()=>editRefeicaoSheet(d,null);
   if(edit){
-    $('#addRefeicao').onclick=()=>editRefeicaoSheet(d,null);
     $$('#alimDia [data-edref]').forEach(b=>b.onclick=()=>editRefeicaoSheet(d,b.dataset.edref));
     $$('#alimDia [data-delref]').forEach(b=>b.onclick=()=>{ S.alimSemana[d]=S.alimSemana[d].filter(x=>x.id!==b.dataset.delref); save('alim:semana'); renderAlimDia(); });
   }
