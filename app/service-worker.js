@@ -3,7 +3,7 @@
    Sempre que você subir código novo no host, muda a versão do CACHE abaixo
    (ou a lógica de fetch pega o novo do servidor). O app se atualiza sozinho
    na próxima abertura. */
-const CACHE = 'redzone-v147';
+const CACHE = 'redzone-v148';
 
 // ---- Web Push: recebe notificação mesmo com o app fechado ----
 self.addEventListener('push', (e) => {
