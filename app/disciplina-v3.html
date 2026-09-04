@@ -258,6 +258,8 @@ button.rowitem{width:100%;text-align:left;font:inherit}
 .materia-grupo-top input{flex:1;min-width:0;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--text);padding:12px;font:inherit;font-weight:700}
 .materia-grupo-top input:focus{outline:none;border-color:var(--accent)}
 .materia-grupo-editor .materia-editor-list{margin:10px 0}
+.materia-grupo-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.materia-grupo-actions .btn{min-width:0;white-space:normal}
+@media(max-width:390px){.materia-grupo-actions{grid-template-columns:1fr}}
 @media(max-width:390px){.study-tree-head{padding:13px}.study-tree-content{padding-left:17px}.study-tree-node-row{padding-right:7px}.study-tree-pct{min-width:41px;padding-inline:5px}.materia-editor-num{display:none}.materia-editor-item{padding:9px}.materia-grupo-editor{padding:9px}}
 .profile-bio{margin:12px 2px;color:var(--text);line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
 .pencil{opacity:.8; font-size:16px; padding:6px 9px; border-radius:10px; background:rgba(255,255,255,.05); border:1px solid var(--line);}
@@ -841,9 +843,10 @@ setInterval(()=>{ if(authToken&&offQueue().length&&navigator.onLine) flushQueue(
 
 /* id único DESTE aparelho/aba — usado pra não ecoar de volta a própria escrita no sync ao vivo */
 const CLIENT_ID = (Math.random().toString(36).slice(2)+'-'+Date.now().toString(36));
-const APP_BUILD = 'redzone-v145';
+const APP_BUILD = 'redzone-v146';
 // evita re-render que rouba o foco enquanto a pessoa digita (o dado já foi aplicado em S de qualquer forma)
-function _syncPodeRender(){ const a=document.activeElement; return !(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||'')); }
+let _mediaUploadBusy=0;
+function _syncPodeRender(){ const a=document.activeElement; return !_mediaUploadBusy&&!(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||'')); }
 // ANTI-LOOP: ao aplicar uma mudança que VEIO do servidor, um re-render pode disparar escritas de
 // efeito colateral (reportXP/saveProfile/save) que voltariam a emitir e criariam ping-pong entre
 // aparelhos. Durante uma janela curta após aplicar o remoto, NÃO reescrevemos no servidor.
@@ -2251,7 +2254,7 @@ function editExecSheet(dia, exId){
   const paintVideo=()=>{ va.innerHTML = videoUrl
     ? `<video class="natural-video" src="${videoUrl}" controls playsinline preload="metadata"></video><button class="btn sm ghost" id="exVideoDel" style="margin-top:6px">Remover vídeo</button>`
     : `<button class="btn sm ghost" id="exVideoAdd">🎥 Selecionar vídeo</button>`;
-    if($('#exVideoAdd')) $('#exVideoAdd').onclick=()=>{ const inp=$('#capVideo'); inp.value=''; inp.removeAttribute('capture'); inp.onchange=async()=>{ const f=inp.files[0]; if(!f)return;const salvar=$('#exSave');salvar.disabled=true;va.innerHTML='<b>Preparando demonstração</b><div class="upload-progress"><i id="exUploadBar"></i></div><div class="upload-status" id="exUploadStatus">Iniciando envio…</div>';try{const up=await uploadMedia(f,{perfil:'demonstracao',onProgress:(pct,fase)=>{const bar=$('#exUploadBar'),st=$('#exUploadStatus');if(bar)bar.style.width=pct+'%';if(st)st.textContent=fase==='otimizando'?'Upload concluído. Otimizando automaticamente…':fase==='pronto'?'✅ Vídeo pronto.':`Enviando… ${pct}%`}});videoUrl=up.url;toast('Vídeo pronto.');}catch(e){toast(e?.message||'Falha ao enviar vídeo.');}finally{salvar.disabled=false;paintVideo();}}; inp.click(); };
+    if($('#exVideoAdd')) $('#exVideoAdd').onclick=()=>{ const inp=$('#capVideo'); inp.value=''; inp.removeAttribute('capture'); inp.onchange=async()=>{ const f=inp.files[0]; if(!f)return;const salvar=$('#exSave');salvar.disabled=true;_mediaUploadBusy++;va.innerHTML='<b>Enviando demonstração</b><div class="upload-progress"><i id="exUploadBar"></i></div><div class="upload-status" id="exUploadStatus">Preparando envio rápido…</div>';try{const up=await uploadMedia(f,{perfil:'demonstracao',onProgress:(pct,fase)=>{const bar=$('#exUploadBar'),st=$('#exUploadStatus');if(bar)bar.style.width=pct+'%';if(st)st.textContent=fase==='otimizando'?'Upload concluído. Finalizando…':fase==='pronto'?'✅ Vídeo pronto.':fase==='reconectando'?'Reconectando sem perder o envio…':`Enviando… ${pct}%`}});videoUrl=up.url;toast('Vídeo pronto.');}catch(e){toast(e?.message||'Falha ao enviar vídeo.');}finally{_mediaUploadBusy=Math.max(0,_mediaUploadBusy-1);salvar.disabled=false;paintVideo();}}; inp.click(); };
     if($('#exVideoDel')) $('#exVideoDel').onclick=()=>{ videoUrl=null; paintVideo(); };
   };
   paintVideo();
@@ -2262,7 +2265,7 @@ function editExecSheet(dia, exId){
     const indiceAtual=Math.max(0,S.treinoWeeks.findIndex(w=>w.id===semanaId)),planoAtual=planoTreinoDaSemana(indiceAtual,true),existente=exId?planoAtual[dia].find(x=>x.id===exId):null,b=$('#exSave');b.disabled=true;b.textContent='Salvando…';
     if(existente){ existente.nome=nome; existente.desc=desc; existente.videoUrl=videoUrl; }
     else planoAtual[dia].push({id:uid(), nome, desc, videoUrl});
-    treinoSemanaSel=indiceAtual;await save('treino:weeks'); closeSheet(); renderTreinoDia();toast('Exercício salvo na semana.');
+    treinoSemanaSel=indiceAtual;try{await save('treino:weeks');closeSheet();renderTreinoDia();toast('Exercício salvo na semana.')}catch(e){b.disabled=false;b.textContent='Salvar';toast('Não foi possível salvar. Tente novamente.');}
   };
 }
 function addTreinoWeek(){
@@ -2802,10 +2805,7 @@ function editMateriaSheet(mid){
   prepararEstruturaMateria(m);
   openSheet(`<h3>${mid?'Editar':'Nova'} matéria</h3>
     <div class="field"><label>Nome da matéria</label><input id="matNome" value="${esc(m.nome)}" placeholder="Ex: Matemática"></div>
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px">
-      <label style="font-family:'Oswald';font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim)">Conteúdos principais / pastas</label>
-      <button type="button" class="btn sm ghost" id="matAddGrupo">＋ Novo conteúdo</button>
-    </div>
+    <label style="font-family:'Oswald';font-size:13px;letter-spacing:.08em;text-transform:uppercase;color:var(--text-dim)">Conteúdos principais / pastas</label>
     <p class="small muted" style="margin:7px 0 4px">Organize qualquer matéria em conteúdos, assuntos e subassuntos. Dentro de cada assunto, use “＋ Adicionar subassunto”. Enter apenas pula uma linha no mesmo item.</p>
     <div id="matGrupos"></div>
     <p class="small muted" id="matSemGrupo" style="display:none">Nenhum conteúdo principal ainda. Toque em “Novo conteúdo”.</p>
@@ -2830,13 +2830,13 @@ function editMateriaSheet(mid){
   };
   const addGrupo=(grupo=null,focar=false)=>{
     const el=document.createElement('div'); el.className='materia-grupo-editor'; el.dataset.gid=grupo?.id||uid();
-    el.innerHTML=`<div class="materia-grupo-top"><span class="study-tree-folder">📁</span><input maxlength="120" placeholder="Ex: Acentuação" value="${esc(grupo?.nome||'')}"><button type="button" class="materia-editor-remove grupo-remove" aria-label="Remover conteúdo principal">🗑️</button></div><div class="materia-editor-list"></div><p class="small muted grupo-sem-conteudo">Pasta vazia.</p><button type="button" class="btn sm ghost grupo-add-conteudo">＋ Adicionar assunto</button>`;
+    el.innerHTML=`<div class="materia-grupo-top"><span class="study-tree-folder">📁</span><input maxlength="120" placeholder="Ex: Acentuação" value="${esc(grupo?.nome||'')}"><button type="button" class="materia-editor-remove grupo-remove" aria-label="Remover conteúdo principal">🗑️</button></div><div class="materia-editor-list"></div><p class="small muted grupo-sem-conteudo">Pasta vazia.</p><div class="materia-grupo-actions"><button type="button" class="btn sm ghost grupo-add-conteudo">＋ Adicionar assunto</button><button type="button" class="btn sm ghost grupo-add-novo">＋ Novo conteúdo</button></div>`;
     $('.grupo-remove',el).onclick=()=>{ el.remove(); $('#matSemGrupo').style.display=$$('.materia-grupo-editor',gruposBox).length?'none':'block'; toast('Conteúdo retirado desta edição. Salve para confirmar.'); };
     $('.grupo-add-conteudo',el).onclick=()=>addConteudo(el,null,true);
+    $('.grupo-add-novo',el).onclick=()=>addGrupo(null,true);
     gruposBox.appendChild(el); (grupo?conteudosOrdenados(m,grupo.id):[]).forEach(({conteudo,nivel})=>addConteudo(el,conteudo,false,nivel,conteudo.parentId||'')); atualizarNumeros(el); $('#matSemGrupo').style.display='none'; if(focar)setTimeout(()=>$('.materia-grupo-top input',el).focus(),30);
   };
   gruposMateria(m).forEach(g=>addGrupo(g));
-  $('#matAddGrupo').onclick=()=>addGrupo(null,true);
   if(!gruposMateria(m).length)addGrupo(null,false);
   $('#matSave').onclick=()=>{
     const nome=$('#matNome').value.trim(); if(!nome) return toast('Nome da matéria?');

@@ -91,6 +91,13 @@ uploadRouter.post('/', receberArquivo, async (req, res) => {
       if (recebeuCorte && !corte) return res.status(400).json({ erro: 'Trecho de vídeo inválido. Escolha até 60 segundos.' });
       let nome = `${id}.mp4`;
       const perfil=String(req.body.perfil||'');
+      // Demonstrações em MP4/WebM já podem ser reproduzidas diretamente.
+      // Evita uma segunda espera longa e picos de processamento no servidor.
+      if (perfil === 'demonstracao' && !corte && ['.mp4','.webm'].includes(extEntrada)) {
+        nome = `${id}${extEntrada}`;
+        await writeFile(path.join(UPLOAD_DIR, nome), req.file.buffer);
+        return res.status(201).json({ url: `${PUBLIC_BASE}/${nome}`, tipo: 'video', otimizado: false });
+      }
       const comprimido = await comprimirComFfmpeg(req.file.buffer, extEntrada, 'video', corte, perfil);
       const usarComprimido = corte || comprimido.length < req.file.buffer.length;
       const buf = usarComprimido ? comprimido : req.file.buffer;
