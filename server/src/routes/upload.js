@@ -13,7 +13,7 @@ export const uploadRouter = Router();
 uploadRouter.use(exigirAuth);
 
 const UPLOAD_DIR = process.env.UPLOAD_DIR || './uploads';
-const PUBLIC_BASE = process.env.PUBLIC_MEDIA_BASE || '/uploads';
+const PUBLIC_BASE = process.env.PUBLIC_MEDIA_BASE || '/rotina/uploads';
 const execFileAsync = promisify(execFile);
 
 async function comprimirComFfmpeg(buffer, ext, tipo, corte = null, perfil = '') {

@@ -163,7 +163,8 @@ stateRouter.put('/:chave', async (req, res) => {
     }
   }
   let valor = req.body?.valor;
-  const versaoRecebida = BigInt(Math.max(0, Number(req.body?.versao || Date.now())));
+  const versaoInformada=Number(req.body?.versao);
+  const versaoRecebida = BigInt(Math.max(0, Math.trunc(Number.isFinite(versaoInformada)?versaoInformada:Date.now())));
   const atual = await prisma.userState.findUnique({ where: { usuarioId_chave: { usuarioId: req.userId, chave: req.params.chave } } });
   if (atual && atual.versao > versaoRecebida) return res.json({ ok: true, valor: atual.valor, versao: Number(atual.versao), ignorada: true });
   if (req.params.chave === 'rotina:dias') {
