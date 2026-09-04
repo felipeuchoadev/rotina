@@ -843,7 +843,7 @@ setInterval(()=>{ if(authToken&&offQueue().length&&navigator.onLine) flushQueue(
 
 /* id único DESTE aparelho/aba — usado pra não ecoar de volta a própria escrita no sync ao vivo */
 const CLIENT_ID = (Math.random().toString(36).slice(2)+'-'+Date.now().toString(36));
-const APP_BUILD = 'redzone-v148';
+const APP_BUILD = 'redzone-v149';
 // evita re-render que rouba o foco enquanto a pessoa digita (o dado já foi aplicado em S de qualquer forma)
 let _mediaUploadBusy=0;
 function _syncPodeRender(){ const a=document.activeElement; return !_mediaUploadBusy&&!(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||'')); }
@@ -2277,7 +2277,7 @@ function addTreinoWeek(){
   const last=S.treinoWeeks[S.treinoWeeks.length-1];
   const start=new Date(last.startISO); start.setDate(start.getDate()+7);
   S.treinoWeeks.push({id:uid(), startISO:start.toISOString().slice(0,10), exec:{}, template:clonarPlanoTreino(last.template||S.treinoTemplate)});
-  treinoSemanaSel=S.treinoWeeks.length-1; save('treino:weeks'); renderTreinos(); toast('Nova semana criada.');
+  treinoSemanaSel=S.treinoWeeks.length-1;treinoDiaSel='seg'; save('treino:weeks'); renderTreinos(); toast('Nova semana criada.');
 }
 // data ISO do dia `di` (0=seg..6=dom) de uma semana que começa em startISO
 function weekDayISO(startISO, di){ const dt=new Date(startISO+'T00:00:00'); dt.setDate(dt.getDate()+di); return `${dt.getFullYear()}-${String(dt.getMonth()+1).padStart(2,'0')}-${String(dt.getDate()).padStart(2,'0')}`; }
@@ -2371,6 +2371,8 @@ function renderPlanejamentoSemanas(){
 }
 function selecionarSemanaTreino(i){
   treinoSemanaSel=i;
+  const plano=planoTreinoDaSemana(i,false);
+  treinoDiaSel=DIAS.find(d=>plano?.[d]?.length)||'seg';
   renderTreinos();
   setTimeout(()=>$('#treinoDia')?.scrollIntoView({behavior:'smooth',block:'center'}),30);
 }
@@ -2384,7 +2386,7 @@ async function duplicarSemanaTreino(i){
   const origem=S.treinoWeeks[i]; if(!origem)return;
   const ultima=S.treinoWeeks.at(-1), inicio=addDiasISO(ultima.startISO,7);
   S.treinoWeeks.push({id:uid(),startISO:inicio,exec:{},descricao:origem.descricao?`${origem.descricao} — cópia`:'',template:clonarPlanoTreino(planoTreinoDaSemana(i,false))});
-  treinoSemanaSel=S.treinoWeeks.length-1; await save('treino:weeks');renderTreinos();toast('Semana duplicada.');
+  treinoSemanaSel=S.treinoWeeks.length-1;treinoDiaSel=DIAS.find(d=>planoTreinoDaSemana(treinoSemanaSel,false)?.[d]?.length)||'seg'; await save('treino:weeks');renderTreinos();toast('Semana duplicada.');
 }
 async function moverSemanaTreino(i,dir){
   const j=i+dir;if(j<0||j>=S.treinoWeeks.length)return;
@@ -2478,7 +2480,9 @@ function startSession(tipo, dia, refId, grupoId=null){
   const m=tipo==='estudo'?S.materias.find(x=>x.id===refId):null, grupo=grupoId?gruposMateria(m).find(g=>String(g.id)===String(grupoId)):null;
   $('#timerTitle').textContent = (tipo==='treino'?'SESSÃO DE TREINO — ':'SESSÃO DE ESTUDO — ')+nome.toUpperCase()+(grupo?' · '+grupo.nome.toUpperCase():'');
   const demo=$('#timerDemo'),video=$('#timerDemoVideo'),caption=$('#timerDemoCaption'),toggle=$('#timerDemoToggle');
-  if(exercicio?.videoUrl){demo.hidden=false;video.src=exercicio.videoUrl;caption.textContent=exercicio.desc||'';toggle.classList.remove('hidden');toggle.textContent='Ocultar vídeo';$('#timer').classList.add('has-demo')}else{demo.hidden=true;video.pause();video.removeAttribute('src');video.load();caption.textContent='';toggle.classList.add('hidden');$('#timer').classList.remove('has-demo')}
+  video.pause();video.autoplay=false;video.currentTime=0;
+  if(exercicio?.videoUrl){demo.hidden=false;video.src=exercicio.videoUrl;caption.textContent=exercicio.desc||'';toggle.classList.remove('hidden');toggle.textContent='Ocultar vídeo';$('#timer').classList.add('has-demo')}else{demo.hidden=true;video.removeAttribute('src');video.load();caption.textContent='';toggle.classList.add('hidden');$('#timer').classList.remove('has-demo')}
+  $('#timerClock').textContent='00:00:00';$('#timerPaused').textContent='O cronômetro só começa quando você tocar em Iniciar.';
   $('#timerPauseBtn').textContent='Iniciar';
   rollTaunt();
   $('#timer').classList.add('show');
@@ -2505,6 +2509,10 @@ $('#timerPauseBtn').addEventListener('click', ()=>{
 });
 $('#timerDemoToggle').addEventListener('click',()=>{const demo=$('#timerDemo'),ocultar=!demo.hidden;demo.hidden=ocultar;$('#timerDemoToggle').textContent=ocultar?'Mostrar vídeo':'Ocultar vídeo';$('#timer').classList.toggle('has-demo',!ocultar);if(ocultar)$('#timerDemoVideo').pause();});
 $('#timerFinishBtn').addEventListener('click', finishSession);
+
+// Em qualquer tela do REDZONE, iniciar um vídeo pausa todos os outros.
+// Evita dois exercícios, posts ou prévias reproduzindo som ao mesmo tempo.
+document.addEventListener('play',e=>{const atual=e.target;if(atual?.tagName!=='VIDEO')return;$$('video').forEach(v=>{if(v!==atual&&!v.paused){try{v.pause()}catch{}}})},true);
 function finishSession(){
   if(!timerSession) return;
   if(!podeExecutarDia(timerSession.dia)){
