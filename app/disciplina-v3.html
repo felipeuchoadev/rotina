@@ -383,6 +383,8 @@ button.rowitem{width:100%;text-align:left;font:inherit}
 .overlay{position:fixed; inset:0; z-index:60; background:rgba(0,0,0,.62); display:none; align-items:flex-end;}
 .overlay.show{display:flex;}
 .sheet{background:var(--surface); width:100%; max-width:520px; margin:0 auto; border-radius:26px 26px 0 0; padding:20px 16px calc(24px + env(safe-area-inset-bottom)); max-height:min(90vh,var(--app-vvh,90vh)); overflow-y:auto; overscroll-behavior:contain; box-shadow:0 -24px 54px rgba(0,0,0,.5);}
+.sound-settings{display:grid;gap:12px;margin-top:16px}.sound-card{border:1px solid var(--line);border-radius:17px;background:var(--surface2);padding:14px}.sound-card-head{display:flex;align-items:center;gap:11px;margin-bottom:12px}.sound-card-head input{width:22px;height:22px;flex:0 0 22px}.sound-card-head b{font-size:16px;line-height:1.25}.sound-card select{width:100%;min-height:46px}.sound-card-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:9px}.sound-card-actions .btn{min-width:0;width:100%;white-space:normal;padding:10px 8px}.sound-custom{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:9px;color:var(--text-dim);font-size:12px}.sound-save{position:sticky;bottom:calc(-24px - env(safe-area-inset-bottom));z-index:2;margin-top:14px;padding:11px 0 calc(14px + env(safe-area-inset-bottom));background:linear-gradient(transparent,var(--surface) 18%)}
+@media(max-width:420px){.sound-card{padding:12px}.sound-card-actions{grid-template-columns:1fr}.sound-settings{gap:10px}}
 html.chat-open,body.chat-open{overflow:hidden!important;overscroll-behavior:none}
 .overlay.chat-full{align-items:stretch;background:var(--bg);inset:0!important;width:100vw!important;height:100dvh!important;max-width:none!important;transform:none!important;z-index:90;overflow:hidden}
 .overlay.chat-full .sheet{max-width:none;height:100%;max-height:none;border-radius:0;padding:calc(14px + env(safe-area-inset-top)) 14px calc(10px + env(safe-area-inset-bottom));display:flex;flex-direction:column;overflow:hidden}
@@ -839,7 +841,7 @@ setInterval(()=>{ if(authToken&&offQueue().length&&navigator.onLine) flushQueue(
 
 /* id único DESTE aparelho/aba — usado pra não ecoar de volta a própria escrita no sync ao vivo */
 const CLIENT_ID = (Math.random().toString(36).slice(2)+'-'+Date.now().toString(36));
-const APP_BUILD = 'redzone-v144';
+const APP_BUILD = 'redzone-v145';
 // evita re-render que rouba o foco enquanto a pessoa digita (o dado já foi aplicado em S de qualquer forma)
 function _syncPodeRender(){ const a=document.activeElement; return !(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||'')); }
 // ANTI-LOOP: ao aplicar uma mudança que VEIO do servidor, um re-render pode disparar escritas de
@@ -1970,7 +1972,7 @@ function resumoHojeHTML(){
   const estudoPlan = (S.estudoSemana[dia]||[]);
   const estudoFeitos = estudoPlan.filter(mid=>estudoFeitoHoje(mid)).length;
   const rotinaHoje = rotinaDoDia(todayISO());
-  const rotinaTotal = rotinaHoje.length, rotinaFeita = rotinaHoje.filter(r=>r.done).length;
+  const rotinaTotal = rotinaHoje.length, rotinaFeita = rotinaHoje.filter(r=>atividadeConcluidaNaData(r,todayISO())).length;
   const aguaHoje = S.agua[todayISO()]||0;
   const aguaPct = Math.min(100, Math.round(aguaHoje/(S.profile.metaAgua||2500)*100));
   const pct = (a,b)=> b ? Math.round(a/b*100) : 0;
@@ -2012,7 +2014,7 @@ function resumoDetalheSheet(tipo){
   } else if(tipo==='rotina'){
     titulo='Rotina de hoje';
     const rotinaHoje=rotinaDoDia(hoje);
-    corpo = rotinaHoje.length ? rotinaHoje.map(r=>{ const f=!!r.done;
+    corpo = rotinaHoje.length ? rotinaHoje.map(r=>{ const f=atividadeConcluidaNaData(r,hoje);
       return `<div class="rowitem ${f?'done':''}"><div class="chk">${f?'✓':''}</div><div class="txt"><div class="t">${esc(r.nome)}</div><div class="s mono">${r.hora||'--:--'} ${f?'· ✅ feito':'· ⏳ pendente'}</div></div></div>`;
     }).join('') : '<p class="muted small">Nenhuma atividade planejada para hoje.</p>';
   } else {
@@ -3289,9 +3291,12 @@ function startAlarmes(){clearInterval(window._alarmTimer);if(!S||S.profile?.isAd
 // status de um dia: sempre usa as mesmas atividades exibidas no calendário
 function diaStatusRotina(iso){
   const acts=(S.rotinaDias&&S.rotinaDias[iso])||[];
-  if(acts.length) return {total:acts.length, done:acts.filter(a=>a.done).length};
+  if(acts.length) return {total:acts.length, done:acts.filter(a=>atividadeConcluidaNaData(a,iso)).length};
   return {total:0, done:0};
 }
+function isoLocalDoInstante(valor){const d=new Date(Number(valor));if(!Number.isFinite(d.getTime()))return '';const p=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(d),v=t=>p.find(x=>x.type===t)?.value||'';return `${v('year')}-${v('month')}-${v('day')}`;}
+function atividadeConcluidaNaData(a,iso){if(!a?.done)return false;if(a.doneDate)return a.doneDate===iso;const instante=Number(a.doneAt||a.updatedAt||0);return instante>0&&isoLocalDoInstante(instante)===iso;}
+function definirConclusaoAtividade(a,feito,iso=todayISO()){a.done=!!feito;a.updatedAt=Date.now()+(typeof _serverClockOffset==='number'?_serverClockOffset:0);if(feito){a.doneDate=iso;a.doneAt=a.updatedAt}else{delete a.doneDate;delete a.doneAt}}
 function rotinaDoDia(iso=todayISO()){
   return ordenarAtividadesRotina((S.rotinaDias&&S.rotinaDias[iso])||[]);
 }
@@ -3299,7 +3304,7 @@ function ordenarAtividadesRotina(lista){return [...lista].map((a,i)=>({a,i})).so
 function atualizaRotinaHist(){
   const lista=rotinaDoDia(todayISO());
   const total=lista.length;
-  const done=lista.filter(r=>r.done).length;
+  const done=lista.filter(r=>atividadeConcluidaNaData(r,todayISO())).length;
   if(!S.rotinaHist) S.rotinaHist={};
   S.rotinaHist[todayISO()]={done,total};
   save('rotina:hist');
@@ -3467,11 +3472,11 @@ function diaRotinaSheet(iso){
   const isFuturo = iso>hoje;
   // Dia futuro = SÓ visualização (dá pra planejar no modo edição, mas NÃO finalizar).
   const podeMarcar = isToday;
-  const linhas = acts.length ? acts.map(a=>`<div class="rowitem ${a.done?'done':''}">
-      <div class="chk" data-actchk="${a.id}" style="${podeMarcar?'':'opacity:.5'}">${a.done?'✓':''}</div>
+  const linhas = acts.length ? acts.map(a=>{const feito=atividadeConcluidaNaData(a,iso);return `<div class="rowitem ${feito?'done':''}">
+      <div class="chk" data-actchk="${a.id}" style="${podeMarcar?'':'opacity:.5'}">${feito?'✓':''}</div>
       <div class="txt"><div class="t">${esc(a.nome)}</div>${a.hora?`<div class="s mono">⏰ ${a.hora}</div>`:''}${a.descricao?`<div class="activity-description">${esc(a.descricao)}</div>`:''}${a.midiaUrl?`<img class="chat-media" src="${esc(a.midiaUrl)}" alt="Comprovação da atividade">`:''}</div>
       ${editable?`<button class="pencil" data-actedit="${a.id}" aria-label="Editar atividade">✏️</button><button class="pencil" data-actdel="${a.id}" aria-label="Excluir atividade">🗑️</button>`:''}
-    </div>`).join('') : `<p class="muted small">Nenhuma atividade nesse dia.${editable?' Adicione abaixo.':''}</p>`;
+    </div>`}).join('') : `<p class="muted small">Nenhuma atividade nesse dia.${editable?' Adicione abaixo.':''}</p>`;
   let sheet=`<h3 style="text-transform:capitalize">${dataLabel}</h3>
     <p class="small" style="${st.total>0&&st.done>=st.total?'color:var(--ok)':'color:var(--text-dim)'}">${st.total>0?`${st.done}/${st.total} atividades${st.done>=st.total?' · dia 100% ✅':''}`:'Sem atividades planejadas.'}</p>
     ${linhas}`;
@@ -3500,7 +3505,7 @@ function diaRotinaSheet(iso){
   }
   openSheet(sheet);
   ativarCampoHorario('actHora');
-  $$('#sheet [data-actchk]').forEach(b=>b.onclick=async()=>{ if(!podeMarcar) return toast(iso<hoje?'⛔ O passado já fechou. Disciplina se prova hoje.':'⛔ Sem atalhos: essa atividade só vale quando o dia chegar.'); const a=(S.rotinaDias[iso]||[]).find(x=>x.id===b.dataset.actchk); if(a){ a.done=!a.done; a.updatedAt=Date.now(); await save('rotina:dias'); if(iso===hoje){ atualizaRotinaHist(); renderRotinaList(); manageSiren(); } diaRotinaSheet(iso); renderCalendarioRotina(); } });
+  $$('#sheet [data-actchk]').forEach(b=>b.onclick=async()=>{ if(!podeMarcar) return toast(iso<hoje?'⛔ O passado já fechou. Disciplina se prova hoje.':'⛔ Sem atalhos: essa atividade só vale quando o dia chegar.'); const a=(S.rotinaDias[iso]||[]).find(x=>x.id===b.dataset.actchk); if(a){ definirConclusaoAtividade(a,!atividadeConcluidaNaData(a,iso),iso); await save('rotina:dias'); if(iso===hoje){ atualizaRotinaHist(); renderRotinaList(); manageSiren(); } diaRotinaSheet(iso); renderCalendarioRotina(); } });
   if(editable){
     $('#actRep').onchange=()=>$('#actRepXWrap').style.display=$('#actRep').value==='x'?'block':'none';
     $('#actAdd').onclick=async()=>{ const nome=$('#actNome').value.trim(); if(!nome) return toast('Qual a atividade?'); const descricao=$('#actDesc').value.trim(); const hora=normalizarHorario($('#actHora').value); if(hora===null) return toast('Horário inválido. Use HH:MM, por exemplo 08:00.'); const tipo=$('#actRep').value, n=tipo==='x'?Math.min(366,Math.max(0,parseInt($('#actRepX').value||'0',10))):0; if(tipo==='x'&&!n) return toast('Informe de 1 a 366 dias.'); const count=adicionarAtividadeRepetida(iso,{nome,hora,descricao},tipo,n); await save('rotina:dias'); if(iso===hoje){ atualizaRotinaHist(); renderRotinaList(); } toast(count>1?`Atividade aplicada a ${count} dias.`:'Atividade adicionada.'); diaRotinaSheet(iso); renderCalendarioRotina(); };
@@ -3539,7 +3544,7 @@ function renderRotinaList(){
   const edit=S.config.editMode;
   const hoje=todayISO(), list=rotinaDoDia(hoje);
   $('#rotinaList').innerHTML = list.length? list.map(r=>{
-    const done=!!r.done;
+    const done=atividadeConcluidaNaData(r,hoje);
     return `<div class="rowitem ${done?'done':''}" ${!r.hora?`data-rot-order="${r.id}"`:''}>
       ${edit&&!r.hora?`<button type="button" class="rotina-drag" data-rot-drag="${r.id}" aria-label="Arrastar ${esc(r.nome)} para reordenar" title="Arraste para mudar a ordem">≡</button>`:''}
       <div class="chk" data-togh="${r.id}">${done?'✓':''}</div>
@@ -3547,8 +3552,8 @@ function renderRotinaList(){
       ${!done?`<button class="pencil" data-toghmedia="${r.id}" aria-label="Concluir com foto ou vídeo" title="Concluir com mídia">📷</button>`:''}
       ${edit?`<button class="pencil" data-edh="${r.id}">✏️</button><button class="pencil" data-delh="${r.id}">🗑️</button>`:''}
     </div>`; }).join('') : `<p class="muted small">Sem hábitos. ${edit?'Adicione (ex: Tomar banho 06:30).':'Ative o modo edição pra montar.'}</p>`;
-  $$('#rotinaList [data-togh]').forEach(b=>b.onclick=()=>{ const r=(S.rotinaDias[hoje]||[]).find(x=>x.id===b.dataset.togh); if(!r) return; r.done=!r.done; r.updatedAt=Date.now()+(typeof _serverClockOffset==='number'?_serverClockOffset:0); atualizaRotinaHist(); renderRotinaList(); manageSiren(); if($('#rotinaCal')) renderCalendarioRotina(); save('rotina:dias'); });
-  $$('#rotinaList [data-toghmedia]').forEach(b=>b.onclick=()=>{const r=(S.rotinaDias[hoje]||[]).find(x=>x.id===b.dataset.toghmedia);if(!r)return;const input=document.createElement('input');input.type='file';input.accept='image/*,video/*';input.onchange=async()=>{const f=input.files?.[0];if(!f)return;toast('Enviando registro…');try{const up=await uploadMedia(f);r.provaUrl=up.url;r.provaTipo=up.tipo;r.done=true;r.updatedAt=Date.now()+(typeof _serverClockOffset==='number'?_serverClockOffset:0);atualizaRotinaHist();renderRotinaList();manageSiren();if($('#rotinaCal'))renderCalendarioRotina();await save('rotina:dias');toast('Atividade concluída com mídia. ✅')}catch(e){toast(e.message||'Não foi possível enviar a mídia.')}};input.click()});
+  $$('#rotinaList [data-togh]').forEach(b=>b.onclick=()=>{ const r=(S.rotinaDias[hoje]||[]).find(x=>x.id===b.dataset.togh); if(!r) return; definirConclusaoAtividade(r,!atividadeConcluidaNaData(r,hoje),hoje); atualizaRotinaHist(); renderRotinaList(); manageSiren(); if($('#rotinaCal')) renderCalendarioRotina(); save('rotina:dias'); });
+  $$('#rotinaList [data-toghmedia]').forEach(b=>b.onclick=()=>{const r=(S.rotinaDias[hoje]||[]).find(x=>x.id===b.dataset.toghmedia);if(!r)return;const input=document.createElement('input');input.type='file';input.accept='image/*,video/*';input.onchange=async()=>{const f=input.files?.[0];if(!f)return;toast('Enviando registro…');try{const up=await uploadMedia(f);r.provaUrl=up.url;r.provaTipo=up.tipo;definirConclusaoAtividade(r,true,hoje);atualizaRotinaHist();renderRotinaList();manageSiren();if($('#rotinaCal'))renderCalendarioRotina();await save('rotina:dias');toast('Atividade concluída com mídia. ✅')}catch(e){toast(e.message||'Não foi possível enviar a mídia.')}};input.click()});
   if(edit){
     $$('#rotinaList [data-edh]').forEach(b=>b.onclick=()=>editHabitoSheet(b.dataset.edh));
     $$('#rotinaList [data-delh]').forEach(b=>b.onclick=()=>{const a=(S.rotinaDias[hoje]||[]).find(x=>String(x.id)===String(b.dataset.delh));if(a)excluirAtividadeRotinaSheet(hoje,a);});
@@ -4607,15 +4612,19 @@ function renderPerfilTemas(){
 function notify(title,body,alvo,comSom){ if(!S?.config?.notif) return; if(comSom) tocarSomNotif(); if('Notification' in window && Notification.permission==='granted'){ try{ const n=new Notification(title,{body, icon:'icon-192.png?v=117',badge:'icon-192.png?v=117'}); n.onclick=()=>{ try{ window.focus(); }catch(e){} try{ if(alvo){ if(alvo[0]==='#'){ location.hash=alvo; if(typeof handleDeepLink==='function') handleDeepLink(); } else go(alvo); } }catch(e){} n.close(); }; }catch(e){} } }
 function tryOpts(){ if(!S.config.tryOpts) S.config.tryOpts={som:'alarme', vibrar:true, intervaloS:20, treguaS:60, somNotif:true}; return S.config.tryOpts; }
 const NOTIF_CATS=[['mensagens','Mensagens'],['lembretes','Lembretes'],['social','Curtidas e comentários'],['sistema','Avisos do REDZONE']];
-function sonsNotif(){const o=tryOpts();if(!o.sonsNotif){o.sonsNotif={};NOTIF_CATS.forEach(([k])=>o.sonsNotif[k]={ativo:o.somNotif!==false,url:o.somNotifCustom||null});}return o.sonsNotif;}
+const SOM_NOTIF_PRESETS=[['sino','Sino padrão'],['suave','Toque suave'],['alerta','Alerta claro'],['duplo','Toque duplo'],['silencioso','Sem som']];
+function sonsNotif(){const o=tryOpts();if(!o.sonsNotif)o.sonsNotif={};NOTIF_CATS.forEach(([k])=>{o.sonsNotif[k]||(o.sonsNotif[k]={ativo:o.somNotif!==false,url:o.somNotifCustom||null,preset:'sino'});o.sonsNotif[k].preset||='sino'});return o.sonsNotif;}
 // som que toca em CADA notificação do app (personalizável pela pessoa)
-function tocarSomNotif(tipo='lembretes'){ if(S?.profile?.isAdmin||emModoSuporte())return;const o=tryOpts(),c=sonsNotif()[tipo]||sonsNotif().lembretes; if(o.somNotif===false||c?.ativo===false)return; if(c?.url){try{const a=new Audio(c.url);a.volume=1;a.play().catch(()=>{});}catch(e){}}else tocarSom('sino'); }
+function tocarSomNotif(tipo='lembretes'){ if(S?.profile?.isAdmin||emModoSuporte())return;const o=tryOpts(),c=sonsNotif()[tipo]||sonsNotif().lembretes; if(o.somNotif===false||c?.ativo===false||c?.preset==='silencioso')return; if(c?.url){try{const a=new Audio(c.url);a.volume=1;a.play().catch(()=>{});}catch(e){}}else tocarSom(c?.preset||'sino'); }
 // motor de som (WebAudio) — sons diferentes; 'alarme' é a sirene chata do Try Hard
 let _actx=null; function audioCtx(){ try{ _actx=_actx||new (window.AudioContext||window.webkitAudioContext)(); if(_actx.state==='suspended') _actx.resume(); return _actx; }catch(e){ return null; } }
 function tocarSom(tipo){
   const c=audioCtx(); if(!c) return;
   const beeps = tipo==='alarme' ? [ [880,0,.14],[660,.16,.14],[990,.32,.14],[660,.48,.14],[1046,.64,.2] ]
              : tipo==='sino' ? [ [1318,0,.5] ]
+             : tipo==='suave' ? [ [880,0,.18],[1175,.16,.28] ]
+             : tipo==='alerta' ? [ [1046,0,.16],[1318,.18,.22] ]
+             : tipo==='duplo' ? [ [988,0,.12],[988,.22,.12] ]
              : tipo==='sirene' ? [ [700,0,.5],[1100,.25,.5] ]
              : tipo==='brutal' ? [ [900,0,.16],[1500,.14,.16],[700,.3,.16],[1600,.44,.16],[850,.6,.16],[1700,.74,.2],[600,.94,.26] ] // insuportável
              : [ [880,0,.16] ]; // apito
@@ -4655,7 +4664,7 @@ function itemFeitoHoje(nome, doneFlag){
 function atrasadosAgora(){
   if(!S) return []; const now=brasiliaNow(); const hhmm=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0'); const hoje=todayISO();
   const out=[];
-  ((S.rotinaDias&&S.rotinaDias[hoje])||[]).forEach(a=>{ if(a.hora && a.hora<hhmm && !itemFeitoHoje(a.nome, a.done)) out.push(a.nome); });
+  ((S.rotinaDias&&S.rotinaDias[hoje])||[]).forEach(a=>{ if(a.hora && a.hora<hhmm && !itemFeitoHoje(a.nome, atividadeConcluidaNaData(a,hoje))) out.push(a.nome); });
   return out;
 }
 // gerencia a sirene: Try Hard não tem pausa; só para quando não há tarefa atrasada.
@@ -4674,7 +4683,7 @@ function startTryHard(){
     if(!S) return;
     const now=brasiliaNow(); const hhmm=String(now.getHours()).padStart(2,'0')+':'+String(now.getMinutes()).padStart(2,'0'); const hoje=todayISO();
     // 1) AVISO no minuto exato do horário das atividades planejadas no calendário de hoje
-    if(S.config.notif) ((S.rotinaDias&&S.rotinaDias[hoje])||[]).forEach(a=>{const chave=`${hoje}:${a.id||chaveAtividadeRotina(a)}:${a.hora}`;if(a.hora===hhmm&&!itemFeitoHoje(a.nome,a.done)&&!_avisosRotinaExatos.has(chave)){_avisosRotinaExatos.add(chave);if(_avisosRotinaExatos.size>500)_avisosRotinaExatos.clear();notify('REDZONE — '+a.nome,'Tá no horário. Cumpra agora, recruta.','rotina',true);if(o.vibrar&&navigator.vibrate)navigator.vibrate(200);}});
+    if(S.config.notif) ((S.rotinaDias&&S.rotinaDias[hoje])||[]).forEach(a=>{const chave=`${hoje}:${a.id||chaveAtividadeRotina(a)}:${a.hora}`;if(a.hora===hhmm&&!itemFeitoHoje(a.nome,atividadeConcluidaNaData(a,hoje))&&!_avisosRotinaExatos.has(chave)){_avisosRotinaExatos.add(chave);if(_avisosRotinaExatos.size>500)_avisosRotinaExatos.clear();notify('REDZONE — '+a.nome,'Tá no horário. Cumpra agora, recruta.','rotina',true);if(o.vibrar&&navigator.vibrate)navigator.vibrate(200);}});
     // 2) TRY HARD BRUTAL (sirene+tremor+esculacho): SÓ pra itens com horário que já PASSOU
     const atrasados=atrasadosAgora();
     if(S.config.tryHard && atrasados.length){
@@ -4691,9 +4700,9 @@ function startTryHard(){
 // Som das notificações — a pessoa escolhe o padrão ou envia o próprio áudio
 function somNotificacaoSheet(){
   const sons=JSON.parse(JSON.stringify(sonsNotif()));
-  openSheet(`<h3>🔔 Sons das notificações</h3><p class="small muted">Personalize cada tipo de aviso. Sem áudio escolhido, toca o sino padrão.</p>${NOTIF_CATS.map(([k,n])=>`<div class="rowitem" data-som-cat="${k}"><input type="checkbox" data-som-on ${sons[k]?.ativo!==false?'checked':''} style="width:22px;height:22px"><div class="txt"><div class="t">${n}</div><div class="s" data-som-nome>${sons[k]?.url?'Áudio personalizado':'Sino padrão'}</div></div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end"><button class="btn sm ghost" data-som-test>▶</button><button class="btn sm ghost" data-som-upload>Escolher</button><button class="btn sm ghost" data-som-reset>Redefinir</button></div></div>`).join('')}<button class="btn" id="snSalvar">Salvar sons</button>`);
-  $$('#sheet [data-som-cat]').forEach(row=>{const k=row.dataset.somCat;$('[data-som-test]',row).onclick=()=>{if(sons[k]?.url){const a=new Audio(sons[k].url);a.volume=1;a.play().catch(()=>{});}else tocarSom('sino');};$('[data-som-upload]',row).onclick=async()=>{const f=await escolherMidia('audio/*');if(!f)return;toast('Comprimindo e enviando áudio…');try{const up=await uploadMedia(f);sons[k].url=up.url;$('[data-som-nome]',row).textContent='Áudio personalizado';toast('Som escolhido.');}catch{toast('Não foi possível enviar este áudio.');}};$('[data-som-reset]',row).onclick=()=>{sons[k].url=null;$('[data-som-nome]',row).textContent='Sino padrão';};});
-  $('#snSalvar').onclick=()=>{const o=tryOpts();$$('#sheet [data-som-cat]').forEach(row=>sons[row.dataset.somCat].ativo=$('[data-som-on]',row).checked);o.sonsNotif=sons;o.somNotif=true;save('config');closeSheet();toast('Sons salvos por categoria.');};
+  openSheet(`<h3>🔔 Sons das notificações</h3><p class="small muted">O sino padrão já vem selecionado. Você pode trocar cada categoria ou usar seu próprio áudio.</p><div class="sound-settings">${NOTIF_CATS.map(([k,n])=>`<section class="sound-card" data-som-cat="${k}"><label class="sound-card-head"><input type="checkbox" data-som-on ${sons[k]?.ativo!==false?'checked':''}><b>${n}</b></label><select data-som-preset>${SOM_NOTIF_PRESETS.map(([v,t])=>`<option value="${v}" ${(sons[k]?.preset||'sino')===v?'selected':''}>${t}</option>`).join('')}</select><div class="sound-custom" data-som-custom>${sons[k]?.url?'<span>🎵 Áudio personalizado em uso</span><button class="btn sm ghost" data-som-reset>Remover</button>':'<span>Nenhum áudio próprio</span>'}</div><div class="sound-card-actions"><button class="btn sm ghost" data-som-test>▶ Ouvir</button><button class="btn sm ghost" data-som-upload>＋ Usar meu áudio</button></div></section>`).join('')}</div><div class="sound-save"><button class="btn" id="snSalvar">Salvar sons</button></div>`);
+  $$('#sheet [data-som-cat]').forEach(row=>{const k=row.dataset.somCat,preset=$('[data-som-preset]',row),custom=$('[data-som-custom]',row);const desenharCustom=()=>custom.innerHTML=sons[k]?.url?'<span>🎵 Áudio personalizado em uso</span><button class="btn sm ghost" data-som-reset>Remover</button>':'<span>Nenhum áudio próprio</span>';const ligarReset=()=>{$('[data-som-reset]',row)?.addEventListener('click',()=>{sons[k].url=null;desenharCustom();ligarReset()})};preset.onchange=()=>{sons[k].preset=preset.value;sons[k].url=null;desenharCustom()};$('[data-som-test]',row).onclick=()=>{if(sons[k]?.url){const a=new Audio(sons[k].url);a.volume=1;a.play().catch(()=>{})}else if(preset.value!=='silencioso')tocarSom(preset.value)};$('[data-som-upload]',row).onclick=async()=>{const f=await escolherMidia('audio/*');if(!f)return;toast('Enviando áudio…');try{const up=await uploadMedia(f);sons[k].url=up.url;desenharCustom();ligarReset();toast('Áudio pronto para usar.')}catch{toast('Não foi possível enviar este áudio.')}};ligarReset()});
+  $('#snSalvar').onclick=()=>{const o=tryOpts();$$('#sheet [data-som-cat]').forEach(row=>{const k=row.dataset.somCat;sons[k].ativo=$('[data-som-on]',row).checked;sons[k].preset=$('[data-som-preset]',row).value});o.sonsNotif=sons;o.somNotif=true;save('config');closeSheet();toast('Sons salvos.');};
 }
 function tryHardOpcoesSheet(){
   const o=tryOpts();
