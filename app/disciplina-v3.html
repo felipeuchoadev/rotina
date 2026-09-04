@@ -843,7 +843,7 @@ setInterval(()=>{ if(authToken&&offQueue().length&&navigator.onLine) flushQueue(
 
 /* id único DESTE aparelho/aba — usado pra não ecoar de volta a própria escrita no sync ao vivo */
 const CLIENT_ID = (Math.random().toString(36).slice(2)+'-'+Date.now().toString(36));
-const APP_BUILD = 'redzone-v149';
+const APP_BUILD = 'redzone-v150';
 // evita re-render que rouba o foco enquanto a pessoa digita (o dado já foi aplicado em S de qualquer forma)
 let _mediaUploadBusy=0;
 function _syncPodeRender(){ const a=document.activeElement; return !_mediaUploadBusy&&!(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||'')); }
@@ -1703,7 +1703,7 @@ function renderInicio(){
   $('#xpPill').onclick=xpHistoricoSheet;
   const fotoInicio=$('[data-view-own-photo]',$('#scr-inicio')); if(fotoInicio){ fotoInicio.onclick=verFotoPerfil; fotoInicio.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();verFotoPerfil();}}; }
   $$('#scr-inicio [data-bio]').forEach(c=>c.onclick=()=>{ if(c.dataset.bio==='idade') aniversarioUserSheet(); else pesoRelatorioSheet(); });
-  $$('#scr-inicio [data-detalhe]').forEach(c=>c.onclick=()=>resumoDetalheSheet(c.dataset.detalhe));
+  $$('#scr-inicio [data-detalhe]').forEach(c=>c.onclick=()=>{const destino={treino:'treinos',estudo:'estudos',rotina:'rotina',agua:'alimentacao'}[c.dataset.detalhe];if(destino)go(destino)});
   renderAgenda();
 }
 // clicar na idade → quanto falta pro aniversário do usuário
@@ -2042,12 +2042,13 @@ const HIST_KEYS={TREINOS:['treino:tpl','treino:weeks','treino:logs','treino:reco
 const HIST_LABEL={'treino:tpl':'Plano de treino','treino:weeks':'Semanas de treino','treino:logs':'Treinos realizados','treino:recordes':'Evolução dos recordes','estudo:materias':'Matérias e conteúdos','estudo:semana':'Plano de estudos','estudo:logs':'Sessões de estudo','alim:semana':'Refeições registradas','alim:pesos':'Evolução do peso','alim:agua':'Consumo de água','alim:hist':'Semanas alimentares','rotina':'Hábitos','rotina:hist':'Rotina realizada','rotina:plano':'Plano de rotina','rotina:dias':'Atividades da rotina','recordacoes':'Fotos e vídeos registrados','perfil:dados':'Dados pessoais','config':'Preferências do aplicativo'};
 function detalhesHistorico(chave,v){
   const linhas=[],add=x=>{if(x)linhas.push(String(x))};
+  const data=d=>/^\d{4}-\d{2}-\d{2}$/.test(String(d||''))?new Date(d+'T12:00:00').toLocaleDateString('pt-BR',{day:'2-digit',month:'long',year:'numeric'}):(d||'Data não informada');
   if(v==null)add('Dados removidos.');
-  else if(chave==='treino:logs'||chave==='estudo:logs')(Array.isArray(v)?v:[]).slice(-8).reverse().forEach(x=>add(`${x.dateISO||'Data não informada'} — ${x.materia||x.nome||x.exercicio||'Sessão'} · ${Math.floor(Number(x.ativoMs||0)/60000)} min${Array.isArray(x.conteudos)&&x.conteudos.length?' · '+x.conteudos.join(', '):''}${x.midiaUrl?' · 📎 mídia':''}`));
+  else if(chave==='treino:logs'||chave==='estudo:logs')(Array.isArray(v)?v:[]).slice(-12).reverse().forEach(x=>add(`${data(x.dateISO)} — ${x.materia||x.nome||x.exercicio||'Sessão'} · ${Math.floor(Number(x.ativoMs||0)/60000)} min${Array.isArray(x.conteudos)&&x.conteudos.length?' · '+x.conteudos.join(', '):''}${x.midiaUrl?' · com mídia':''}`));
   else if(chave==='treino:recordes')(Array.isArray(v)?v:Object.values(v||{})).slice(-12).forEach(x=>add(`${x.nome||x.titulo||'Recorde'} — ${x.valor??x.atual??x.melhor??'sem valor'} ${x.unidade||''}`));
-  else if(chave==='alim:agua')Object.entries(v||{}).sort().slice(-14).reverse().forEach(([d,ml])=>add(`${d} — ${ml} ml`));
-  else if(chave==='alim:pesos')(Array.isArray(v)?v:[]).slice(-12).reverse().forEach(x=>add(`${x.dateISO||x.data||'Data'} — ${x.kg??x.peso??'-'} kg`));
-  else if(chave==='rotina:dias')Object.entries(v||{}).sort().slice(-14).reverse().forEach(([d,a])=>add(`${d} — ${(Array.isArray(a)?a:[]).map(x=>`${x.done?'✅':'◻️'} ${x.nome}${x.hora?' ('+x.hora+')':''}`).join(' · ')||'sem atividades'}`));
+  else if(chave==='alim:agua')Object.entries(v||{}).sort().slice(-14).reverse().forEach(([d,ml])=>add(`${data(d)} — ${Number(ml).toLocaleString('pt-BR')} ml`));
+  else if(chave==='alim:pesos')(Array.isArray(v)?v:[]).slice(-12).reverse().forEach(x=>add(`${data(x.dateISO||x.data)} — ${x.kg??x.peso??'-'} kg`));
+  else if(chave==='rotina:dias')Object.entries(v||{}).sort().slice(-14).reverse().forEach(([d,a])=>add(`${data(d)} — ${(Array.isArray(a)?a:[]).map(x=>`${atividadeConcluidaNaData(x,d)?'✅':'◻️'} ${x.nome}${x.hora?' às '+x.hora:''}`).join(' · ')||'sem atividades'}`));
   else if(chave==='estudo:materias')(Array.isArray(v)?v:Object.values(v||{})).forEach(x=>add(`${x.nome||x.materia||'Matéria'}${Array.isArray(x.grupos)&&x.grupos.length?' — '+x.grupos.map(g=>g.nome).join(' / '):''}${Array.isArray(x.conteudos)?' — '+x.conteudos.map(c=>c.nome||c).join(', '):''}`));
   else if(chave==='treino:tpl')Object.entries(v||{}).forEach(([dia,a])=>add(`${dia.toUpperCase()} — ${(Array.isArray(a)?a:[]).map(x=>x.nome||x).join(', ')||'descanso'}`));
   else if(chave==='treino:weeks')(Array.isArray(v)?v:[]).forEach((w,i)=>{
@@ -2064,7 +2065,7 @@ function detalhesHistorico(chave,v){
 function renderHistoricoAgrupado(rows){
   const grupos={};
   rows.forEach(r=>{const assinatura=JSON.stringify(r.valor),g=grupos[r.chave]||(grupos[r.chave]=[]);if(g.some(x=>x.assinatura===assinatura))return;g.push({...r,assinatura})});
-  return Object.entries(grupos).map(([chave,itens])=>`<details class="hist-detail" open><summary><b>${esc(HIST_LABEL[chave]||'Registros')}</b><span>${itens.length} ${itens.length===1?'registro':'registros'}</span></summary>${itens.slice(0,30).map((r,i)=>{const ds=detalhesHistorico(chave,r.valor);return `<article class="hist-event"><div class="hist-event-head"><strong>${r.estadoAtual?'Estado atual':i===0?'Registro mais recente':'Alteração anterior'}</strong><time>${new Date(r.criadoEm).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo'})}</time></div>${ds.map(x=>`<div class="hist-line">${esc(x)}</div>`).join('')}</article>`}).join('')}</details>`).join('')
+  return Object.entries(grupos).map(([chave,itens])=>{const atual=itens[0],ds=detalhesHistorico(chave,atual.valor);return `<details class="hist-detail" open><summary><b>${esc(HIST_LABEL[chave]||'Registros')}</b><span>${ds.length} ${ds.length===1?'item':'itens'}</span></summary><article class="hist-event"><div class="hist-event-head"><strong>Informações atuais</strong><time>Atualizado ${new Date(atual.criadoEm).toLocaleString('pt-BR',{timeZone:'America/Sao_Paulo',day:'2-digit',month:'2-digit',hour:'2-digit',minute:'2-digit'})}</time></div>${ds.map(x=>`<div class="hist-line">${esc(x)}</div>`).join('')}</article></details>`}).join('')
 }
 async function abrirHistorico(area){openSheet(`<h3>Histórico de ${esc(area.toLocaleLowerCase('pt-BR'))}</h3><p class="muted small">Carregando sua trajetória…</p>`);try{const ks=HIST_KEYS[area]||[],rows=await api('/state/historico/lista?chaves='+encodeURIComponent(ks.join(',')));if(area==='PERFIL'&&!rows.some(r=>r.chave==='perfil:dados'))rows.unshift({chave:'perfil:dados',valor:{nome:S.profile.nome,username:S.profile.username,peso:S.profile.peso,altura:S.profile.altura},criadoEm:new Date().toISOString(),estadoAtual:true});openSheet(`<h3>Histórico de ${esc(area.toLocaleLowerCase('pt-BR'))}</h3><p class="muted small">Tudo o que realmente foi registrado nesta área, separado por categoria, data e horário.</p>${rows.length?renderHistoricoAgrupado(rows):'<div class="hist-empty">Ainda não há registros nesta área.</div>'}`)}catch(e){openSheet(`<h3>Histórico de ${esc(area.toLocaleLowerCase('pt-BR'))}</h3><p class="err">Não foi possível carregar agora.</p>`)}}
 window.abrirHistorico=abrirHistorico;
@@ -4534,7 +4535,7 @@ function renderPerfilConfig(){
     </div>`;
   $('#cfEdit').onchange=e=>{ S.config.editMode=e.target.checked; save('config'); toast(e.target.checked?'Modo edição ON':'Modo edição OFF'); };
   $('#cfPriv').onchange=async e=>{ S.profile.privado=e.target.checked; try{ await api('/perfil',{method:'PATCH',body:{privado:e.target.checked}}); toast(e.target.checked?'Perfil agora é privado.':'Perfil agora é público.'); }catch(err){ toast('Falha ao salvar.'); } };
-  $('#cfNotif').onchange=async e=>{ S.config.notif=e.target.checked; save('config'); if(e.target.checked && 'Notification' in window){ const perm=await Notification.requestPermission(); if(perm!=='granted'){ toast('Permissão de notificação negada no navegador.'); } else { subscribePush(); toast('Notificações ligadas — chegam até com o app fechado.'); } } };
+  $('#cfNotif').onchange=async e=>{if(!e.target.checked){S.config.notif=false;await save('config');return}if(!('Notification'in window)){e.target.checked=false;S.config.notif=false;await save('config');return toast('Este navegador não oferece notificações.')}const perm=await Notification.requestPermission();if(perm!=='granted'){e.target.checked=false;S.config.notif=false;await save('config');toast('Notificações continuam desligadas. Autorize nas configurações do navegador.');return}S.config.notif=true;await save('config');subscribePush();toast('Notificações ligadas.')};
   $('#cfTry').onchange=async e=>{ S.config.tryHard=e.target.checked; if(e.target.checked&&'Notification' in window&&Notification.permission!=='granted'){ const perm=await Notification.requestPermission(); if(perm==='granted'){ S.config.notif=true; subscribePush(); toast('Try Hard e notificações autorizados.'); } else toast('Try Hard ligado, mas o celular bloqueou as notificações. Autorize nas configurações do navegador.'); } save('config'); startTryHard(); };
   $('#cfSomNotif').onclick=somNotificacaoSheet;
   $('#cfTryOpts').onclick=tryHardOpcoesSheet;
@@ -4624,7 +4625,7 @@ function renderPerfilTemas(){
 /* =========================================================================
    NOTIFICAÇÕES / TRY HARD
 ========================================================================= */
-function notify(title,body,alvo,comSom){ if(!S?.config?.notif) return; if(comSom) tocarSomNotif(); if('Notification' in window && Notification.permission==='granted'){ try{ const n=new Notification(title,{body, icon:'icon-192.png?v=117',badge:'icon-192.png?v=117'}); n.onclick=()=>{ try{ window.focus(); }catch(e){} try{ if(alvo){ if(alvo[0]==='#'){ location.hash=alvo; if(typeof handleDeepLink==='function') handleDeepLink(); } else go(alvo); } }catch(e){} n.close(); }; }catch(e){} } }
+function notify(title,body,alvo,comSom){if(!S?.config?.notif)return;let exibida=false;if(document.visibilityState==='visible'){toast(`${title}: ${body}`,3500);exibida=true}if('Notification'in window&&Notification.permission==='granted'){try{const n=new Notification(title,{body,icon:'icon-192.png?v=117',badge:'icon-192.png?v=117'});exibida=true;n.onclick=()=>{try{window.focus()}catch{}try{if(alvo){if(alvo[0]==='#'){location.hash=alvo;if(typeof handleDeepLink==='function')handleDeepLink()}else go(alvo)}}catch{}n.close()}}catch{}}if(comSom&&exibida)tocarSomNotif()}
 function tryOpts(){ if(!S.config.tryOpts) S.config.tryOpts={som:'alarme', vibrar:true, intervaloS:20, treguaS:60, somNotif:true}; return S.config.tryOpts; }
 const NOTIF_CATS=[['mensagens','Mensagens'],['lembretes','Lembretes'],['social','Curtidas e comentários'],['sistema','Avisos do REDZONE']];
 const SOM_NOTIF_PRESETS=[['sino','Sino padrão'],['suave','Toque suave'],['alerta','Alerta claro'],['duplo','Toque duplo'],['silencioso','Sem som']];
@@ -4858,8 +4859,8 @@ function connectSocket(){
     _socket.on('post:novo',()=>{ if(activeTab==='batalha') atualizarFeedAoVivo(); });
     _socket.on('post:like',d=>{ if(!d)return; $$(`[data-post="${d.postId}"] [data-like]`).forEach(el=>{ const n=$('b',el); if(n)n.textContent=d.total; }); });
     _socket.on('post:comentario',d=>{ if(!d||d.total==null)return; $$(`[data-post="${d.postId}"] [data-comment]`).forEach(el=>{ const n=$('b',el); if(n)n.textContent=d.total; }); });
-    _socket.on('notif:nova',()=>{if(S?.profile?.isAdmin||sessionStorage.getItem('rz:admin:returnToken'))return;tocarSomNotif('social'); const btn=$('#sinoBtn'); if(!btn)return; let b=$('.notif-badge',btn); if(!b){b=document.createElement('span');b.className='notif-badge';btn.appendChild(b);} const n=Math.min(99,(parseInt(b.textContent)||0)+1); b.textContent=n>9?'9+':n; });
-    _socket.on('aviso:novo',()=>{if(S?.profile?.isAdmin||sessionStorage.getItem('rz:admin:returnToken'))return;tocarSomNotif('sistema');checarAvisosAdmin();});
+    _socket.on('notif:nova',()=>{if(S?.profile?.isAdmin||sessionStorage.getItem('rz:admin:returnToken'))return;toast('Nova interação no feed.');tocarSomNotif('social'); const btn=$('#sinoBtn'); if(!btn)return; let b=$('.notif-badge',btn); if(!b){b=document.createElement('span');b.className='notif-badge';btn.appendChild(b);} const n=Math.min(99,(parseInt(b.textContent)||0)+1); b.textContent=n>9?'9+':n; });
+    _socket.on('aviso:novo',()=>{if(S?.profile?.isAdmin||sessionStorage.getItem('rz:admin:returnToken'))return;checarAvisosAdmin();});
     // SYNC AO VIVO ponta a ponta: mudou num aparelho → reflete nos outros na hora (sem F5)
     _socket.on('state:changed', (d)=>{ if(!d || d.src===CLIENT_ID) return; applyRemoteState(d.chave, d.valor,d.versao); });
     _socket.on('profile:changed', (d)=>{ if(!d || d.src===CLIENT_ID) return; applyRemoteProfile(d.usuario); });
@@ -4911,10 +4912,7 @@ async function subscribePush({solicitar=false}={}){
 }
 async function desvincularPushDesteAcesso(){try{if(!('serviceWorker'in navigator))return;const reg=await navigator.serviceWorker.ready;for(const n of await reg.getNotifications())n.close();const sub=await reg.pushManager.getSubscription();if(sub?.endpoint)await api('/push/subscribe',{method:'DELETE',body:{endpoint:sub.endpoint}})}catch(e){}}
 async function renderStatusPushAlarmes(){
-  const box=$('#alarmPushStatus');if(!box||S?.profile?.isAdmin)return;let status=null;try{status=await api('/push/status')}catch{}
-  const permissao=('Notification'in window)?Notification.permission:'incompativel',pronto=!!status?.pronto&&permissao==='granted';
-  box.innerHTML=`<div class="alarm-push-status ${pronto?'ready':'warn'}"><div class="txt"><b>${pronto?'✅ Aviso com aplicativo fechado: pronto':'⚠️ Aviso com aplicativo fechado: falta autorizar'}</b><span>${pronto?`${status.dispositivos} aparelho(s) conectado(s).`:'O alarme continua salvo, mas o Android só recebe fechado depois da autorização.'}</span></div><button class="btn sm ${pronto?'ghost':''}" id="alarmPushAction">${pronto?'Testar':'Autorizar'}</button></div>`;
-  $('#alarmPushAction').onclick=async()=>{const r=await subscribePush({solicitar:true});if(!r?.ok)return toast('O navegador não autorizou notificações. Libere nas configurações do site.');if(pronto){try{await api('/push/test',{method:'POST'});toast('Teste agendado para 8 segundos. Feche o aplicativo agora.')}catch(e){toast(e.data?.erro||'Não foi possível iniciar o teste.')}}else{S.config.notif=true;await save('config');toast('Notificações externas autorizadas.');renderStatusPushAlarmes();}};
+  const box=$('#alarmPushStatus');if(box)box.innerHTML='';
 }
 let _pushRefreshAt=0;
 function renovarPushEmSegundoPlano(){
