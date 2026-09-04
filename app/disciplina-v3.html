@@ -843,7 +843,7 @@ setInterval(()=>{ if(authToken&&offQueue().length&&navigator.onLine) flushQueue(
 
 /* id único DESTE aparelho/aba — usado pra não ecoar de volta a própria escrita no sync ao vivo */
 const CLIENT_ID = (Math.random().toString(36).slice(2)+'-'+Date.now().toString(36));
-const APP_BUILD = 'redzone-v150';
+const APP_BUILD = 'redzone-v151';
 // evita re-render que rouba o foco enquanto a pessoa digita (o dado já foi aplicado em S de qualquer forma)
 let _mediaUploadBusy=0;
 function _syncPodeRender(){ const a=document.activeElement; return !_mediaUploadBusy&&!(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||'')); }
@@ -854,17 +854,19 @@ let _syncBusyUntil=0;
 function _syncBusy(){ return Date.now() < _syncBusyUntil; }
 function _syncHold(){ _syncBusyUntil = Date.now() + 3000; }
 /* ---------- STORE: dados pessoais por usuário (backend + offline) ---------- */
+const _storeWriteChains={};
 const Store = {
   async get(key){ try{ return await api('/state/'+encodeURIComponent(key)); }catch(e){ return null; } },
   async set(key,val){
+    // Guarda a alteração imediatamente no aparelho e envia mudanças da mesma
+    // área em ordem. Assim, cliques rápidos nunca chegam invertidos ao servidor.
+    try{ val=structuredClone(val); }catch{ val=JSON.parse(JSON.stringify(val)); }
     const versao=novaVersao(key);
     try{ localStorage.setItem(userStorageKey('local:'+key), JSON.stringify(val)); }catch{}   // espelho local
-    try{ const r=await api('/state/'+encodeURIComponent(key),{method:'PUT',body:{valor:val,versao,clientId:CLIENT_ID,resetId:_accountResetId}}); if(Number.isFinite(r?.xp))S.profile.xp=r.xp; if(r?.ignorada){ applyRemoteState(key,r.valor,r.versao); } else if(key==='rotina:dias'&&r?.valor&&Number(r.versao||versao)>=Number(_stateVersoes[key]||0)){ S.rotinaDias=r.valor; try{ localStorage.setItem(userStorageKey('local:'+key),JSON.stringify(r.valor)); }catch{} } return true; }
-    catch(e){
-      if(e?.status===409&&e?.data?.reset){ setQueue([]); location.reload(); return false; }
-      const q=offQueue().filter(i=>i.chave!==key); q.push({chave:key, valor:val}); setQueue(q);  // enfileira (última escrita vence)
-      return true;
-    }
+    const enviar=async()=>{try{ const r=await api('/state/'+encodeURIComponent(key),{method:'PUT',body:{valor:val,versao,clientId:CLIENT_ID,resetId:_accountResetId}}); if(Number.isFinite(r?.xp))S.profile.xp=r.xp; if(r?.ignorada){ applyRemoteState(key,r.valor,r.versao); } else if(key==='rotina:dias'&&r?.valor&&Number(r.versao||versao)>=Number(_stateVersoes[key]||0)){ S.rotinaDias=r.valor; try{ localStorage.setItem(userStorageKey('local:'+key),JSON.stringify(r.valor)); }catch{} } return true; }
+      catch(e){if(e?.status===409&&e?.data?.reset){ setQueue([]); location.reload(); return false; }const q=offQueue().filter(i=>i.chave!==key);q.push({chave:key,valor:val});setQueue(q);return true;}};
+    _storeWriteChains[key]=(_storeWriteChains[key]||Promise.resolve()).catch(()=>{}).then(enviar);
+    return _storeWriteChains[key];
   },
   async del(key){ try{ await api('/state/'+encodeURIComponent(key)+'?src='+encodeURIComponent(CLIENT_ID),{method:'DELETE'}); }catch(e){} },
 };
@@ -2804,7 +2806,7 @@ function renderMaterias(){
   $$('#estMaterias [data-toggle-group]').forEach(b=>b.onclick=()=>{ const id=String(b.dataset.toggleGroup); estudoGruposAbertos.has(id)?estudoGruposAbertos.delete(id):estudoGruposAbertos.add(id); renderMaterias(); });
   $$('#estMaterias [data-toggle-content]').forEach(b=>b.onclick=()=>{ const id=String(b.dataset.toggleContent); estudoConteudosAbertos.has(id)?estudoConteudosAbertos.delete(id):estudoConteudosAbertos.add(id); renderMaterias(); });
   if(edit)$$('#estMaterias [data-add-sub]').forEach(b=>b.onclick=()=>adicionarSubtopicoSheet(b.dataset.mid,b.dataset.addSub));
-  if(edit){ $$('#estMaterias [data-edm]').forEach(b=>b.onclick=()=>editMateriaSheet(b.dataset.edm)); $$('#estMaterias [data-delm]').forEach(b=>b.onclick=()=>{ const m=S.materias.find(x=>String(x.id)===String(b.dataset.delm)); if(!m||!confirm(`Apagar a matéria “${m.nome}” e sua estrutura? Os registros de sessões já realizadas serão preservados.`))return; S.materias=S.materias.filter(x=>String(x.id)!==String(m.id)); Object.keys(S.estudoSemana||{}).forEach(d=>S.estudoSemana[d]=(S.estudoSemana[d]||[]).filter(id=>String(id)!==String(m.id))); save('estudo:materias'); save('estudo:semana'); renderMaterias(); renderEstudoDia(); }); }
+  if(edit){ $$('#estMaterias [data-edm]').forEach(b=>b.onclick=()=>editMateriaSheet(b.dataset.edm)); $$('#estMaterias [data-delm]').forEach(b=>b.onclick=()=>{ const m=S.materias.find(x=>String(x.id)===String(b.dataset.delm)); if(!m||!confirm(`Apagar a matéria “${m.nome}” e sua estrutura? Os registros de sessões já realizadas serão preservados.`))return; S.materias=S.materias.filter(x=>String(x.id)!==String(m.id)); Object.keys(S.estudoSemana||{}).forEach(d=>S.estudoSemana[d]=(S.estudoSemana[d]||[]).filter(id=>String(id)!==String(m.id))); save('estudo:materias'); save('estudo:semana'); renderMaterias(); renderEstudoDia(); renderPrevisaoEstudo(); renderRelatorio('estRelatorio','estudo'); }); }
 }
 function adicionarSubtopicoSheet(mid,parentId){
   const m=S.materias.find(x=>String(x.id)===String(mid)),pai=m?conteudosMateria(m).find(c=>String(c.id)===String(parentId)):null; if(!m||!pai)return;
@@ -2869,7 +2871,7 @@ function editMateriaSheet(mid){
     }
     if(mid){ m.nome=nome; m.grupos=grupos; m.conteudos=conteudos; prepararEstruturaMateria(m); }
     else { const nova={id:m.id,nome,grupos,conteudos}; prepararEstruturaMateria(nova); S.materias.push(nova); }
-    save('estudo:materias'); closeSheet(); renderMaterias(); renderEstudoDia();
+    save('estudo:materias'); closeSheet(); renderMaterias(); renderEstudoDia(); renderPrevisaoEstudo(); renderRelatorio('estRelatorio','estudo');
   };
 }
 function posEstudo(sess){
@@ -4341,7 +4343,9 @@ async function renderAdmin(){
   $('#adminAuditoria').onclick=adminAuditoriaSheet;
   $('#adminSair').onclick=logout;
   $('#adminAtualizar').onclick=async()=>{const b=$('#adminAtualizar');b.disabled=true;await Promise.all([carregarAdminResumo(),carregarAdminUsuarios($('#adminQ').value)]);b.disabled=false;toast('Painel atualizado com os dados do servidor.');};
-  $('#adminQ').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();carregarAdminUsuarios(e.target.value)}};
+  let pesquisaTimer=null,pesquisaSeq=0;
+  $('#adminQ').oninput=e=>{const q=e.target.value,seq=++pesquisaSeq;clearTimeout(pesquisaTimer);pesquisaTimer=setTimeout(()=>{if(seq===pesquisaSeq)carregarAdminUsuarios(q)},100)};
+  $('#adminQ').onkeydown=e=>{if(e.key==='Enter'){e.preventDefault();clearTimeout(pesquisaTimer);pesquisaSeq++;carregarAdminUsuarios(e.target.value)}};
   try{
     await carregarAdminResumo();
     await carregarAdminUsuarios('');
@@ -4349,10 +4353,10 @@ async function renderAdmin(){
 }
 async function carregarAdminResumo(){
   const r=await api('/admin/resumo'),box=$('#adminStats');if(!box)return;
-  const cards=[['👥','Usuários',r.usuarios,'users','Contas ativas no sistema'],['🚫','Bloqueados',r.bloqueados,'blocked','Toque para filtrar'],['📰','Publicações',r.posts,'posts',`${r.postsHoje||0} enviada(s) hoje`],['💬','Mensagens',r.mensagens,'messages',`${r.mensagensHoje||0} enviada(s) hoje`],['☁️','Dados sincronizados',r.estados,'states','Registros pessoais salvos']];
+  const cards=[['👥','Usuários',r.usuarios,'users','Contas ativas no sistema'],['🚫','Bloqueados',r.bloqueados,'blocked','Toque para filtrar'],['📢','Avisos',r.avisos,'notices',`${r.avisosHoje||0} enviado(s) hoje`],['📰','Publicações',r.posts,'posts',`${r.postsHoje||0} enviada(s) hoje`],['💬','Mensagens',r.mensagens,'messages',`${r.mensagensHoje||0} enviada(s) hoje`],['☁️','Dados sincronizados',r.estados,'states','Registros pessoais salvos']];
   box.innerHTML=cards.map(x=>`<button class="admin-stat" data-admin-stat="${x[3]}"><span class="admin-stat-top"><span class="admin-stat-icon">${x[0]}</span><span class="admin-stat-arrow">›</span></span><span><b>${Number(x[2]||0).toLocaleString('pt-BR')}</b><span>${x[1]}</span><small>${esc(x[4])}</small></span></button>`).join('');
   const atualizado=$('#adminAtualizado');if(atualizado)atualizado.textContent=`Atualizado diretamente do servidor às ${new Date(r.atualizadoEm||Date.now()).toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit',second:'2-digit'})}`;
-  $$('[data-admin-stat]').forEach(b=>b.onclick=()=>{const k=b.dataset.adminStat;if(k==='users'){$('#adminQ').value='';carregarAdminUsuarios('');$('#adminLista').scrollIntoView({behavior:'smooth'})}else if(k==='blocked'){$('#adminQ').value='';carregarAdminUsuarios('',true);$('#adminLista').scrollIntoView({behavior:'smooth'})}else adminConteudoSheet(k);});
+  $$('[data-admin-stat]').forEach(b=>b.onclick=()=>{const k=b.dataset.adminStat;if(k==='users'){$('#adminQ').value='';carregarAdminUsuarios('');$('#adminLista').scrollIntoView({behavior:'smooth'})}else if(k==='blocked'){$('#adminQ').value='';carregarAdminUsuarios('',true);$('#adminLista').scrollIntoView({behavior:'smooth'})}else if(k==='notices')adminHistoricoAvisosSheet();else adminConteudoSheet(k);});
 }
 async function carregarAdminUsuarios(q='',somenteBloqueados=false){
   const box=$('#adminLista');if(!box)return;box.innerHTML='<p class="muted">Buscando…</p>';
@@ -4402,13 +4406,18 @@ function adminSenhaSheet(id,nome){
 async function adminAvisoSheet(){
   let usuarios=[];try{usuarios=(await api('/admin/usuarios?limite=100')).usuarios||[]}catch(e){}
   openSheet(`<h3>📢 Novo aviso</h3><p class="small muted">Aparece uma vez para cada destinatário. Depois do X, não volta a aparecer naquela conta.</p>
-    <div class="field"><label>Destinatário</label><input id="avBusca" class="admin-recipient-search" placeholder="Pesquisar nome, e-mail ou @usuário"><select id="avDest"><option value="">Todos os usuários</option>${usuarios.filter(u=>!u.isAdmin).map(u=>`<option value="${u.id}">${esc(u.nomeGuerra)} (@${esc(u.username)})</option>`).join('')}</select></div>
+    <div class="field"><label>Destinatário</label><input id="avBusca" class="admin-recipient-search" placeholder="Pesquisar nome, e-mail ou @usuário" autocomplete="off"><div id="avSugestoes" style="display:none;margin-top:7px"></div><select id="avDest"><option value="">Todos os usuários</option>${usuarios.filter(u=>!u.isAdmin).map(u=>`<option value="${u.id}">${esc(u.nomeGuerra)} (@${esc(u.username)})</option>`).join('')}</select><div class="small muted" id="avEscolhido" style="margin-top:6px">Destinatário atual: Todos</div></div>
     <div class="field"><label>Título</label><input id="avTitulo" maxlength="80" placeholder="Ex: Manutenção programada"></div>
     <div class="field"><label>Mensagem</label><textarea id="avMsg" maxlength="1000" rows="6" placeholder="Escreva o comunicado…"></textarea></div>
     <div class="err" id="avErr"></div><button class="btn" id="avEnviar">Publicar aviso</button>`);
-  let buscaTimer=null,buscaSeq=0;const renderDestinos=(lista,atual='')=>{const sel=$('#avDest');if(!sel)return;sel.innerHTML='<option value="">Todos os usuários</option>'+lista.filter(u=>!u.isAdmin).map(u=>`<option value="${u.id}">${esc(u.nomeGuerra)} (@${esc(u.username)})</option>`).join('');if([...sel.options].some(o=>o.value===atual))sel.value=atual;};
-  $('#avBusca').oninput=e=>{const q=e.target.value.trim(),atual=$('#avDest').value,seq=++buscaSeq;clearTimeout(buscaTimer);buscaTimer=setTimeout(async()=>{try{const lista=(await api('/admin/usuarios?limite=100'+(q?'&q='+encodeURIComponent(q):''))).usuarios||[];if(seq!==buscaSeq)return;usuarios=lista;renderDestinos(lista,atual)}catch{if(seq===buscaSeq)renderDestinos(usuarios.filter(u=>!q||`${u.nomeGuerra} ${u.username} ${u.email}`.toLocaleLowerCase('pt-BR').includes(q.toLocaleLowerCase('pt-BR'))),atual)}},220)};
-  $('#avEnviar').onclick=async()=>{const titulo=$('#avTitulo').value.trim(),mensagem=$('#avMsg').value.trim(),destinatarioId=$('#avDest').value||null;if(!titulo||!mensagem)return $('#avErr').textContent='Escreva o título e a mensagem.';const b=$('#avEnviar');b.disabled=true;b.textContent='Publicando…';try{await api('/admin/avisos',{method:'POST',body:{titulo,mensagem,destinatarioId}});closeSheet();toast(destinatarioId?'Aviso enviado ao usuário.':'Aviso publicado para todos.')}catch(e){b.disabled=false;b.textContent='Publicar aviso';$('#avErr').textContent=e.data?.erro||'Não foi possível publicar.'}};
+  let buscaTimer=null,buscaSeq=0;
+  const nomeUsuario=u=>`${u.nomeGuerra} (@${u.username})`;
+  const marcarEscolhido=()=>{const s=$('#avDest'),o=s?.selectedOptions?.[0];if($('#avEscolhido'))$('#avEscolhido').textContent='Destinatário atual: '+(o?.value?o.textContent:'Todos');};
+  const renderDestinos=(lista,atual='')=>{const sel=$('#avDest');if(!sel)return;sel.innerHTML='<option value="">Todos os usuários</option>'+lista.filter(u=>!u.isAdmin).map(u=>`<option value="${u.id}">${esc(nomeUsuario(u))}</option>`).join('');if([...sel.options].some(o=>o.value===atual))sel.value=atual;marcarEscolhido();};
+  const renderSugestoes=lista=>{const box=$('#avSugestoes');if(!box)return;const validos=lista.filter(u=>!u.isAdmin).slice(0,6);box.style.display=validos.length?'grid':'none';box.innerHTML=validos.map(u=>`<button type="button" class="rowitem" data-av-user="${u.id}" style="cursor:pointer;text-align:left;padding:10px"><span class="txt"><span class="t">${esc(u.nomeGuerra)}</span><span class="s">@${esc(u.username)} · ${esc(u.email)}</span></span></button>`).join('');$$('[data-av-user]',box).forEach(b=>b.onclick=()=>{const u=validos.find(x=>String(x.id)===String(b.dataset.avUser));renderDestinos(usuarios,u.id);$('#avBusca').value=nomeUsuario(u);box.style.display='none';marcarEscolhido();});};
+  $('#avDest').onchange=marcarEscolhido;
+  $('#avBusca').oninput=e=>{const q=e.target.value.trim(),atual=$('#avDest').value,seq=++buscaSeq;if(q)$('#avDest').value='';marcarEscolhido();clearTimeout(buscaTimer);if(!q){renderSugestoes([]);renderDestinos(usuarios,atual);return;}buscaTimer=setTimeout(async()=>{try{const lista=(await api('/admin/usuarios?limite=100&q='+encodeURIComponent(q))).usuarios||[];if(seq!==buscaSeq)return;usuarios=lista;renderDestinos(lista,'');renderSugestoes(lista)}catch{if(seq===buscaSeq)renderSugestoes(usuarios.filter(u=>`${u.nomeGuerra} ${u.username} ${u.email}`.toLocaleLowerCase('pt-BR').includes(q.toLocaleLowerCase('pt-BR'))))}},100)};
+  $('#avEnviar').onclick=async()=>{const titulo=$('#avTitulo').value.trim(),mensagem=$('#avMsg').value.trim(),destinatarioId=$('#avDest').value||null;if($('#avBusca').value.trim()&&!destinatarioId)return $('#avErr').textContent='Toque no nome da pessoa encontrada antes de enviar.';if(!titulo||!mensagem)return $('#avErr').textContent='Escreva o título e a mensagem.';const b=$('#avEnviar');b.disabled=true;b.textContent='Publicando…';try{await api('/admin/avisos',{method:'POST',body:{titulo,mensagem,destinatarioId}});closeSheet();await carregarAdminResumo();toast(destinatarioId?'Aviso entregue instantaneamente ao usuário.':'Aviso entregue instantaneamente para todos.')}catch(e){b.disabled=false;b.textContent='Publicar aviso';$('#avErr').textContent=e.data?.erro||'Não foi possível publicar.'}};
 }
 async function adminHistoricoAvisosSheet(){
   openSheet('<h3>🗂️ Avisos enviados</h3><div id="avHist"><p class="muted">Carregando…</p></div>');

@@ -23,12 +23,14 @@ adminRouter.use(async (req, res, next) => {
 const auditar = (adminId, alvoId, acao, detalhes = null) => prisma.adminAudit.create({ data: { adminId, alvoId, acao, detalhes } });
 
 adminRouter.get('/resumo', async (_req, res) => {
-  const inicioHoje=new Date();inicioHoje.setHours(0,0,0,0);
-  const [usuarios, bloqueados, posts, mensagens, estados, mensagensHoje, postsHoje] = await Promise.all([
-    prisma.usuario.count({ where:{isAdmin:false} }), prisma.usuario.count({ where: { bloqueado: true, isAdmin:false } }), prisma.feedPost.count(),
-    prisma.mensagem.count(), prisma.userState.count(), prisma.mensagem.count({where:{criadoEm:{gte:inicioHoje}}}), prisma.feedPost.count({where:{criadoEm:{gte:inicioHoje}}}),
+  const hoje=new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+  const inicioHoje=new Date(hoje+'T03:00:00.000Z'),fimHoje=new Date(inicioHoje.getTime()+86400000);
+  const periodoHoje={gte:inicioHoje,lt:fimHoje};
+  const [usuarios, bloqueados, avisos, posts, mensagens, estados, avisosHoje, mensagensHoje, postsHoje] = await Promise.all([
+    prisma.usuario.count({ where:{isAdmin:false} }), prisma.usuario.count({ where: { bloqueado: true, isAdmin:false } }), prisma.adminAviso.count(),
+    prisma.feedPost.count(), prisma.mensagem.count(), prisma.userState.count(), prisma.adminAviso.count({where:{criadoEm:periodoHoje}}), prisma.mensagem.count({where:{criadoEm:periodoHoje}}), prisma.feedPost.count({where:{criadoEm:periodoHoje}}),
   ]);
-  res.json({ usuarios, bloqueados, posts, mensagens, estados, mensagensHoje, postsHoje, atualizadoEm:new Date().toISOString() });
+  res.json({ usuarios, bloqueados, avisos, posts, mensagens, estados, avisosHoje, mensagensHoje, postsHoje, atualizadoEm:new Date().toISOString() });
 });
 
 adminRouter.get('/atividade', async (req,res)=>{
