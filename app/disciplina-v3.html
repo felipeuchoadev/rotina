@@ -843,7 +843,7 @@ setInterval(()=>{ if(authToken&&offQueue().length&&navigator.onLine) flushQueue(
 
 /* id único DESTE aparelho/aba — usado pra não ecoar de volta a própria escrita no sync ao vivo */
 const CLIENT_ID = (Math.random().toString(36).slice(2)+'-'+Date.now().toString(36));
-const APP_BUILD = 'redzone-v146';
+const APP_BUILD = 'redzone-v147';
 // evita re-render que rouba o foco enquanto a pessoa digita (o dado já foi aplicado em S de qualquer forma)
 let _mediaUploadBusy=0;
 function _syncPodeRender(){ const a=document.activeElement; return !_mediaUploadBusy&&!(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||'')); }
@@ -1203,13 +1203,17 @@ async function loadUserData(){
   currentUser = u.username;
   applyTheme(S.profile.tema||'red');
 }
-async function saveProfile(){
-  if(_syncBusy()) return;   // veio do servidor agora → não reescreve (anti-loop)
-  const p=S.profile;
-  try{ await api('/perfil',{method:'PATCH',body:{ nomeGuerra:p.nome, username:p.username, idade:p.idade,
-    pesoKg:p.peso, alturaCm:p.altura, fotoUrl:p.foto, bio:p.bio||'', tema:p.tema, metaAgua:p.metaAgua, xp:computeXP(), clientId:CLIENT_ID }}); }
-  catch(e){ console.error(e); }
-  await Store.set('perfil:dados',{nome:p.nome,username:p.username,peso:p.peso,altura:p.altura});
+let _profileSaveChain=Promise.resolve();
+function saveProfile(){
+  if(_syncBusy()) return Promise.resolve();
+  // Serializa alterações rápidas: a última escolha sempre é a última a chegar
+  // ao servidor, evitando um tema antigo vencer por diferença de conexão.
+  _profileSaveChain=_profileSaveChain.catch(()=>{}).then(async()=>{
+    const p={...S.profile};
+    try{const r=await api('/perfil',{method:'PATCH',body:{nomeGuerra:p.nome,username:p.username,idade:p.idade,pesoKg:p.peso,alturaCm:p.altura,fotoUrl:p.foto,bio:p.bio||'',tema:p.tema,metaAgua:p.metaAgua,xp:computeXP(),clientId:CLIENT_ID}});if(r?.usuario)applyRemoteProfile(r.usuario)}catch(e){console.error(e)}
+    await Store.set('perfil:dados',{nome:p.nome,username:p.username,peso:p.peso,altura:p.altura});
+  });
+  return _profileSaveChain;
 }
 // aplica mudança de PERFIL vinda de outro aparelho (nome/foto/tema/gênero…) — sync ao vivo
 function applyRemoteProfile(u){
@@ -4748,8 +4752,15 @@ function bindPasswordEyes(root){
   });
 }
 function modalLock(on){document.documentElement.classList.toggle('modal-open',!!on);document.body.classList.toggle('modal-open',!!on)}
-function openSheet(html){ pausarVideosFeed();try{window._alarmPreviewStop?.()}catch{}window._alarmPreviewStop=null; const estava=$('#overlay').classList.contains('show'); $('#sheet').classList.remove('keyboard-fit'); $('#sheet').innerHTML=`<button class="sheet-close" onclick="closeSheet()">×</button>`+html; $('#overlay').classList.add('show'); modalLock(true); ajustarViewportTeclado(); if(!estava){ try{ history.pushState({rzSheet:true,rzTab:activeTab},'',location.href); }catch(e){} } bindPasswordEyes($('#sheet')); }
-function closeSheet(fromPop=false){ try{window._alarmPreviewStop?.()}catch{}window._alarmPreviewStop=null;$$('#sheet video,#sheet audio').forEach(v=>{try{v.pause();}catch(e){}}); try{_chatStopRecording?.();}catch(e){} _chatStopRecording=null; if(_socket&&_chatPeerId)_socket.emit('dm:viewing',{peerId:null}); const aberto=$('#overlay').classList.contains('show'); $('#overlay').classList.remove('show','chat-full'); document.documentElement.classList.remove('chat-open'); document.body.classList.remove('chat-open'); modalLock(false); _chatUser=null; _chatPeerId=null; if(aberto&&!fromPop&&history.state?.rzSheet){ try{ history.back();}catch(e){} } if(window.__appUpdatePending)setTimeout(()=>executarAtualizacaoApp(),80); }
+let _sheetDraft=null,_sheetDraftDirty=false,_sheetSaveIntent=false;
+function sheetDraftKey(){const titulo=$('#sheet h3')?.textContent?.trim()||'';return titulo&&!$('#overlay')?.classList.contains('chat-full')?userStorageKey(`rascunho:${activeTab}:${titulo}`):''}
+function sheetDraftFields(){return $$('#sheet input,#sheet textarea,#sheet select').filter(x=>x.type!=='file'&&x.type!=='password'&&!x.disabled)}
+function snapshotSheetDraft(){return sheetDraftFields().map((x,i)=>({i,id:x.id||'',name:x.name||'',type:x.type||x.tagName,value:(x.type==='checkbox'||x.type==='radio')?x.checked:x.value}))}
+function salvarRascunhoSheet(){if(!_sheetDraft)return;try{localStorage.setItem(_sheetDraft,JSON.stringify({at:Date.now(),fields:snapshotSheetDraft()}))}catch{}}
+function limparRascunhoSheet(){if(_sheetDraft)try{localStorage.removeItem(_sheetDraft)}catch{};_sheetDraftDirty=false;_sheetSaveIntent=false}
+function ativarRascunhoSheet(){_sheetDraft=sheetDraftKey();_sheetDraftDirty=false;_sheetSaveIntent=false;if(!_sheetDraft)return;let d=null;try{d=JSON.parse(localStorage.getItem(_sheetDraft)||'null')}catch{};if(d?.fields?.length){const fs=sheetDraftFields();d.fields.forEach(v=>{const x=(v.id&&$('#'+CSS.escape(v.id)))||(v.name&&$(`#sheet [name="${CSS.escape(v.name)}"]`))||fs[v.i];if(!x)return;if(x.type==='checkbox'||x.type==='radio')x.checked=!!v.value;else x.value=v.value;x.dispatchEvent(new Event('input',{bubbles:true}))});toast('Rascunho recuperado automaticamente.')}const registrar=()=>{_sheetDraftDirty=true;salvarRascunhoSheet()};$('#sheet').addEventListener('input',registrar);$('#sheet').addEventListener('change',registrar);$('#sheet').addEventListener('click',e=>{const b=e.target.closest('button');if(b&&/salvar|confirmar|publicar|adicionar|criar|redefinir/i.test(b.textContent||'')){_sheetSaveIntent=true;setTimeout(()=>{if($('#overlay')?.classList.contains('show'))_sheetSaveIntent=false},5000)}},true)}
+function openSheet(html){ pausarVideosFeed();try{window._alarmPreviewStop?.()}catch{}window._alarmPreviewStop=null; const estava=$('#overlay').classList.contains('show'); $('#sheet').classList.remove('keyboard-fit'); $('#sheet').innerHTML=`<button class="sheet-close" onclick="closeSheet()">×</button>`+html; $('#overlay').classList.add('show'); modalLock(true); ajustarViewportTeclado(); if(!estava){ try{ history.pushState({rzSheet:true,rzTab:activeTab},'',location.href); }catch(e){} } bindPasswordEyes($('#sheet'));setTimeout(ativarRascunhoSheet,0); }
+function closeSheet(fromPop=false){if(_sheetDraftDirty&&!_sheetSaveIntent){const manter=confirm('Há informações ainda não confirmadas.\n\nOK: guardar o rascunho para continuar depois.\nCancelar: descartar o rascunho.');if(manter)salvarRascunhoSheet();else limparRascunhoSheet()}else if(_sheetSaveIntent)limparRascunhoSheet(); try{window._alarmPreviewStop?.()}catch{}window._alarmPreviewStop=null;$$('#sheet video,#sheet audio').forEach(v=>{try{v.pause();}catch(e){}}); try{_chatStopRecording?.();}catch(e){} _chatStopRecording=null; if(_socket&&_chatPeerId)_socket.emit('dm:viewing',{peerId:null}); const aberto=$('#overlay').classList.contains('show'); $('#overlay').classList.remove('show','chat-full'); document.documentElement.classList.remove('chat-open'); document.body.classList.remove('chat-open'); modalLock(false); _chatUser=null; _chatPeerId=null;_sheetDraft=null;_sheetDraftDirty=false;_sheetSaveIntent=false; if(aberto&&!fromPop&&history.state?.rzSheet){ try{ history.back();}catch(e){} } if(window.__appUpdatePending)setTimeout(()=>executarAtualizacaoApp(),80); }
 
 function executarAtualizacaoApp(){
   if(window.__appReloading)return;window.__appReloading=true;salvarPosicaoAtual();
