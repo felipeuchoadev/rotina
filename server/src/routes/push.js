@@ -27,6 +27,14 @@ pushRouter.post('/subscribe', async (req, res) => {
   res.json({ ok: true });
 });
 
+// Remove o vínculo deste navegador ao sair do modo suporte/entrar no ADM.
+pushRouter.delete('/subscribe', async (req,res)=>{
+  const endpoint=String(req.body?.endpoint||'');
+  if(!endpoint)return res.status(400).json({erro:'Inscrição inválida.'});
+  await prisma.pushSub.deleteMany({where:{endpoint}});
+  res.json({ok:true});
+});
+
 // Cobrança do Try Hard para o próprio usuário, inclusive com o app em segundo plano.
 pushRouter.post('/try-hard', async (req,res)=>{
   const tarefa=String(req.body?.tarefa||'').trim().slice(0,160);

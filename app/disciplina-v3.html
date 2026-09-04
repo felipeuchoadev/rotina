@@ -839,7 +839,7 @@ setInterval(()=>{ if(authToken&&offQueue().length&&navigator.onLine) flushQueue(
 
 /* id único DESTE aparelho/aba — usado pra não ecoar de volta a própria escrita no sync ao vivo */
 const CLIENT_ID = (Math.random().toString(36).slice(2)+'-'+Date.now().toString(36));
-const APP_BUILD = 'redzone-v143';
+const APP_BUILD = 'redzone-v144';
 // evita re-render que rouba o foco enquanto a pessoa digita (o dado já foi aplicado em S de qualquer forma)
 function _syncPodeRender(){ const a=document.activeElement; return !(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||'')); }
 // ANTI-LOOP: ao aplicar uma mudança que VEIO do servidor, um re-render pode disparar escritas de
@@ -1578,7 +1578,8 @@ async function enterApp(){
   try{ history.replaceState({rzTab:abaSalva},'',location.href); }catch(e){}
   startClock(); startTryHard(); startAlarmes(); connectSocket(); reportXP(); flushQueue();
   startSyncWatchdog();
-  if(S.config.notif) subscribePush();
+  if(S.config.notif&&!S.profile.isAdmin&&!emModoSuporte()) subscribePush();
+  if(S.profile.isAdmin&&!emModoSuporte()) desvincularPushDesteAcesso();
   setTimeout(solicitarPermissoesIniciais,650);
   handleDeepLink();
   setTimeout(checarAvisosAdmin,700);
@@ -2233,7 +2234,7 @@ function renderTreinoDia(){
   }
 }
 function editExecSheet(dia, exId){
-  const plano=planoTreinoDaSemana(treinoSemanaSel,true);
+  const semanaId=S.treinoWeeks[treinoSemanaSel]?.id,plano=planoTreinoDaSemana(treinoSemanaSel,true);
   const ex = exId ? plano[dia].find(x=>x.id===exId) : {nome:'',desc:''};
   openSheet(`
     <h3>${exId?'Editar':'Novo'} exercício — ${DIAS_NOME[dia]}</h3>
@@ -2253,12 +2254,13 @@ function editExecSheet(dia, exId){
   };
   paintVideo();
   const ta=$('#exDesc'); autoGrow(ta); ta.oninput=()=>autoGrow(ta);
-  $('#exSave').onclick=()=>{
+  $('#exSave').onclick=async()=>{
     const nome=$('#exNome').value.trim(), desc=$('#exDesc').value.trim();
     if(!nome) return toast('Dê um nome ao exercício.');
-    if(exId){ ex.nome=nome; ex.desc=desc; ex.videoUrl=videoUrl; }
-    else plano[dia].push({id:uid(), nome, desc, videoUrl});
-    save('treino:weeks'); closeSheet(); renderTreinoDia();
+    const indiceAtual=Math.max(0,S.treinoWeeks.findIndex(w=>w.id===semanaId)),planoAtual=planoTreinoDaSemana(indiceAtual,true),existente=exId?planoAtual[dia].find(x=>x.id===exId):null,b=$('#exSave');b.disabled=true;b.textContent='Salvando…';
+    if(existente){ existente.nome=nome; existente.desc=desc; existente.videoUrl=videoUrl; }
+    else planoAtual[dia].push({id:uid(), nome, desc, videoUrl});
+    treinoSemanaSel=indiceAtual;await save('treino:weeks'); closeSheet(); renderTreinoDia();toast('Exercício salvo na semana.');
   };
 }
 function addTreinoWeek(){
@@ -4364,7 +4366,7 @@ async function entrarComoUsuario(id,nome){
 }
 function renderSupportBanner(){
   document.querySelector('.support-banner')?.remove();const token=sessionStorage.getItem('rz:admin:returnToken');if(!emModoSuporte())return;
-  const el=document.createElement('div');el.className='support-banner';el.innerHTML=`<b>Modo suporte: ${esc(sessionStorage.getItem('rz:admin:supportName')||currentUser)}</b><button>Voltar ao painel ADM</button>`;el.querySelector('button').onclick=async()=>{try{const t=token&&token!=='__server__'?token:(await api('/admin/retornar-suporte',{method:'POST'})).token;sessionStorage.removeItem('rz:admin:returnToken');sessionStorage.removeItem('rz:admin:supportName');setToken(t);location.reload()}catch(e){toast('Não foi possível voltar ao ADM.')}};document.body.appendChild(el);
+  const el=document.createElement('div');el.className='support-banner';el.innerHTML=`<b>Modo suporte: ${esc(sessionStorage.getItem('rz:admin:supportName')||currentUser)}</b><button>Voltar ao painel ADM</button>`;el.querySelector('button').onclick=async()=>{try{await desvincularPushDesteAcesso();const t=token&&token!=='__server__'?token:(await api('/admin/retornar-suporte',{method:'POST'})).token;sessionStorage.removeItem('rz:admin:returnToken');sessionStorage.removeItem('rz:admin:supportName');setToken(t);location.reload()}catch(e){toast('Não foi possível voltar ao ADM.')}};document.body.appendChild(el);
 }
 async function adminAuditoriaSheet(){
   openSheet('<h3>🕘 Histórico de ações</h3><p class="small muted">Registro legível das alterações feitas pelo painel.</p><div id="adAudit"><p class="muted">Carregando…</p></div>');
@@ -4389,7 +4391,7 @@ async function adminAvisoSheet(){
 }
 async function adminHistoricoAvisosSheet(){
   openSheet('<h3>🗂️ Avisos enviados</h3><div id="avHist"><p class="muted">Carregando…</p></div>');
-  try{const r=await api('/admin/avisos'),box=$('#avHist');box.innerHTML=(r.avisos||[]).length?r.avisos.map(a=>`<div class="rowitem"><div class="txt"><div class="t">${esc(a.titulo)}</div><div class="s">Para: ${a.destinatario?`${esc(a.destinatario.nomeGuerra)} (@${esc(a.destinatario.username)})`:'Todos'} · ${new Date(a.criadoEm).toLocaleString('pt-BR')} · ${a._count?.dispensas||0} fecharam · ${a.ativo?'ativo':'desativado'}</div><div class="small muted">${esc(a.mensagem)}</div></div><button class="btn sm ghost" data-av-toggle="${a.id}" data-ativo="${a.ativo?'1':'0'}">${a.ativo?'Desativar':'Reativar'}</button></div>`).join(''):'<p class="muted">Nenhum aviso enviado.</p>';$$('[data-av-toggle]',box).forEach(b=>b.onclick=async()=>{await api('/admin/avisos/'+b.dataset.avToggle,{method:'PATCH',body:{ativo:b.dataset.ativo!=='1'}});adminHistoricoAvisosSheet()})}catch(e){$('#avHist').innerHTML='<p class="err">Falha ao carregar os avisos.</p>'}
+  try{const r=await api('/admin/avisos'),box=$('#avHist');box.innerHTML=(r.avisos||[]).length?r.avisos.map(a=>`<div class="card"><div class="h"><span>${esc(a.titulo)}</span><span class="admin-badge">${a.ativo?'ATIVO':'DESATIVADO'}</span></div><div class="small" style="margin-top:8px"><b>Destinatário:</b> ${a.destinatario?`${esc(a.destinatario.nomeGuerra)} (@${esc(a.destinatario.username)})`:'Todos'}</div><div class="small muted" style="margin-top:5px"><b>Enviado:</b> ${new Date(a.criadoEm).toLocaleString('pt-BR')}</div><div class="small" style="margin-top:10px;white-space:pre-wrap"><b>Mensagem:</b><br>${esc(a.mensagem)}</div><div class="small muted" style="margin-top:8px">${a._count?.dispensas||0} destinatário(s) fecharam o aviso</div><button class="btn sm ghost" style="margin-top:10px" data-av-toggle="${a.id}" data-ativo="${a.ativo?'1':'0'}">${a.ativo?'Desativar':'Reativar'}</button></div>`).join(''):'<p class="muted">Nenhum aviso enviado.</p>';$$('[data-av-toggle]',box).forEach(b=>b.onclick=async()=>{await api('/admin/avisos/'+b.dataset.avToggle,{method:'PATCH',body:{ativo:b.dataset.ativo!=='1'}});adminHistoricoAvisosSheet()})}catch(e){$('#avHist').innerHTML='<p class="err">Falha ao carregar os avisos.</p>'}
 }
 
 let _avisosPendentes=[];
@@ -4864,6 +4866,7 @@ function connectSocket(){
 function urlB64ToUint8(b64){ const pad='='.repeat((4-b64.length%4)%4); const s=(b64+pad).replace(/-/g,'+').replace(/_/g,'/'); const raw=atob(s); return Uint8Array.from([...raw].map(c=>c.charCodeAt(0))); }
 async function subscribePush({solicitar=false}={}){
   try{
+    if(S?.profile?.isAdmin||emModoSuporte())return {ok:false,motivo:'administracao'};
     if(!('serviceWorker' in navigator)||!('PushManager' in window)||!('Notification' in window))return {ok:false,motivo:'incompativel'};
     if(Notification.permission!=='granted'){if(!solicitar)return {ok:false,motivo:Notification.permission};const p=await Notification.requestPermission();if(p!=='granted')return {ok:false,motivo:p};}
     const reg=await navigator.serviceWorker.ready;
@@ -4875,6 +4878,7 @@ async function subscribePush({solicitar=false}={}){
     return {ok:true};
   }catch(e){console.warn('push',e);return {ok:false,motivo:'erro'};}
 }
+async function desvincularPushDesteAcesso(){try{if(!('serviceWorker'in navigator))return;const reg=await navigator.serviceWorker.ready;for(const n of await reg.getNotifications())n.close();const sub=await reg.pushManager.getSubscription();if(sub?.endpoint)await api('/push/subscribe',{method:'DELETE',body:{endpoint:sub.endpoint}})}catch(e){}}
 async function renderStatusPushAlarmes(){
   const box=$('#alarmPushStatus');if(!box||S?.profile?.isAdmin)return;let status=null;try{status=await api('/push/status')}catch{}
   const permissao=('Notification'in window)?Notification.permission:'incompativel',pronto=!!status?.pronto&&permissao==='granted';
