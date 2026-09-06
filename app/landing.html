@@ -91,9 +91,9 @@
     <p class="tagline">Treino, estudo, alimentação e rotina num app só. Disciplina de quartel na palma da mão — rumo à Escola de Sargentos das Armas.</p>
     <div class="cta">
       <button class="btn" id="instalar">📲 Instalar o app</button>
-      <a class="btn ghost" href="./">Entrar / Abrir no navegador →</a>
+      <a class="btn ghost" href="./">Entrar / Abrir REDZONE →</a>
     </div>
-    <div class="hint" id="instHint">Funciona instalado ou direto pelo navegador. Grátis.</div>
+    <div class="hint" id="instHint">No Android, basta baixar uma vez: as próximas versões chegam automaticamente.</div>
   </header>
 
   <section id="dispositivos">
@@ -194,7 +194,10 @@
 
   const modal = document.getElementById('instModal');
   function instalar() {
-    if (deferredPrompt) {
+    if (/Android/i.test(navigator.userAgent)) {
+      location.href='redzone-latest.apk';
+      if(hint)hint.textContent='Baixando o REDZONE. Depois desta instalação, as próximas atualizações chegam pelo próprio app.';
+    } else if (deferredPrompt) {
       deferredPrompt.prompt();
       deferredPrompt.userChoice.finally(() => { deferredPrompt = null; });
     } else if (window.matchMedia('(display-mode: standalone)').matches) {
