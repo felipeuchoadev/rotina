@@ -13,7 +13,7 @@ assert.match(html,/function carregarAdminResumo/);
 assert.match(html,/Atualizado diretamente do servidor/);
 assert.match(html,/cache:'no-store'/);
 assert.match(html,/function renderStatusPushAlarmes/);
-assert.match(html,/redzone-v153/);
+assert.match(html,/redzone-v154/);
 assert.doesNotMatch(html,/id="alarmPushAction"/);
 assert.match(html,/const _avisosRotinaExatos=new Set/);
 assert.doesNotMatch(html,/api\('\/push\/try-hard'/);

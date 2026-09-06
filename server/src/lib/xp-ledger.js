@@ -1,60 +1,38 @@
-const dataValida = (valor, hoje) => /^\d{4}-\d{2}-\d{2}$/.test(String(valor || '')) && valor <= hoje;
+import crypto from 'node:crypto';
+import { prisma } from './db.js';
 
-const minutosValidos = valor => {
-  const ms = Number(valor);
-  return Number.isFinite(ms) && ms >= 60_000 && ms <= 86_400_000 ? Math.floor(ms / 60_000) : 0;
-};
+const hash=v=>crypto.createHash('sha256').update(JSON.stringify(v)).digest('hex').slice(0,24);
+const arr=v=>Array.isArray(v)?v:[];
+const minutos=v=>{const ms=Number(v);return Number.isFinite(ms)&&ms>=60000&&ms<=86400000?Math.floor(ms/60000):0;};
 
-export function calcularExtratoXp(estados = {}, perfil = {}, hoje) {
-  const itens = [];
-  const treino = Array.isArray(estados['treino:logs']) ? estados['treino:logs'] : [];
-  const estudo = Array.isArray(estados['estudo:logs']) ? estados['estudo:logs'] : [];
-  const materias = Array.isArray(estados['estudo:materias']) ? estados['estudo:materias'] : [];
-  const nomesConteudo = new Map();
-  for (const materia of materias) {
-    for (const conteudo of Array.isArray(materia?.conteudos) ? materia.conteudos : []) {
-      if (conteudo?.id) nomesConteudo.set(String(conteudo.id), String(conteudo.nome || conteudo.id));
-    }
+export async function garantirExtratoXp(usuarioId){
+  if(await prisma.xpLancamento.findFirst({where:{usuarioId},select:{id:true}}))return;
+  const u=await prisma.usuario.findUnique({where:{id:usuarioId},select:{xp:true}});if(!u)return;
+  await prisma.xpLancamento.create({data:{usuarioId,eventoId:'saldo-inicial-v1',tipo:'ajustes',descricao:'Saldo preservado antes do extrato fiel',pontos:u.xp}}).catch(e=>{if(e?.code!=='P2002')throw e;});
+}
+
+function eventos(chave,anterior,atual,perfil){
+  const out=[],agora=new Date();
+  if(chave==='rotina:dias'){
+    const a=anterior&&typeof anterior==='object'?anterior:{},n=atual&&typeof atual==='object'?atual:{};
+    for(const [dia,atividades] of Object.entries(n)){const velhas=new Map(arr(a[dia]).map(x=>[String(x?.id),x]));for(const x of arr(atividades)){const v=velhas.get(String(x?.id));if(!v||!!v.done===!!x.done)continue;const at=Number(x.updatedAt)||Date.now();out.push({eventoId:`rotina:${dia}:${x.id}:${x.done?'feito':'desfeito'}:${at}`,tipo:'rotina',descricao:`Rotina ${x.done?'cumprida':'desmarcada'}: ${x.nome||'atividade'}${x.hora?` (${x.hora})`:''}`,pontos:x.done?10:-10,ocorridoEm:new Date(at)});}}
   }
-
-  for (const log of treino) {
-    if (!dataValida(log?.dateISO, hoje)) continue;
-    const minutos = minutosValidos(log?.ativoMs);
-    if (minutos) itens.push({ tipo:'treino', dateISO:log.dateISO, at:Number(log.updatedAt || 0), xp:minutos, txt:`Treino: ${log.nome || 'sessão'} · ${minutos} min ativo(s)` });
+  if(chave==='treino:logs'||chave==='estudo:logs'){
+    const antigos=new Set(arr(anterior).map(hash));for(const log of arr(atual)){const h=hash(log);if(antigos.has(h))continue;const m=minutos(log?.ativoMs),at=Number(log?.updatedAt)?new Date(Number(log.updatedAt)):agora,tipo=chave.startsWith('treino')?'treino':'estudo';if(m)out.push({eventoId:`${chave}:${h}:tempo`,tipo,descricao:tipo==='treino'?`Treino: ${log.nome||'sessão'} · ${m} min ativo(s)`:`Estudo: ${log.materia||'matéria'} · ${m} min × 2 XP`,pontos:tipo==='treino'?m:m*2,ocorridoEm:at});if(tipo==='estudo')for(const c of new Set(arr(log?.conteudos).map(String)))out.push({eventoId:`${chave}:${h}:conteudo:${c}`,tipo,descricao:`Conteúdo concluído: ${c}`,pontos:40,ocorridoEm:at});}
   }
-
-  for (const log of estudo) {
-    if (!dataValida(log?.dateISO, hoje)) continue;
-    const minutos = minutosValidos(log?.ativoMs);
-    if (minutos) itens.push({ tipo:'estudo', dateISO:log.dateISO, at:Number(log.updatedAt || 0), xp:minutos * 2, txt:`Estudo: ${log.materia || 'matéria'} · ${minutos} min × 2 XP` });
-    for (const id of new Set((Array.isArray(log?.conteudos) ? log.conteudos : []).filter(Boolean).map(String))) {
-      itens.push({ tipo:'estudo', dateISO:log.dateISO, at:Number(log.updatedAt || 0), xp:40, txt:`Conteúdo concluído: ${nomesConteudo.get(id) || id}` });
-    }
+  if(chave==='alim:agua'){
+    const meta=Math.max(250,Number(perfil?.metaAgua||2500)),a=anterior&&typeof anterior==='object'?anterior:{},n=atual&&typeof atual==='object'?atual:{};for(const [dia,v] of Object.entries(n)){const antes=Number(a[dia])>=meta,depois=Number(v)>=meta;if(antes===depois)continue;out.push({eventoId:`agua:${dia}:${depois?'atingiu':'desfez'}:${Date.now()}`,tipo:'agua',descricao:`Meta de água ${depois?'atingida':'desfeita'}: ${Number(v).toLocaleString('pt-BR')} de ${meta.toLocaleString('pt-BR')} ml`,pontos:depois?15:-15,ocorridoEm:agora});}
   }
+  return out;
+}
 
-  const metaAgua = Math.max(250, Number(perfil?.metaAgua || 2500));
-  const agua = estados['alim:agua'] && typeof estados['alim:agua'] === 'object' && !Array.isArray(estados['alim:agua']) ? estados['alim:agua'] : {};
-  for (const [dia, valor] of Object.entries(agua)) {
-    const ml = Number(valor);
-    if (dataValida(dia, hoje) && Number.isFinite(ml) && ml >= metaAgua && ml <= 20_000) {
-      itens.push({ tipo:'agua', dateISO:dia, at:0, xp:15, txt:`Meta de água: ${ml.toLocaleString('pt-BR')} de ${metaAgua.toLocaleString('pt-BR')} ml` });
-    }
-  }
+export async function registrarMudancaXp(usuarioId,chave,anterior,atual){
+  await garantirExtratoXp(usuarioId);const perfil=await prisma.usuario.findUnique({where:{id:usuarioId},select:{metaAgua:true}});
+  for(const e of eventos(chave,anterior,atual,perfil))await prisma.xpLancamento.create({data:{usuarioId,...e}}).catch(err=>{if(err?.code!=='P2002')throw err;});
+  const s=await prisma.xpLancamento.aggregate({where:{usuarioId},_sum:{pontos:true}}),total=Math.max(0,Number(s._sum.pontos||0));await prisma.usuario.update({where:{id:usuarioId},data:{xp:total}});return total;
+}
 
-  const rotina = estados['rotina:dias'] && typeof estados['rotina:dias'] === 'object' && !Array.isArray(estados['rotina:dias']) ? estados['rotina:dias'] : {};
-  for (const [dia, atividades] of Object.entries(rotina)) {
-    if (!dataValida(dia, hoje) || !Array.isArray(atividades)) continue;
-    for (const atividade of atividades.slice(0, 100)) {
-      const xp = atividade?.done === true ? 10 : dia < hoje ? -10 : 0;
-      if (!xp) continue;
-      itens.push({ tipo:'rotina', dateISO:dia, at:Number(atividade?.updatedAt || 0), xp, txt:xp > 0 ? `Rotina cumprida: ${atividade?.nome || 'atividade'}${atividade?.hora ? ` (${atividade.hora})` : ''}` : `Rotina não cumprida: ${atividade?.nome || 'atividade'}${atividade?.hora ? ` (${atividade.hora})` : ''}` });
-    }
-  }
-
-  const bonus = Number(estados['xp:bonus']);
-  if (Number.isFinite(bonus) && bonus !== 0) itens.push({ tipo:'ajustes', dateISO:hoje, at:0, xp:Math.floor(bonus), txt:'Bônus/ajuste administrativo' });
-  itens.sort((a, b) => String(b.dateISO).localeCompare(String(a.dateISO)) || Number(b.at || 0) - Number(a.at || 0));
-  const ganhos = itens.filter(i => i.xp > 0).reduce((s, i) => s + i.xp, 0);
-  const perdas = itens.filter(i => i.xp < 0).reduce((s, i) => s + i.xp, 0);
-  return { total:Math.max(0, Math.floor(ganhos + perdas)), ganhos, perdas, itens };
+export async function obterExtratoXp(usuarioId){
+  await garantirExtratoXp(usuarioId);const [u,rows]=await Promise.all([prisma.usuario.findUnique({where:{id:usuarioId},select:{xp:true}}),prisma.xpLancamento.findMany({where:{usuarioId},orderBy:[{ocorridoEm:'desc'},{id:'desc'}],take:1000})]);
+  const itens=rows.map(r=>({id:String(r.id),tipo:r.tipo,dateISO:r.ocorridoEm.toISOString().slice(0,10),at:r.ocorridoEm.getTime(),criadoEm:r.criadoEm.getTime(),xp:r.pontos,txt:r.descricao})),ganhos=itens.filter(i=>i.xp>0).reduce((s,i)=>s+i.xp,0),perdas=itens.filter(i=>i.xp<0).reduce((s,i)=>s+i.xp,0);return{total:Number(u?.xp||0),ganhos,perdas,itens};
 }

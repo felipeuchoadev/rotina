@@ -52,8 +52,24 @@ model Usuario {
   msgEnviadas  Mensagem[]   @relation("de")
   msgRecebidas Mensagem[]   @relation("para")
   pushSubs     PushSub[]
+  xpLancamentos XpLancamento[]
 
   @@map("usuarios")
+}
+
+model XpLancamento {
+  id BigInt @id @default(autoincrement())
+  usuario Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+  usuarioId String
+  eventoId String
+  tipo String
+  descricao String
+  pontos Int
+  ocorridoEm DateTime @default(now())
+  criadoEm DateTime @default(now())
+  @@unique([usuarioId, eventoId])
+  @@index([usuarioId, ocorridoEm, id])
+  @@map("xp_lancamentos")
 }
 
 model AdminAudit {

@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { prisma } from '../lib/db.js';
 import { exigirAuth } from '../lib/auth.js';
 import { emitToUser, emitRanking } from '../realtime.js';
-import { calcularExtratoXp } from '../lib/xp-ledger.js';
+import { obterExtratoXp, registrarMudancaXp } from '../lib/xp-ledger.js';
 
 // Armazenamento chave-valor por usuário (dados pessoais do app).
 export const stateRouter = Router();
@@ -91,35 +91,16 @@ function protegerExecucaoPorData(chave, atual, recebido) {
   return recebido;
 }
 
-async function recalcularXp(usuarioId) {
-  const rows = await prisma.userState.findMany({
-    where: { usuarioId, chave: { in: ['treino:logs', 'estudo:logs', 'estudo:materias', 'alim:agua', 'rotina:dias', 'xp:bonus'] } },
-  });
-  const s = Object.fromEntries(rows.map(r => [r.chave, r.valor]));
-  const hoje = new Intl.DateTimeFormat('en-CA', { timeZone:'America/Sao_Paulo', year:'numeric', month:'2-digit', day:'2-digit' }).format(new Date());
-  const usuario = await prisma.usuario.findUnique({ where: { id: usuarioId }, select: { metaAgua: true } });
-  const extrato = calcularExtratoXp(s, usuario, hoje);
-  const xpFinal = extrato.total;
-  await prisma.usuario.update({ where: { id: usuarioId }, data: { xp: xpFinal } });
+/* O XP agora é um extrato imutável; nunca mais é recalculado a partir de tarefas antigas. */
+async function recalcularXp(usuarioId, chave, anterior, atual) {
+  const xpFinal = await registrarMudancaXp(usuarioId, chave, anterior, atual);
   emitToUser(usuarioId, 'profile:changed', { usuario: { xp: xpFinal }, src: null });
   emitRanking();
   return xpFinal;
 }
 
 async function extratoXpDoUsuario(usuarioId) {
-  const [rows, usuario] = await Promise.all([
-    prisma.userState.findMany({ where: { usuarioId, chave: { in: ['treino:logs', 'estudo:logs', 'estudo:materias', 'alim:agua', 'rotina:dias', 'xp:bonus'] } } }),
-    prisma.usuario.findUnique({ where: { id: usuarioId }, select: { metaAgua: true, xp: true } }),
-  ]);
-  const estados = Object.fromEntries(rows.map(r => [r.chave, r.valor]));
-  const hoje = hojeBrasilia();
-  const extrato = calcularExtratoXp(estados, usuario, hoje);
-  if (usuario && usuario.xp !== extrato.total) {
-    await prisma.usuario.update({ where: { id: usuarioId }, data: { xp: extrato.total } });
-    emitToUser(usuarioId, 'profile:changed', { usuario: { xp: extrato.total }, src: null });
-    emitRanking();
-  }
-  return extrato;
+  return obterExtratoXp(usuarioId);
 }
 
 // Todos os blobs do usuário de uma vez → { chave: valor, ... }
@@ -179,7 +160,7 @@ stateRouter.put('/:chave', async (req, res) => {
   if(!atual||JSON.stringify(atual.valor)!==JSON.stringify(valor)){
     await prisma.stateHistory.create({data:{usuarioId:req.userId,chave:req.params.chave,valor}}).catch(()=>{});
   }
-  const xpAtual=['treino:logs','estudo:logs','alim:agua','rotina:dias'].includes(req.params.chave) ? await recalcularXp(req.userId) : null;
+  const xpAtual=['treino:logs','estudo:logs','alim:agua','rotina:dias'].includes(req.params.chave) ? await recalcularXp(req.userId,req.params.chave,atual?.valor,valor) : null;
   // sync ao vivo: avisa os OUTROS aparelhos do mesmo usuário (src = quem escreveu, pra não ecoar nele)
   emitToUser(req.userId, 'state:changed', { chave: req.params.chave, valor, versao:Number(versaoRecebida), src: req.body?.clientId || null });
   res.json({ ok: true, valor, versao:Number(versaoRecebida), ...(xpAtual!==null?{xp:xpAtual}:{}) });
@@ -190,7 +171,7 @@ stateRouter.delete('/:chave', async (req, res) => {
   const anterior=await prisma.userState.findUnique({where:{usuarioId_chave:{usuarioId:req.userId,chave:req.params.chave}}});
   await prisma.userState.deleteMany({ where: { usuarioId: req.userId, chave: req.params.chave } });
   if(anterior)await prisma.stateHistory.create({data:{usuarioId:req.userId,chave:req.params.chave,valor:null}}).catch(()=>{});
-  if (['treino:logs', 'estudo:logs', 'alim:agua', 'rotina:dias'].includes(req.params.chave)) await recalcularXp(req.userId);
+  if (['treino:logs', 'estudo:logs', 'alim:agua', 'rotina:dias'].includes(req.params.chave)) await recalcularXp(req.userId,req.params.chave,anterior?.valor,null);
   emitToUser(req.userId, 'state:changed', { chave: req.params.chave, valor: null, src: req.query.src || null });
   res.status(204).end();
 });

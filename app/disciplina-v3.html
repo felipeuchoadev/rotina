@@ -844,7 +844,7 @@ setInterval(()=>{ if(authToken&&offQueue().length&&navigator.onLine) flushQueue(
 
 /* id único DESTE aparelho/aba — usado pra não ecoar de volta a própria escrita no sync ao vivo */
 const CLIENT_ID = (Math.random().toString(36).slice(2)+'-'+Date.now().toString(36));
-const APP_BUILD = 'redzone-v153';
+const APP_BUILD = 'redzone-v154';
 // evita re-render que rouba o foco enquanto a pessoa digita (o dado já foi aplicado em S de qualquer forma)
 let _mediaUploadBusy=0;
 function _syncPodeRender(){ const a=document.activeElement; return !_mediaUploadBusy&&!(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||'')); }
@@ -1753,7 +1753,7 @@ function extratoXpLocal(){
   (S.estudoLogs||[]).forEach(l=>{ const ms=Number(l.ativoMs||0),m=Math.floor(ms/60000); if(!dataOk(l.dateISO))return;if(ms>=60000&&ms<=86400000&&m>0)itens.push({tipo:'estudo',dateISO:l.dateISO,at:l.updatedAt||0,xp:m*2,txt:`Estudo: ${l.materia||'matéria'} · ${m} min × 2 XP`});
     [...new Set(l.conteudos||[])].forEach(cid=>{ const mat=(S.materias||[]).find(x=>x.id===l.materiaId),conteudo=conteudosMateria(mat).find(x=>x.id===cid); itens.push({tipo:'estudo',dateISO:l.dateISO,at:l.updatedAt||0,xp:40,txt:`Conteúdo concluído: ${conteudo?.nome||cid}`}); }); });
   Object.entries(S.agua||{}).forEach(([iso,v])=>{ const ml=Number(v),meta=Number(S.profile.metaAgua||2500); if(dataOk(iso)&&Number.isFinite(ml)&&ml>0&&ml<=20000&&ml>=meta) itens.push({tipo:'agua',dateISO:iso,xp:15,txt:`Meta de água: ${ml.toLocaleString('pt-BR')} de ${meta.toLocaleString('pt-BR')} ml`}); });
-  Object.entries(S.rotinaDias||{}).forEach(([iso,acts])=>{ if(!dataOk(iso)||!Array.isArray(acts))return; acts.forEach(a=>itens.push({tipo:'rotina',dateISO:iso,at:a.updatedAt||0,xp:a.done?10:(iso<hoje?-10:0),txt:a.done?`Rotina cumprida: ${a.nome}${a.hora?` (${a.hora})`:''}`:`Rotina não cumprida: ${a.nome}${a.hora?` (${a.hora})`:''}`})); });
+  Object.entries(S.rotinaDias||{}).forEach(([iso,acts])=>{ if(!dataOk(iso)||!Array.isArray(acts))return; acts.filter(a=>a.done).forEach(a=>itens.push({tipo:'rotina',dateISO:iso,at:a.updatedAt||0,xp:10,txt:`Rotina cumprida: ${a.nome}${a.hora?` (${a.hora})`:''}`})); });
   for(let i=itens.length-1;i>=0;i--)if(!itens[i].xp)itens.splice(i,1);
   if(S.profile.xpBonus) itens.push({tipo:'ajustes',dateISO:todayISO(), xp:S.profile.xpBonus, txt:'Bônus/ajuste administrativo'});
   itens.sort((a,b)=>String(b.dateISO).localeCompare(String(a.dateISO))||(b.at||0)-(a.at||0));
