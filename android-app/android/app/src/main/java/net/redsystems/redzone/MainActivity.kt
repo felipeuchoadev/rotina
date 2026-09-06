@@ -52,6 +52,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         window.statusBarColor = Color.rgb(9, 10, 14); window.navigationBarColor = Color.rgb(16, 17, 22)
         createContent(); configureWebView(); askNotificationPermission(); loadRequestedUrl(intent)
+        UpdateManager.check(this)
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() { if (webView.canGoBack()) webView.goBack() else finish() }
         })
@@ -126,6 +127,7 @@ class MainActivity : ComponentActivity() {
         webView.loadUrl(url)
     }
     override fun onNewIntent(intent: Intent) { super.onNewIntent(intent); setIntent(intent); loadRequestedUrl(intent) }
+    override fun onResume() { super.onResume(); if (::webView.isInitialized) UpdateManager.check(this) }
     override fun onDestroy() { pendingFiles?.onReceiveValue(null); webView.destroy(); super.onDestroy() }
     private fun askNotificationPermission() {
         if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)

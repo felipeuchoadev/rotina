@@ -624,6 +624,15 @@ body.th-shake{animation:thshake .55s;}
 /* ============================================================
    RESPONSIVO
 ============================================================ */
+input::placeholder,textarea::placeholder{color:var(--text-dim)!important;opacity:.48!important}
+/* Celular: navegação sempre na base, ao alcance do polegar. */
+@media (max-width:899px){
+  #app{padding-bottom:calc(86px + env(safe-area-inset-bottom))}
+  .nav{top:auto;left:0;right:0;bottom:0;width:100%;max-width:none;height:calc(72px + env(safe-area-inset-bottom));padding:7px 5px env(safe-area-inset-bottom);transform:none!important;border:0;border-top:1px solid var(--line);background:color-mix(in srgb,var(--bg) 91%,transparent);backdrop-filter:blur(22px);box-shadow:0 -8px 30px rgba(0,0,0,.3);overflow-x:auto;overflow-y:hidden}
+  .nav-inner{min-width:max-content;height:100%;padding:0;display:flex;flex-direction:row;gap:2px;align-items:stretch}
+  .nav-inner::before{display:none}.nav button{width:72px;min-width:72px;height:58px;flex-direction:column;justify-content:center;gap:3px;padding:5px 3px;font-size:9.5px;text-align:center;border-radius:13px}.nav button svg{width:23px;height:23px}
+  .navbd,.hamb{display:none!important}#toast{bottom:calc(92px + env(safe-area-inset-bottom))}
+}
 /* CELULAR estreito: dá respiro pros números do Início (não colar um no outro) */
 @media (max-width:430px){
   .topbar{gap:5px}.topbar>div{gap:7px!important}.topbar .icobtn{width:36px;height:36px;border-radius:10px}.topbar .homeclock .hc-time{font-size:19px}.topbar .homeclock .hc-date{display:none}.topbar .brand{font-size:18px}
@@ -728,6 +737,7 @@ body.th-shake{animation:thshake .55s;}
  <symbol id="i-dm" viewBox="0 0 24 24"><path d="M4 6a2 2 0 012-2h12a2 2 0 012 2v8a2 2 0 01-2 2H9l-5 4z"/></symbol>
  <symbol id="i-sino" viewBox="0 0 24 24"><path d="M6 9a6 6 0 0112 0c0 5 2 6 2 6H4s2-1 2-6M10 20a2 2 0 004 0"/></symbol>
  <symbol id="i-fotos" viewBox="0 0 24 24"><rect x="3" y="5" width="14" height="14" rx="2"/><path d="M3 15l4-4 3 3 4-4 3 3"/><circle cx="8" cy="9" r="1"/><path d="M20 8v11a2 2 0 01-2 2H8"/></symbol>
+ <symbol id="i-financas" viewBox="0 0 24 24"><rect x="3" y="5" width="18" height="14" rx="3"/><path d="M3 9h18M16 14h2"/></symbol>
 </svg>
 
 <!-- ===================== AUTH ===================== -->
@@ -745,6 +755,7 @@ body.th-shake{animation:thshake .55s;}
   <section id="scr-rotina" class="screen"></section>
   <section id="scr-recordacoes" class="screen"></section>
   <section id="scr-batalha" class="screen"></section>
+  <section id="scr-financas" class="screen"></section>
   <section id="scr-perfil" class="screen"></section>
   <section id="scr-admin" class="screen"></section>
 
@@ -848,7 +859,7 @@ setInterval(()=>{ if(authToken&&offQueue().length&&navigator.onLine) flushQueue(
 
 /* id único DESTE aparelho/aba — usado pra não ecoar de volta a própria escrita no sync ao vivo */
 const CLIENT_ID = (Math.random().toString(36).slice(2)+'-'+Date.now().toString(36));
-const APP_BUILD = 'redzone-v157';
+const APP_BUILD = 'redzone-v158';
 // evita re-render que rouba o foco enquanto a pessoa digita (o dado já foi aplicado em S de qualquer forma)
 let _mediaUploadBusy=0;
 function _syncPodeRender(){ const a=document.activeElement; return !_mediaUploadBusy&&!(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||'')); }
@@ -997,6 +1008,7 @@ const RANKS = [
   {id:'3sgt',    name:'3º Sargento',  min:150000, divisas:3, estrela:true },
 ];
 function rankOf(xp){ let r=RANKS[0]; for(const k of RANKS){ if(xp>=k.min) r=k; } return r; }
+function patenteAtualNome(){const xpServidor=Number(S?.profile?.xp);return rankOf(Number.isFinite(xpServidor)?xpServidor:computeXP()).name}
 function nextRank(xp){ return RANKS.find(k=>k.min>xp)||null; }
 
 /* ---------------------------------------------------------------------------
@@ -1251,8 +1263,8 @@ async function save(k){
 function sincronizarAlarmesNativos(){
   try{
     if(!window.RedzoneNative?.syncAlarms)return;
-    const tryHard=!!S?.config?.tryHard;
-    window.RedzoneNative.syncAlarms(JSON.stringify((Array.isArray(S?.alarmes)?S.alarmes:[]).map(a=>({...a,tryHard}))));
+    const tryHard=!!S?.config?.tryHard,tema=S?.profile?.tema||'red';
+    window.RedzoneNative.syncAlarms(JSON.stringify((Array.isArray(S?.alarmes)?S.alarmes:[]).map(a=>({...a,tryHard,tema}))));
   }catch(e){}
 }
 window.addEventListener('redzone-native-ready',()=>setTimeout(sincronizarAlarmesNativos,500));
@@ -1481,11 +1493,12 @@ const TABS = [
   {id:'rotina', ico:'⏰', label:'Rotina'},
   {id:'recordacoes', ico:'🖼️', label:'Memórias'},
   {id:'batalha', ico:'⚔️', label:'Batalha'},
+  {id:'financas', ico:'💳', label:'Finanças'},
   {id:'perfil', ico:'🎖️', label:'Perfil'},
   {id:'admin', ico:'🛡️', label:'Admin', admin:true},
 ];
 let activeTab='inicio';
-const NAV_ICO = {inicio:'i-home', treinos:'i-treino', alimentacao:'i-alim', estudos:'i-estudo', rotina:'i-rotina', recordacoes:'i-fotos', batalha:'i-batalha', perfil:'i-perfil',admin:'i-admin'};
+const NAV_ICO = {inicio:'i-home', treinos:'i-treino', alimentacao:'i-alim', estudos:'i-estudo', rotina:'i-rotina', recordacoes:'i-fotos', batalha:'i-batalha', financas:'i-financas', perfil:'i-perfil',admin:'i-admin'};
 function svgIcon(id){ return `<svg viewBox="0 0 24 24"><use href="#${id}"/></svg>`; }
 
 function renderNav(){
@@ -1522,6 +1535,7 @@ function goBack(){ if(_navStack.length){ go(_navStack.pop(), true); } else { go(
 window.goBack=goBack;
 let _popNavegando=false;
 window.addEventListener('popstate',(e)=>{
+  if($('.media-lightbox')){ $('.media-lightbox')._closeFromPop?.(); return; }
   if(fecharCamadaTransitória(true)) return;
   if($('#overlay')?.classList.contains('show')){ closeSheet(true); return; }
   const tab=e.state&&e.state.rzTab;
@@ -1550,7 +1564,7 @@ function go(tab, isBack, restaurarSalvo=false){
   try{ sessionStorage.setItem(`rz:view:${currentUser||'anon'}:tab`,tab); }catch(e){}
   $$('.screen').forEach(s=>s.classList.remove('active'));
   $('#scr-'+tab).classList.add('active');
-  ({inicio:renderInicio, treinos:renderTreinos, alimentacao:renderAlimentacao, estudos:renderEstudos, rotina:renderRotina, recordacoes:renderRecordacoes, batalha:renderBatalha, perfil:renderPerfil, admin:renderAdmin})[tab]();
+  ({inicio:renderInicio, treinos:renderTreinos, alimentacao:renderAlimentacao, estudos:renderEstudos, rotina:renderRotina, recordacoes:renderRecordacoes, batalha:renderBatalha, financas:()=>{}, perfil:renderPerfil, admin:renderAdmin})[tab]();
   const destino=mesmaAba?yAtual:((isBack||restaurarSalvo)?ySalvo:0);
   requestAnimationFrame(()=>requestAnimationFrame(()=>window.scrollTo(0,Math.max(0,destino))));
 }
@@ -1566,7 +1580,7 @@ async function solicitarPermissoesIniciais(){
     <div class="rowitem"><div style="font-size:25px">🔔</div><div class="txt"><div class="t">Notificações</div><div class="s">Lembretes, mensagens e avisos importantes.</div></div></div>
     <div class="rowitem"><div style="font-size:25px">📷</div><div class="txt"><div class="t">Câmera</div><div class="s">Fotos e vídeos feitos dentro do aplicativo.</div></div></div>
     <div class="rowitem"><div style="font-size:25px">🎙️</div><div class="txt"><div class="t">Microfone</div><div class="s">Áudios e gravações de vídeo com som.</div></div></div>
-    <p class="small muted">O navegador ainda pode mostrar as confirmações oficiais de segurança. Se uma permissão for negada, ela só poderá ser liberada depois nas configurações do navegador.</p>
+    <p class="small muted">O sistema do celular pode mostrar confirmações oficiais de segurança. Se uma permissão for negada, libere-a depois nas configurações do REDZONE.</p>
     <button class="btn" id="permitirRecursos" style="width:100%">Continuar e permitir</button>
   </div>`);
   const fechar=$('.sheet-close',$('#sheet')); if(fechar) fechar.style.display='none';
@@ -1589,7 +1603,7 @@ async function solicitarPermissoesIniciais(){
     }catch(e){ resultado.notificacoes='negada'; }
     try{localStorage.setItem(chavePermissoesIniciais(),JSON.stringify(resultado))}catch(e){}
     closeSheet();
-    toast(resultado.notificacoes==='granted'&&resultado.camera==='permitida'?'REDZONE pronto. Permissões configuradas. ✅':'Permissões registradas. Você pode alterá-las nas configurações do navegador.');
+    toast(resultado.notificacoes==='granted'&&resultado.camera==='permitida'?'REDZONE pronto. Permissões configuradas. ✅':'Permissões registradas. Você pode alterá-las nas configurações do REDZONE.');
   };
 }
 
@@ -3307,10 +3321,10 @@ function renderAlarmes(){
 function alarmeSheet(id){
   const a=(S.alarmes||[]).find(x=>x.id===id)||{id:uid(),nome:'Despertar',hora:'07:00',dias:[0,1,2,3,4,5,6],ativo:true,intensidade:100,som:'original'};
   const intensidade=Math.max(20,Math.min(100,Number(a.intensidade)||({normal:55,alto:82,maximo:100}[a.volume]||100)));
-  openSheet(`<div class="alarm-editor"><div class="alarm-editor-head"><div><span class="eyebrow">DESPERTADOR REDZONE</span><h3>${id?'Editar alarme':'Novo alarme'}</h3></div><span class="alarm-status-dot">● ${a.ativo!==false?'ATIVO':'DESATIVADO'}</span></div><section class="alarm-drawer alarm-time-editor"><label>Horário</label><input id="alHora" type="time" value="${esc(a.hora)}"><div class="field"><label>Nome do alarme</label><input id="alNome" value="${esc(a.nome)}" maxlength="80" placeholder="Ex.: Acordar para treinar"></div></section><section class="alarm-drawer"><div class="alarm-drawer-title"><div><b>Repetir</b><span>Escolha os dias em que deve tocar</span></div></div><div class="alarm-presets"><button type="button" data-al-preset="all">Semana inteira</button><button type="button" data-al-preset="work">Seg a Sex</button><button type="button" data-al-preset="weekend">Fim de semana</button><button type="button" data-al-preset="none">Limpar</button></div><div class="alarm-day-list">${ALARM_DIAS.map((d,i)=>`<label><span>${d==='Dom'?'Domingo':d==='Seg'?'Segunda-feira':d==='Ter'?'Terça-feira':d==='Qua'?'Quarta-feira':d==='Qui'?'Quinta-feira':d==='Sex'?'Sexta-feira':'Sábado'}</span><input type="checkbox" data-al-dia="${i}" ${(a.dias||[]).includes(i)?'checked':''}></label>`).join('')}</div></section><section class="alarm-drawer"><div class="alarm-drawer-title"><div><b>Biblioteca de sons</b><span>Selecione e teste antes de salvar</span></div></div><div class="alarm-sound-list">${[['original','Sirene REDZONE','Forte e contínua'],['grave','Sirene grave','Tom mais profundo'],['rapida','Sirene rápida','Ritmo mais urgente']].map(([v,n,s])=>`<label class="alarm-sound-row"><input type="radio" name="alSom" value="${v}" ${(a.som||'original')===v?'checked':''}><span><b>${n}</b><small>${s}</small></span><button type="button" data-test-som="${v}">▶ Testar</button></label>`).join('')}<label class="alarm-sound-row custom"><input type="radio" name="alSom" value="custom" ${a.som==='custom'?'checked':''}><span><b>Meu próprio áudio</b><small id="alCustomName">${esc(a.customNome||'Escolha um arquivo do aparelho')}</small></span><button type="button" id="alCustomPick">＋ Escolher</button></label><input id="alCustomFile" type="file" accept="audio/*" hidden></div></section><section class="alarm-drawer"><div class="alarm-drawer-title"><div><b>Intensidade</b><span>Arraste para ajustar o volume do alarme</span></div><strong id="alIntVal">${intensidade}%</strong></div><input class="alarm-range" id="alInt" type="range" min="20" max="100" step="1" value="${intensidade}"><div class="alarm-range-labels"><span>Suave</span><span>Máxima</span></div><p class="small muted">O navegador ainda respeita o volume geral definido no aparelho.</p></section><div class="err" id="alErr"></div><button class="btn alarm-save" id="alSalvar">Salvar alarme</button></div>`);
+  openSheet(`<div class="alarm-editor"><div class="alarm-editor-head"><div><span class="eyebrow">DESPERTADOR REDZONE</span><h3>${id?'Editar alarme':'Novo alarme'}</h3></div><span class="alarm-status-dot">● ${a.ativo!==false?'ATIVO':'DESATIVADO'}</span></div><section class="alarm-drawer alarm-time-editor"><label>Horário</label><input id="alHora" type="time" value="${esc(a.hora)}"><div class="field"><label>Nome do alarme</label><input id="alNome" value="${esc(a.nome)}" maxlength="80" placeholder="Ex.: Acordar para treinar"></div></section><section class="alarm-drawer"><div class="alarm-drawer-title"><div><b>Repetir</b><span>Escolha os dias em que deve tocar</span></div></div><div class="alarm-presets"><button type="button" data-al-preset="all">Semana inteira</button><button type="button" data-al-preset="work">Seg a Sex</button><button type="button" data-al-preset="weekend">Fim de semana</button><button type="button" data-al-preset="none">Limpar</button></div><div class="alarm-day-list">${ALARM_DIAS.map((d,i)=>`<label><span>${d==='Dom'?'Domingo':d==='Seg'?'Segunda-feira':d==='Ter'?'Terça-feira':d==='Qua'?'Quarta-feira':d==='Qui'?'Quinta-feira':d==='Sex'?'Sexta-feira':'Sábado'}</span><input type="checkbox" data-al-dia="${i}" ${(a.dias||[]).includes(i)?'checked':''}></label>`).join('')}</div></section><section class="alarm-drawer"><div class="alarm-drawer-title"><div><b>Biblioteca de sons</b><span>Selecione e teste antes de salvar</span></div></div><div class="alarm-sound-list">${[['original','Sirene REDZONE','Forte e contínua'],['grave','Sirene grave','Tom mais profundo'],['rapida','Sirene rápida','Ritmo mais urgente']].map(([v,n,s])=>`<label class="alarm-sound-row"><input type="radio" name="alSom" value="${v}" ${(a.som||'original')===v?'checked':''}><span><b>${n}</b><small>${s}</small></span><button type="button" data-test-som="${v}">▶ Testar</button></label>`).join('')}<label class="alarm-sound-row custom"><input type="radio" name="alSom" value="custom" ${a.som==='custom'?'checked':''}><span><b>Meu próprio áudio</b><small id="alCustomName">${esc(a.customNome||'Escolha um arquivo do aparelho')}</small></span><button type="button" id="alCustomPick">＋ Escolher</button></label><input id="alCustomFile" type="file" accept="audio/*" hidden></div></section><section class="alarm-drawer"><div class="alarm-drawer-title"><div><b>Intensidade</b><span>Arraste para ajustar o volume do alarme</span></div><strong id="alIntVal">${intensidade}%</strong></div><input class="alarm-range" id="alInt" type="range" min="20" max="100" step="1" value="${intensidade}"><div class="alarm-range-labels"><span>Suave</span><span>Máxima</span></div><p class="small muted">O volume final também acompanha o volume de alarmes definido no celular.</p></section><div class="err" id="alErr"></div><button class="btn alarm-save" id="alSalvar">Salvar alarme</button></div>`);
   let customUrl=a.customUrl||'',customNome=a.customNome||'',preview=null;
   $('.alarm-sound-row.custom')?.insertAdjacentHTML('beforebegin',[['suave','Despertar suave','Melodia baixa e gradual'],['brisa','Brisa tranquila','Notas longas e discretas'],['sino','Sinos leves','Toques curtos e claros']].map(([v,n,s])=>`<label class="alarm-sound-row"><input type="radio" name="alSom" value="${v}" ${a.som===v?'checked':''}><span><b>${n}</b><small>${s}</small></span><button type="button" data-test-som="${v}">▶ Ouvir</button></label>`).join(''));
-  {const campo=$('#alHora'),[hh,mm]=String(a.hora||'07:00').split(':').map(Number);campo.type='hidden';campo.insertAdjacentHTML('beforebegin',`<div class="alarm-wheel" aria-label="Arraste para escolher o horário"><div class="alarm-wheel-col"><small>HORA</small><div class="alarm-wheel-value" id="alWheelH">${String(hh).padStart(2,'0')}</div><input id="alRangeH" type="range" min="0" max="23" step="1" value="${hh}"></div><div class="alarm-wheel-sep">:</div><div class="alarm-wheel-col"><small>MINUTO</small><div class="alarm-wheel-value" id="alWheelM">${String(mm).padStart(2,'0')}</div><input id="alRangeM" type="range" min="0" max="59" step="1" value="${mm}"></div></div>`);const atualizar=()=>{const h=String(+$('#alRangeH').value).padStart(2,'0'),m=String(+$('#alRangeM').value).padStart(2,'0');$('#alWheelH').textContent=h;$('#alWheelM').textContent=m;campo.value=h+':'+m};$('#alRangeH').oninput=atualizar;$('#alRangeM').oninput=atualizar;atualizar();}
+  {const campo=$('#alHora'),[hh,mm]=String(a.hora||'07:00').split(':').map(Number);campo.type='hidden';campo.insertAdjacentHTML('beforebegin',`<div class="alarm-wheel" aria-label="Escolha ou digite o horário"><div class="alarm-wheel-col"><small>HORA</small><input class="alarm-wheel-value" id="alWheelH" type="number" inputmode="numeric" min="0" max="23" value="${hh}"><input id="alRangeH" type="range" min="0" max="23" step="1" value="${hh}"></div><div class="alarm-wheel-sep">:</div><div class="alarm-wheel-col"><small>MINUTO</small><input class="alarm-wheel-value" id="alWheelM" type="number" inputmode="numeric" min="0" max="59" value="${mm}"><input id="alRangeM" type="range" min="0" max="59" step="1" value="${mm}"></div></div>`);const atualizar=(origem='range')=>{let h,m;if(origem==='numero'){h=Math.max(0,Math.min(23,+$('#alWheelH').value||0));m=Math.max(0,Math.min(59,+$('#alWheelM').value||0));$('#alRangeH').value=h;$('#alRangeM').value=m}else{h=+$('#alRangeH').value;m=+$('#alRangeM').value;$('#alWheelH').value=String(h).padStart(2,'0');$('#alWheelM').value=String(m).padStart(2,'0')}campo.value=String(h).padStart(2,'0')+':'+String(m).padStart(2,'0')};$('#alRangeH').oninput=()=>atualizar();$('#alRangeM').oninput=()=>atualizar();$('#alWheelH').oninput=()=>atualizar('numero');$('#alWheelM').oninput=()=>atualizar('numero');atualizar();}
   let previewBtn=null;const stopPreview=()=>{if(preview){preview.pause();preview.currentTime=0;preview=null}try{if('mediaSession'in navigator)navigator.mediaSession.metadata=null}catch{}previewBtn=null;$$('[data-test-som]').forEach(x=>x.textContent='▶ Ouvir');if($('#alCustomTest'))$('#alCustomTest').textContent='▶ Ouvir'};window._alarmPreviewStop=stopPreview;
   $$('[data-al-preset]').forEach(b=>b.onclick=()=>{const map={all:[0,1,2,3,4,5,6],work:[1,2,3,4,5],weekend:[0,6],none:[]},sel=new Set(map[b.dataset.alPreset]||[]);$$('#sheet [data-al-dia]').forEach(x=>x.checked=sel.has(+x.dataset.alDia));});
   $$('[data-test-som]').forEach(b=>{b.textContent='▶ Ouvir';b.onclick=async e=>{e.preventDefault();if(preview&&!preview.paused&&previewBtn===b){stopPreview();return}stopPreview();$('#sheet [name="alSom"][value="'+b.dataset.testSom+'"]').checked=true;const tipo=b.dataset.testSom;preview=criarSomAlarme(tipo,+$('#alInt').value)||new Audio('siren.mp3');if(preview instanceof Audio){preview.playbackRate=tipo==='grave'?.78:tipo==='rapida'?1.22:1;preview.preservesPitch=false;preview.volume=+$('#alInt').value/100;preview.onended=stopPreview;try{if('mediaSession'in navigator)navigator.mediaSession.metadata=new MediaMetadata({title:'Prévia do alarme',artist:ALARM_SONS[tipo]||'REDZONE'})}catch{}}try{previewBtn=b;await preview.play();b.textContent='⏸ Pausar'}catch(err){stopPreview();toast('O navegador bloqueou o teste. Toque novamente.')}}});
@@ -3744,7 +3758,7 @@ function compartilharNoFeedSheet(r){
     <button class="btn" id="cpEnviar">Publicar</button>`);
   const ta=$('#cpTxt'); autoGrow(ta); ta.oninput=()=>autoGrow(ta);
   $('#cpEnviar').onclick=async()=>{
-    try{ await api('/batalha/feed',{method:'POST',body:{texto:$('#cpTxt').value.trim(), midiaUrl:r.url, midiaTipo:(r.midiaTipo==='video'?'video':'foto'), tipo:'manual', privado:$('#cpPriv').checked}}); closeSheet(); toast(`Publicado, ${rankOf(computeXP()).name}! 📣`); if(activeTab==='batalha') renderBatalha(); }
+    try{ await api('/batalha/feed',{method:'POST',body:{texto:$('#cpTxt').value.trim(), midiaUrl:r.url, midiaTipo:(r.midiaTipo==='video'?'video':'foto'), tipo:'manual', privado:$('#cpPriv').checked}}); closeSheet(); toast(`Publicado, ${patenteAtualNome()}! 📣`); if(activeTab==='batalha') renderBatalha(); }
     catch(e){ toast('Falha ao publicar.'); }
   };
 }
@@ -4060,13 +4074,14 @@ function bindFeedActions(){
 }
 function abrirMidiaFeed(url,tipo){
   pausarVideosFeed();
-  $('.media-lightbox')?.querySelector('.close-media')?.click();
+  $('.media-lightbox')?._closeFromPop?.();
   const el=document.createElement('div'),bodyOverflow=document.body.style.overflow,htmlOverflow=document.documentElement.style.overflow;
   el.className='media-lightbox'; el.setAttribute('role','dialog'); el.setAttribute('aria-modal','true');
   el.innerHTML=`<button class="close-media" aria-label="Fechar">×</button>${tipo==='video'?`<video src="${esc(url)}" controls autoplay playsinline></video>`:`<img src="${esc(url)}" alt="Mídia da publicação">`}`;
-  const fechar=()=>{if(!el.isConnected)return;el.querySelector('video')?.pause();el.remove();document.body.style.overflow=bodyOverflow;document.documentElement.style.overflow=htmlOverflow;};
+  const fechar=(fromPop=false)=>{if(!el.isConnected)return;el.querySelector('video')?.pause();el.remove();document.body.style.overflow=bodyOverflow;document.documentElement.style.overflow=htmlOverflow;if(!fromPop&&history.state?.rzMedia)history.back();};
   document.body.appendChild(el); document.body.style.overflow='hidden'; document.documentElement.style.overflow='hidden';
-  el.querySelector('.close-media').onclick=fechar; el.onclick=e=>{if(e.target===el)fechar()}; el.querySelector('.close-media').focus();
+  try{history.pushState({rzMedia:true,rzTab:activeTab},'',location.href)}catch(e){} el._closeFromPop=()=>fechar(true);
+  el.querySelector('.close-media').onclick=()=>fechar(); el.onclick=e=>{if(e.target===el)fechar()}; el.querySelector('.close-media').focus();
 }
 const _likesBusy=new Set();
 function aplicarCurtidaPostDOM(id,curtido,total){
@@ -4304,7 +4319,7 @@ function composePost(prefill=''){
     const texto=$('#postLeg').value.trim();
     if(!midiaUrl && !texto){botao.disabled=false;botao.textContent='Publicar no feed';return toast('Coloque uma foto/vídeo ou uma legenda.');}
     try{ await api('/batalha/feed',{method:'POST',body:{texto, midiaUrl, midiaTipo, tipo:'manual'}});
-      closeSheet(); toast(`Publicado, ${rankOf(computeXP()).name}! 📣`); renderBatalha(); }
+      closeSheet(); toast(`Publicado, ${patenteAtualNome()}! 📣`); renderBatalha(); }
     catch(e){botao.disabled=false;botao.textContent='Publicar no feed';toast(e?.message||'Falha ao publicar.'); }
   };
 }
@@ -4344,7 +4359,7 @@ async function gerarPublicacaoDoDia(){
     const texto = linhas.length?('Relatório de hoje 🪖\n'+linhas.join('\n')+'\n\nRumo à ESA. Sem desculpa.'):'';
     const selecionadas=[...midiasSel].sort((a,b)=>a-b).map(i=>midiasHoje[i]).filter(Boolean), midias=selecionadas.map(m=>({url:m.url,tipo:m.midiaTipo==='video'?'video':'foto'})), primeira=midias[0]||null;
     if(!texto && !midias.length){ return toast('Marque pelo menos uma coisa.'); }
-    try{ await api('/batalha/feed',{method:'POST',body:{texto,midias,midiaUrl:primeira?.url||null,midiaTipo:primeira?.tipo||null,tipo:'manual',privado:$('#giPriv').checked}});midias.forEach(m=>_feedPostedUrls.add(m.url));closeSheet();toast(`Publicado, ${rankOf(computeXP()).name}! 📣`);renderBatalha(); }
+    try{ await api('/batalha/feed',{method:'POST',body:{texto,midias,midiaUrl:primeira?.url||null,midiaTipo:primeira?.tipo||null,tipo:'manual',privado:$('#giPriv').checked}});midias.forEach(m=>_feedPostedUrls.add(m.url));closeSheet();toast(`Publicado, ${patenteAtualNome()}! 📣`);renderBatalha(); }
     catch(e){ toast('Falha ao publicar.'); }
   };
 }
@@ -4803,7 +4818,7 @@ function bindPasswordEyes(root){
 }
 function modalLock(on){document.documentElement.classList.toggle('modal-open',!!on);document.body.classList.toggle('modal-open',!!on)}
 let _sheetDraft=null,_sheetDraftDirty=false,_sheetSaveIntent=false;
-function sheetDraftKey(){const titulo=$('#sheet h3')?.textContent?.trim()||'';return titulo&&!$('#overlay')?.classList.contains('chat-full')?userStorageKey(`rascunho:${activeTab}:${titulo}`):''}
+function sheetDraftKey(){const titulo=$('#sheet h3')?.textContent?.trim()||'',comentario=!!$('#sheet #comTxt,#sheet [data-comment-compose]');return titulo&&!comentario&&!$('#overlay')?.classList.contains('chat-full')?userStorageKey(`rascunho:${activeTab}:${titulo}`):''}
 function sheetDraftFields(){return $$('#sheet input,#sheet textarea,#sheet select').filter(x=>x.type!=='file'&&x.type!=='password'&&!x.disabled)}
 function snapshotSheetDraft(){return sheetDraftFields().map((x,i)=>({i,id:x.id||'',name:x.name||'',type:x.type||x.tagName,value:(x.type==='checkbox'||x.type==='radio')?x.checked:x.value}))}
 function salvarRascunhoSheet(){if(!_sheetDraft)return;try{localStorage.setItem(_sheetDraft,JSON.stringify({at:Date.now(),fields:snapshotSheetDraft()}))}catch{}}

@@ -11,8 +11,8 @@ android {
         applicationId "net.redsystems.redzone"
         minSdkVersion 24
         targetSdkVersion 36
-        versionCode 6
-        versionName "0.6-connected"
+        versionCode 7
+        versionName "0.7-ota"
         aaptOptions {
              // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
              // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
@@ -24,14 +24,25 @@ android {
         sourceCompatibility JavaVersion.VERSION_21
         targetCompatibility JavaVersion.VERSION_21
     }
+    signingConfigs {
+        ota {
+            def otaKey = file('../../../Chaves/redzone-ota.keystore')
+            if (otaKey.exists()) {
+                storeFile otaKey
+                storePassword 'android'
+                keyAlias 'androiddebugkey'
+                keyPassword 'android'
+            }
+        }
+    }
     buildTypes {
         release {
             minifyEnabled true
             shrinkResources true
             debuggable false
             zipAlignEnabled true
-            // Assinatura instalável apenas para testes. A Play Store usará uma chave própria.
-            signingConfig signingConfigs.debug
+            // Chave estável e privada: todas as futuras versões OTA mantêm a mesma assinatura.
+            signingConfig file('../../../Chaves/redzone-ota.keystore').exists() ? signingConfigs.ota : signingConfigs.debug
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
     }
