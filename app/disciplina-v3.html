@@ -844,7 +844,7 @@ setInterval(()=>{ if(authToken&&offQueue().length&&navigator.onLine) flushQueue(
 
 /* id único DESTE aparelho/aba — usado pra não ecoar de volta a própria escrita no sync ao vivo */
 const CLIENT_ID = (Math.random().toString(36).slice(2)+'-'+Date.now().toString(36));
-const APP_BUILD = 'redzone-v152';
+const APP_BUILD = 'redzone-v153';
 // evita re-render que rouba o foco enquanto a pessoa digita (o dado já foi aplicado em S de qualquer forma)
 let _mediaUploadBusy=0;
 function _syncPodeRender(){ const a=document.activeElement; return !_mediaUploadBusy&&!(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||'')); }
@@ -2052,14 +2052,20 @@ function detalhesHistorico(chave,v){
   else if(chave==='treino:logs'||chave==='estudo:logs')(Array.isArray(v)?v:[]).slice(-12).reverse().forEach(x=>add(`${quando(x)} — ${x.materia||x.nome||x.exercicio||'Sessão'} · ${Math.floor(Number(x.ativoMs||0)/60000)} min ativos · ${Math.floor(Number(x.pausaMs||0)/60000)} min pausados${Array.isArray(x.conteudos)&&x.conteudos.length?' · '+x.conteudos.join(', '):''}${x.prova||x.midiaUrl?' · com mídia':''}`));
   else if(chave==='treino:recordes')(Array.isArray(v)?v:Object.values(v||{})).slice(-12).forEach(x=>add(`${x.nome||x.titulo||'Recorde'} — ${x.valor??x.atual??x.melhor??'sem valor'} ${x.unidade||''}`));
   else if(chave==='alim:agua')Object.entries(v||{}).sort().slice(-14).reverse().forEach(([d,ml])=>add(`${data(d)} — ${Number(ml).toLocaleString('pt-BR')} ml`));
-  else if(chave==='alim:pesos')(Array.isArray(v)?v:[]).slice(-12).reverse().forEach(x=>add(`${data(x.dateISO||x.data)} — ${x.kg??x.peso??'-'} kg`));
+  else if(chave==='alim:pesos')(Array.isArray(v)?v:[]).slice(-12).reverse().forEach(x=>add(`${quando(x)} — ${x.kg??x.peso??'-'} kg`));
   else if(chave==='rotina:dias')Object.entries(v||{}).sort().slice(-14).reverse().forEach(([d,a])=>add(`${data(d)} — ${(Array.isArray(a)?a:[]).map(x=>`${atividadeConcluidaNaData(x,d)?'✅':'◻️'} ${x.nome}${x.hora?' às '+x.hora:''}`).join(' · ')||'sem atividades'}`));
   else if(chave==='estudo:materias')(Array.isArray(v)?v:Object.values(v||{})).forEach(x=>add(`${x.nome||x.materia||'Matéria'}${Array.isArray(x.grupos)&&x.grupos.length?' — '+x.grupos.map(g=>g.nome).join(' / '):''}${Array.isArray(x.conteudos)?' — '+x.conteudos.map(c=>c.nome||c).join(', '):''}`));
   else if(chave==='treino:tpl')Object.entries(v||{}).forEach(([dia,a])=>add(`${dia.toUpperCase()} — ${(Array.isArray(a)?a:[]).map(x=>x.nome||x).join(', ')||'descanso'}`));
-  else if(chave==='treino:weeks')(Array.isArray(v)?v:[]).forEach((w,i)=>{
+  else if(chave==='treino:weeks')(Array.isArray(v)?v:(v&&typeof v==='object'?[v]:[])).forEach((w,i)=>{
     const plano=w.template||{}, dias=DIAS.filter(d=>Array.isArray(plano[d])&&plano[d].length), total=dias.reduce((n,d)=>n+plano[d].length,0);
-    add(`Semana ${i+1}${w.descricao?' — '+w.descricao:''} · ${w.startISO?new Date(w.startISO+'T00:00:00').toLocaleDateString('pt-BR'):'sem data'} · ${dias.length}/7 dias planejados · ${total} exercício${total===1?'':'s'}`);
+    const feitos=Object.values(w.exec||{}).filter(Boolean).length;
+    add(`Semana ${i+1}${w.descricao?' — '+w.descricao:''} · início ${w.startISO?new Date(w.startISO+'T12:00:00').toLocaleDateString('pt-BR'):'não informado'} · ${dias.length}/7 dias planejados · ${total} exercício${total===1?'':'s'} · ${feitos} dia${feitos===1?'':'s'} concluído${feitos===1?'':'s'}`);
   });
+  else if(chave==='estudo:semana')Object.entries(v||{}).forEach(([dia,ids])=>add(`${DIAS_NOME[dia]||dia}: ${Array.isArray(ids)&&ids.length?ids.length+' matéria(s) planejada(s)':'sem matérias'}`));
+  else if(chave==='alim:semana')Object.entries(v||{}).forEach(([dia,refs])=>add(`${DIAS_NOME[dia]||dia}: ${(Array.isArray(refs)?refs:[]).map(r=>`${r.done?'✅':'◻️'} ${r.nome||'Refeição'}${r.hora?' às '+r.hora:''}`).join(' · ')||'sem refeições'}`));
+  else if(chave==='alim:hist')(v?.hist||[]).slice(-12).reverse().forEach(x=>add(`Semana de ${data(x.weekStartISO)} — ${x.total||0} refeição(ões) · ${x.pctBom||0}% saudáveis · ${x.pctRuim||0}% a melhorar`));
+  else if(chave==='rotina:hist')Object.entries(v||{}).sort().slice(-14).reverse().forEach(([d,x])=>add(`${data(d)} — ${x?.done||0}/${x?.total||0} atividades concluídas`));
+  else if(chave==='recordacoes')(Array.isArray(v)?v:[]).slice(0,20).forEach(x=>add(`${quando(x)} — ${x.tipo||'Memória'}${x.texto?' · '+x.texto:''}${x.midiaTipo?' · '+x.midiaTipo:''}`));
   else if(Array.isArray(v))v.slice(-10).forEach(x=>add(typeof x==='object'?(x.nome||x.titulo||x.dateISO||JSON.stringify(x)):x));
   else if(chave==='perfil:dados'){ add(`Nome: ${v?.nome||'não informado'}`); add(`Usuário: @${v?.username||'não informado'}`); add(`Peso: ${v?.peso??'-'} kg`); add(`Altura: ${v?.altura?Number(v.altura/100).toFixed(2).replace('.',','):'-'} m`); }
   else if(chave==='config'){ const nomes={notif:'Notificações',tryHard:'Modo Try Hard',editMode:'Modo de edição'}; Object.entries(nomes).forEach(([k,n])=>{if(v&&k in v)add(`${n}: ${v[k]?'ativado':'desativado'}`)}); }
@@ -2942,7 +2948,7 @@ function renderRelatorio(elId, tipo){
         <button data-g="mes" class="${gran==='mes'?'on':''}">Mensal</button>
         <button data-g="ano" class="${gran==='ano'?'on':''}">Anual</button>
       </div>
-      ${keys.length?`<div class="report-bars">${keys.map(k=>`<div class="bar" style="height:${Math.round(buckets[k]/max*110)+3}px"><b>${Math.round(buckets[k])}m</b><span>${k}</span></div>`).join('')}</div>`:'<p class="muted small">Sem sessões ainda. Bora treinar/estudar.</p>'}
+      ${keys.length?`<div class="report-bars">${keys.map(k=>`<div class="bar" style="height:${Math.round(buckets[k]/max*110)+3}px"><b>${Math.round(buckets[k])}m</b><span>${k}</span></div>`).join('')}</div>`:`<p class="muted small">Sem sessões ainda. ${tipo==='estudo'?'Bora estudar.':'Bora treinar.'}</p>`}
       <div style="margin-top:26px">
         <div class="h">Horas por ${tipo==='estudo'?'matéria':'exercício'}</div>
         ${Object.keys(porItem).length?Object.entries(porItem).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid var(--line)"><span>${esc(k)}</span><b class="mono">${(v/60).toFixed(1)}h</b></div>`).join(''):'<p class="muted small">—</p>'}
@@ -2999,7 +3005,7 @@ async function garantirSemanaAlimAtual(avisar=false){
   if(!Array.isArray(S.alimHist.hist)) S.alimHist.hist=[];
   if(!S.alimHist.ref){ S.alimHist.ref=wk; await save('alim:hist'); return false; }
   if(S.alimHist.ref===wk) return false;
-  return finalizarSemanaAlimDados(S.alimHist.ref,avisar);
+  return finalizarSemanaAlimDados(S.alimHist.ref,true);
 }
 function checarSemanaAlim(){ alimPrecisaFechar=false; }
 function fecharSemanaAlim(){
@@ -3021,11 +3027,7 @@ function renderAlimentacao(){
   checarSemanaAlim();
   $('#scr-alimentacao').innerHTML=`
     ${topbar('ALIMENTAÇÃO')}
-    ${alimPrecisaFechar?`<div class="card" style="border-color:var(--accent)"><div class="h">📅 Semana nova começou</div><p class="small" style="margin:0 0 10px">Feche a semana ${weekLabel(S.alimHist.ref)} pra guardar a análise no gráfico e zerar as refeições.</p><button class="btn sm" id="fecharSemBtn">Fechar semana passada</button></div>`:''}
-    <div style="display:flex;justify-content:space-between;align-items:center;margin:4px 2px">
-      <h2 class="section-title" style="margin:0">Refeições da semana</h2>
-      <button class="btn sm ghost" id="finSemBtn" style="padding:6px 11px">Finalizar semana</button>
-    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin:4px 2px;gap:12px"><h2 class="section-title" style="margin:0">Refeições da semana</h2><span class="small muted" style="text-align:right">Fechamento automático</span></div>
     <div class="days" id="alimDays">${DIAS.map(d=>dayChip(d,alimDiaSel)).join('')}</div>
     <div id="alimDia"></div>
 
@@ -3076,8 +3078,6 @@ function renderAlimentacao(){
   $('#aguaMenos').onclick=()=>{ const q=qtd(); if(!(q>0)) return toast('Digite a quantidade em ml.'); setAgua(cur()-q); };
   $('#aguaDefinir').onclick=()=>{ const q=qtd(); if(!(q>=0)) return toast('Digite a quantidade em ml.'); setAgua(q); };
   $('#aguaZerar').onclick=()=>{ delete S.agua[todayISO()]; save('alim:agua'); toast('Água de hoje zerada.'); renderAlimentacao(); };
-  if($('#finSemBtn')) $('#finSemBtn').onclick=fecharSemanaAlim;
-  if($('#fecharSemBtn')) $('#fecharSemBtn').onclick=fecharSemanaAlim;
   renderAlimDia(); renderAlimAnalise(); renderAlimPeso(); renderGraficoAgua();
   renderAlimHistGrafico(); renderAlimRelatorio();
 }
@@ -3085,7 +3085,7 @@ function renderGraficoAgua(){const box=$('#aguaGraf');if(!box)return;const dias=
 function renderAlimHistGrafico(){
   const box=$('#alimHistGraf'); if(!box) return;
   const hist=(S.alimHist&&S.alimHist.hist)||[];
-  if(!hist.length){ box.innerHTML='<p class="muted small">Feche sua primeira semana pra começar o histórico de alimentação saudável × ruim.</p>'; return; }
+  if(!hist.length){ box.innerHTML='<p class="muted small">Ao terminar a primeira semana, o histórico de alimentação saudável × ruim será criado automaticamente.</p>'; return; }
   const ult=hist.slice(-10);
   box.innerHTML=`<div class="card"><div class="h">% de refeições saudáveis por semana</div>
     <div class="report-bars" style="height:130px">${ult.map(w=>`<div class="bar" style="height:${Math.round((w.pctBom||0)/100*110)+3}px;background:linear-gradient(180deg,var(--ok),#1f9e57)"><b>${w.pctBom||0}%</b><span>${weekLabel(w.weekStartISO)}</span></div>`).join('')}</div>
