@@ -56,7 +56,8 @@ input,textarea,select,[contenteditable="true"],.post-body,.comment-text,.profile
 .mono{font-family:'JetBrains Mono',ui-monospace,monospace; font-variant-numeric:tabular-nums;}
 h1,h2,h3,h4{font-family:'Inter',system-ui,sans-serif; font-weight:800; letter-spacing:-.01em; margin:0; color:var(--text);}
 button{font-family:inherit; cursor:pointer;}
-input,textarea,select{font-family:inherit; font-size:16px;}
+input,textarea,select{font-family:inherit;font-size:16px;color-scheme:dark;background-color:var(--surface2)!important;color:var(--text)!important;border-color:var(--line)!important;-webkit-text-fill-color:var(--text);accent-color:var(--accent)}
+input:-webkit-autofill,textarea:-webkit-autofill,select:-webkit-autofill{-webkit-box-shadow:0 0 0 1000px var(--surface2) inset!important;-webkit-text-fill-color:var(--text)!important}
 .pwwrap{position:relative; display:block;}
 .pwwrap input{padding-right:46px !important; width:100%;}
 .eyebtn{position:absolute; right:8px; top:50%; transform:translateY(-50%); background:none; border:none; color:#fff; font-size:20px; line-height:1; opacity:.92; padding:8px; cursor:pointer; filter:drop-shadow(0 1px 2px #000);}
@@ -191,6 +192,7 @@ button.rowitem{width:100%;text-align:left;font:inherit}
 .rotina-drag{flex:0 0 36px;width:36px;height:38px;border:1px solid var(--line);border-radius:11px;background:var(--surface2);color:var(--text-dim);font-size:20px;cursor:grab;touch-action:none;user-select:none}
 .rotina-drag:active{cursor:grabbing;color:var(--accent2);border-color:var(--accent)}
 .rotina-ordering{opacity:.72;outline:2px solid var(--accent);outline-offset:2px}
+.materia-order-row{position:relative}.materia-order-handle{position:absolute;z-index:3;left:9px;top:13px;width:36px;height:36px;border:1px solid var(--line);border-radius:11px;background:var(--surface2);color:var(--text-dim);font-size:20px;cursor:grab;touch-action:none}.materia-order-row>.study-tree-head{padding-left:55px}.materia-order-row.ordering{opacity:.7;outline:2px solid var(--accent);border-radius:18px}
 .rotina-batch-list{display:grid;gap:10px;margin:10px 0}
 .rotina-batch-item{display:grid;grid-template-columns:minmax(0,1fr) minmax(110px,.35fr) 40px;gap:8px;align-items:start;padding:10px;border:1px solid var(--line);border-radius:15px;background:var(--surface2)}
 .rotina-batch-item input,.rotina-batch-item textarea{box-sizing:border-box;width:100%;min-width:0;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--text);padding:12px;font:inherit}.rotina-batch-item textarea{grid-column:1/-1;min-height:58px;resize:vertical}
@@ -209,7 +211,7 @@ button.rowitem{width:100%;text-align:left;font:inherit}
 .materia-editor-item{display:grid;gap:8px;padding:11px;border:1px solid var(--line);border-radius:16px;background:var(--surface2)}
 .materia-editor-row{display:flex;align-items:flex-start;gap:9px;min-width:0}
 .materia-editor-num{display:grid;place-items:center;flex:0 0 30px;height:30px;border-radius:10px;background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent2);font-weight:800;font-size:13px}
-.materia-editor-item textarea{flex:1;min-width:0;min-height:52px;max-height:180px;resize:none;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--text);padding:12px;font:inherit;line-height:1.4;overflow-y:auto}
+.materia-editor-item textarea{flex:1;min-width:0;min-height:52px;height:auto;max-height:none;resize:none;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--text);padding:12px;font:inherit;line-height:1.4;overflow:hidden;scrollbar-width:none}
 .materia-editor-item textarea:focus{outline:none;border-color:var(--accent)}
 .materia-editor-add-sub{justify-self:start;margin-left:39px;border:0;background:transparent;color:var(--accent2);font:inherit;font-size:12.5px;font-weight:800;padding:5px 8px;border-radius:9px}
 .materia-editor-add-sub:hover,.materia-editor-add-sub:focus-visible{background:color-mix(in srgb,var(--accent) 12%,transparent);outline:none}
@@ -391,11 +393,11 @@ button.rowitem{width:100%;text-align:left;font:inherit}
 @media(max-width:420px){.sound-card{padding:12px}.sound-card-actions{grid-template-columns:1fr}.sound-settings{gap:10px}}
 html.chat-open,body.chat-open{overflow:hidden!important;overscroll-behavior:none}
 .overlay.chat-full{align-items:stretch;background:var(--bg);inset:0!important;width:100vw!important;height:100dvh!important;max-width:none!important;transform:none!important;z-index:90;overflow:hidden}
-.overlay.chat-full .sheet{max-width:none;height:100%;max-height:none;border-radius:0;padding:calc(14px + env(safe-area-inset-top)) 14px calc(10px + env(safe-area-inset-bottom));display:flex;flex-direction:column;overflow:hidden}
+.overlay.chat-full .sheet{max-width:none;height:100%;max-height:none;border-radius:0;padding:calc(14px + env(safe-area-inset-top)) max(14px,calc((100vw - 1180px)/2)) calc(10px + env(safe-area-inset-bottom));display:flex;flex-direction:column;overflow:hidden;background:var(--bg)}
 .sheet.keyboard-fit{max-height:100%;border-radius:18px 18px 0 0}
 .sheet .keyboard-actions{position:sticky;bottom:calc(-24px - env(safe-area-inset-bottom));z-index:3;background:var(--surface);padding:10px 0 calc(14px + env(safe-area-inset-bottom))}
 .chat-head{display:flex;align-items:center;gap:10px;padding:2px 48px 10px 0;border-bottom:1px solid var(--line);flex:0 0 auto;min-width:0}.chat-head .txt{min-width:0}.chat-head .t{font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.chat-head .s{font-size:12px;color:var(--text-dim)}.chat-head .s.live{color:var(--ok)}
-.chat-messages{flex:1;min-height:0;overflow-y:auto;padding:12px 2px}
+.chat-messages{flex:1;min-height:0;overflow-y:auto;padding:18px 10px;background-color:color-mix(in srgb,var(--surface) 92%,var(--bg));background-image:radial-gradient(color-mix(in srgb,var(--text-dim) 12%,transparent) 1px,transparent 1px);background-size:22px 22px;border-radius:14px;scrollbar-color:var(--line) transparent}
 .chat-compose{display:grid;grid-template-columns:auto auto minmax(0,1fr) auto;gap:7px;align-items:center;padding-top:8px;border-top:1px solid var(--line);flex:0 0 auto}
 .chat-compose input{min-width:0;width:100%;background:var(--surface2);border:1.5px solid var(--line);border-radius:18px;padding:12px;color:var(--text)}
 .chat-compose .icobtn{flex:0 0 auto}.chat-send{min-width:48px}.chat-typing{height:20px;flex:0 0 20px;color:var(--ok);font-size:12px;padding:2px 8px}
@@ -846,7 +848,7 @@ setInterval(()=>{ if(authToken&&offQueue().length&&navigator.onLine) flushQueue(
 
 /* id único DESTE aparelho/aba — usado pra não ecoar de volta a própria escrita no sync ao vivo */
 const CLIENT_ID = (Math.random().toString(36).slice(2)+'-'+Date.now().toString(36));
-const APP_BUILD = 'redzone-v155';
+const APP_BUILD = 'redzone-v156';
 // evita re-render que rouba o foco enquanto a pessoa digita (o dado já foi aplicado em S de qualquer forma)
 let _mediaUploadBusy=0;
 function _syncPodeRender(){ const a=document.activeElement; return !_mediaUploadBusy&&!(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||'')); }
@@ -904,7 +906,7 @@ function ajustarViewportTeclado(){
 }
 if(window.visualViewport){ visualViewport.addEventListener('resize',ajustarViewportTeclado); visualViewport.addEventListener('scroll',ajustarViewportTeclado); }
 window.addEventListener('resize',ajustarViewportTeclado); setTimeout(ajustarViewportTeclado,0);
-document.addEventListener('focusin',e=>{ if($('#overlay')?.classList.contains('show')&&/^(INPUT|TEXTAREA)$/.test(e.target?.tagName||'')){ $('#sheet')?.classList.add('keyboard-fit'); setTimeout(()=>e.target.scrollIntoView({block:'nearest',behavior:'smooth'}),180); } });
+document.addEventListener('focusin',e=>{ if($('#overlay')?.classList.contains('show')&&/^(INPUT|TEXTAREA)$/.test(e.target?.tagName||'')) $('#sheet')?.classList.add('keyboard-fit'); });
 document.addEventListener('focusout',()=>setTimeout(()=>{ if(!$('#sheet')?.contains(document.activeElement)) $('#sheet')?.classList.remove('keyboard-fit'); },120));
 document.addEventListener('click',e=>{
   const painel=$('#emojiPanel'), anexos=$('#chatAttachPanel');
@@ -2811,19 +2813,23 @@ function renderMaterias(){
     prepararEstruturaMateria(m); const pMat=progressoConteudos(folhasConteudo(m)),matOpen=estudoMateriasAbertas.has(String(m.id));
     const grupos=gruposMateria(m).map(g=>{ const folhas=folhasConteudo(m,g.id),p=progressoConteudos(folhas),gOpen=estudoGruposAbertos.has(String(g.id)),nos=renderNosConteudo(m,g.id,null,edit); return `<div class="study-tree-group ${gOpen?'open':''}"><button type="button" class="study-tree-group-head" data-toggle-group="${g.id}"><span class="study-tree-folder">📁</span><span class="txt"><span class="t">${esc(g.nome)}</span><span class="s">${p.done}/${p.total} conteúdos · ${p.pct}%</span></span><span class="study-tree-pct">${p.pct}%</span><span class="study-tree-caret">›</span></button><div class="study-tree-contents">${nos||'<p class="small muted" style="padding:12px 14px;margin:0">Conteúdo vazio.</p>'}</div></div>`; }).join('');
     const qtdGrupos=gruposMateria(m).length;
-    return `<div class="study-tree-materia ${matOpen?'open':''}"><button type="button" class="study-tree-head" data-toggle-mat="${m.id}"><span class="study-tree-folder">📚</span><span class="txt"><span class="t">${esc(m.nome)}</span><span class="s">${qtdGrupos} ${qtdGrupos===1?'conteúdo':'conteúdos'} · ${pMat.done}/${pMat.total} conteúdos · ${pMat.pct}%</span><span class="xpbar"><i style="width:${pMat.pct}%"></i></span></span><span class="study-tree-pct">${pMat.pct}%</span><span class="study-tree-caret">›</span></button><div class="study-tree-body">${edit?`<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn sm ghost" data-edm="${m.id}">✏️ Editar estrutura</button><button class="btn sm ghost" data-delm="${m.id}">🗑️</button></div>`:''}${grupos||'<p class="small muted">Sem conteúdos principais. Edite para criar o primeiro.</p>'}</div></div>`;
+    return `<div class="study-tree-materia materia-order-row ${matOpen?'open':''}" data-materia-order="${m.id}">${edit?`<button type="button" class="materia-order-handle" data-materia-drag="${m.id}" aria-label="Arrastar ${esc(m.nome)}">≡</button>`:''}<button type="button" class="study-tree-head" data-toggle-mat="${m.id}"><span class="study-tree-folder">📚</span><span class="txt"><span class="t">${esc(m.nome)}</span><span class="s">${qtdGrupos} ${qtdGrupos===1?'conteúdo':'conteúdos'} · ${pMat.done}/${pMat.total} conteúdos · ${pMat.pct}%</span><span class="xpbar"><i style="width:${pMat.pct}%"></i></span></span><span class="study-tree-pct">${pMat.pct}%</span><span class="study-tree-caret">›</span></button><div class="study-tree-body">${edit?`<div style="display:flex;gap:8px;justify-content:flex-end"><button class="btn sm ghost" data-edm="${m.id}">✏️ Editar estrutura</button><button class="btn sm ghost" data-delm="${m.id}">🗑️</button></div>`:''}${grupos||'<p class="small muted">Sem conteúdos principais. Edite para criar o primeiro.</p>'}</div></div>`;
   }).join('')}</div>` : '<p class="muted small">Nenhuma matéria. Ative o modo edição e crie, por exemplo: Matemática → Funções – ESA → conteúdos.</p>';
   $$('#estMaterias [data-toggle-mat]').forEach(b=>b.onclick=()=>{ const id=String(b.dataset.toggleMat); estudoMateriasAbertas.has(id)?estudoMateriasAbertas.delete(id):estudoMateriasAbertas.add(id); renderMaterias(); });
   $$('#estMaterias [data-toggle-group]').forEach(b=>b.onclick=()=>{ const id=String(b.dataset.toggleGroup); estudoGruposAbertos.has(id)?estudoGruposAbertos.delete(id):estudoGruposAbertos.add(id); renderMaterias(); });
   $$('#estMaterias [data-toggle-content]').forEach(b=>b.onclick=()=>{ const id=String(b.dataset.toggleContent); estudoConteudosAbertos.has(id)?estudoConteudosAbertos.delete(id):estudoConteudosAbertos.add(id); renderMaterias(); });
   if(edit)$$('#estMaterias [data-add-sub]').forEach(b=>b.onclick=()=>adicionarSubtopicoSheet(b.dataset.mid,b.dataset.addSub));
+  if(edit)ativarOrdenacaoMaterias();
   if(edit){ $$('#estMaterias [data-edm]').forEach(b=>b.onclick=()=>editMateriaSheet(b.dataset.edm)); $$('#estMaterias [data-delm]').forEach(b=>b.onclick=()=>{ const m=S.materias.find(x=>String(x.id)===String(b.dataset.delm)); if(!m||!confirm(`Apagar a matéria “${m.nome}” e sua estrutura? Os registros de sessões já realizadas serão preservados.`))return; S.materias=S.materias.filter(x=>String(x.id)!==String(m.id)); Object.keys(S.estudoSemana||{}).forEach(d=>S.estudoSemana[d]=(S.estudoSemana[d]||[]).filter(id=>String(id)!==String(m.id))); save('estudo:materias'); save('estudo:semana'); renderMaterias(); renderEstudoDia(); renderPrevisaoEstudo(); renderRelatorio('estRelatorio','estudo'); }); }
+}
+function ativarOrdenacaoMaterias(){
+  $$('#estMaterias [data-materia-drag]').forEach(alca=>alca.onpointerdown=e=>{e.preventDefault();const row=alca.closest('[data-materia-order]');if(!row)return;row.classList.add('ordering');alca.setPointerCapture?.(e.pointerId);const mover=ev=>{const alvo=document.elementFromPoint(ev.clientX,ev.clientY)?.closest?.('[data-materia-order]');if(!alvo||alvo===row||alvo.parentElement!==row.parentElement)return;const r=alvo.getBoundingClientRect();alvo.parentElement.insertBefore(row,ev.clientY<r.top+r.height/2?alvo:alvo.nextSibling)};const soltar=async()=>{alca.onpointermove=null;alca.onpointerup=null;alca.onpointercancel=null;row.classList.remove('ordering');const ids=$$('#estMaterias [data-materia-order]').map(x=>String(x.dataset.materiaOrder)),mapa=new Map(S.materias.map(x=>[String(x.id),x]));S.materias=ids.map(id=>mapa.get(id)).filter(Boolean);await save('estudo:materias');renderMaterias();renderEstudoDia()};alca.onpointermove=mover;alca.onpointerup=soltar;alca.onpointercancel=soltar;});
 }
 function adicionarSubtopicoSheet(mid,parentId){
   const m=S.materias.find(x=>String(x.id)===String(mid)),pai=m?conteudosMateria(m).find(c=>String(c.id)===String(parentId)):null; if(!m||!pai)return;
   openSheet(`<h3>Adicionar subassunto em ${esc(pai.nome)}</h3><p class="small muted">Crie assuntos específicos dentro deste item. O “＋ Adicionar subassunto” pode ser usado novamente em qualquer nível.</p><div class="materia-editor-list" id="subtopicosNovos"></div><button type="button" class="btn sm ghost" id="addOutroSub">＋ Outro subassunto</button><button class="btn" id="saveSubtopicos" style="margin-top:10px">Salvar subassuntos</button>`);
   const box=$('#subtopicosNovos');
-  const add=()=>{const item=document.createElement('div');item.className='materia-editor-item';item.innerHTML=`<div class="materia-editor-row"><textarea rows="2" maxlength="500" placeholder="Nome do subassunto"></textarea><button type="button" class="materia-editor-remove" aria-label="Remover">🗑️</button></div>`;const ta=$('textarea',item);ta.oninput=()=>autoGrow(ta);$('.materia-editor-remove',item).onclick=()=>item.remove();box.appendChild(item);setTimeout(()=>ta.focus(),30);};
+  const add=()=>{const item=document.createElement('div');item.className='materia-editor-item';item.innerHTML=`<div class="materia-editor-row"><textarea rows="2" maxlength="500" placeholder="Nome do subassunto"></textarea><button type="button" class="materia-editor-remove" aria-label="Remover">🗑️</button></div>`;const ta=$('textarea',item);ta.oninput=()=>autoGrow(ta);$('.materia-editor-remove',item).onclick=()=>item.remove();box.appendChild(item);ta.focus({preventScroll:true});};
   add(); $('#addOutroSub').onclick=add;
   $('#saveSubtopicos').onclick=()=>{const nomes=$$('#subtopicosNovos textarea').map(x=>x.value.replace(/\r\n?/g,'\n').trim()).filter(Boolean),vistos=new Set();if(!nomes.length)return toast('Escreva pelo menos um subassunto.');for(const n of nomes){const k=chaveConteudo(n);if(vistos.has(k)||filhosConteudo(m,pai.id).some(x=>chaveConteudo(x.nome)===k))return toast('Há um subassunto repetido dentro deste assunto.');vistos.add(k);}nomes.forEach(nome=>m.conteudos.push({id:uid(),nome,grupoId:pai.grupoId,parentId:pai.id,done:false}));save('estudo:materias');estudoConteudosAbertos.add(String(pai.id));estudoMateriasAbertas.add(String(m.id));estudoGruposAbertos.add(String(pai.grupoId));closeSheet();renderMaterias();renderEstudoDia();};
 }
@@ -2853,7 +2859,7 @@ function editMateriaSheet(mid){
     $('.materia-editor-add-sub',item).onclick=()=>addConteudo(grupoEl,null,true,nivel+1,item.dataset.cid);
     const lista=$('.materia-editor-list',grupoEl);
     if(parentId){let ancora=Array.from(lista.children).find(x=>String(x.dataset.cid)===String(parentId));if(ancora){const nivelPai=Math.max(0,nivel-1);let prox=ancora.nextElementSibling;while(prox&&Number(prox.dataset.nivel||0)>nivelPai){ancora=prox;prox=prox.nextElementSibling;}ancora.after(item);}else lista.appendChild(item);}else lista.appendChild(item);
-    atualizarNumeros(grupoEl); if(focar)setTimeout(()=>ta.focus(),30);
+    atualizarNumeros(grupoEl); if(focar)ta.focus({preventScroll:true});
   };
   const addGrupo=(grupo=null,focar=false)=>{
     const el=document.createElement('div'); el.className='materia-grupo-editor'; el.dataset.gid=grupo?.id||uid();
@@ -2861,7 +2867,7 @@ function editMateriaSheet(mid){
     $('.grupo-remove',el).onclick=()=>{ el.remove(); $('#matSemGrupo').style.display=$$('.materia-grupo-editor',gruposBox).length?'none':'block'; toast('Conteúdo retirado desta edição. Salve para confirmar.'); };
     $('.grupo-add-conteudo',el).onclick=()=>addConteudo(el,null,true);
     $('.grupo-add-novo',el).onclick=()=>addGrupo(null,true);
-    gruposBox.appendChild(el); (grupo?conteudosOrdenados(m,grupo.id):[]).forEach(({conteudo,nivel})=>addConteudo(el,conteudo,false,nivel,conteudo.parentId||'')); atualizarNumeros(el); $('#matSemGrupo').style.display='none'; if(focar)setTimeout(()=>$('.materia-grupo-top input',el).focus(),30);
+    gruposBox.appendChild(el); (grupo?conteudosOrdenados(m,grupo.id):[]).forEach(({conteudo,nivel})=>addConteudo(el,conteudo,false,nivel,conteudo.parentId||'')); atualizarNumeros(el); $('#matSemGrupo').style.display='none'; if(focar)$('.materia-grupo-top input',el).focus({preventScroll:true});
   };
   gruposMateria(m).forEach(g=>addGrupo(g));
   if(!gruposMateria(m).length)addGrupo(null,false);
@@ -3707,7 +3713,7 @@ function verRecordacao(id){
   const dt=new Date(r.at);
   openSheet(`<h3>${REC_TIPOS[r.tipo]||'Memória'}</h3>
     <p class="small muted">${dt.toLocaleDateString('pt-BR')} · ${dt.toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})}</p>
-    <div style="border-radius:14px;overflow:hidden;background:#000">${r.midiaTipo==='video'?`<video src="${r.url}" controls playsinline style="width:100%;max-height:60vh"></video>`:`<img src="${r.url}" style="width:100%;max-height:60vh;object-fit:contain">`}</div>
+    <div data-rec-full style="border-radius:14px;overflow:hidden;background:#000;cursor:zoom-in">${r.midiaTipo==='video'?`<video src="${r.url}" controls playsinline style="width:100%;max-height:60vh"></video>`:`<img src="${r.url}" style="width:100%;max-height:60vh;object-fit:contain" alt="Abrir foto em tela cheia">`}</div>
     ${r.texto?`<p class="small" style="margin-top:8px">${esc(r.texto)}</p>`:''}
     <div style="display:flex;gap:8px;margin-top:12px">
       <a class="btn sm" href="${r.url}" download="redzone-${r.id}.${r.midiaTipo==='video'?'mp4':'jpg'}" style="flex:1;text-decoration:none;text-align:center">⬇️ Baixar</a>
@@ -3715,6 +3721,7 @@ function verRecordacao(id){
     </div>
     <button class="btn ghost" id="recDel" style="margin-top:8px;color:var(--accent2)">🗑️ Excluir memória</button>`);
   $('#recPost').onclick=()=>compartilharNoFeedSheet(r);
+  $('[data-rec-full]').onclick=e=>{if(r.midiaTipo==='video'&&e.target.closest('video'))return;abrirMidiaFeed(r.url,r.midiaTipo==='video'?'video':'foto');};
   $('#recDel').onclick=async()=>{ S.recordacoes=S.recordacoes.filter(x=>x.id!==id); await save('recordacoes'); closeSheet(); toast('Memória removida.'); renderRecordacoes(); };
 }
 function compartilharNoFeedSheet(r){
