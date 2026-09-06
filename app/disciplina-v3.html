@@ -848,7 +848,7 @@ setInterval(()=>{ if(authToken&&offQueue().length&&navigator.onLine) flushQueue(
 
 /* id único DESTE aparelho/aba — usado pra não ecoar de volta a própria escrita no sync ao vivo */
 const CLIENT_ID = (Math.random().toString(36).slice(2)+'-'+Date.now().toString(36));
-const APP_BUILD = 'redzone-v156';
+const APP_BUILD = 'redzone-v157';
 // evita re-render que rouba o foco enquanto a pessoa digita (o dado já foi aplicado em S de qualquer forma)
 let _mediaUploadBusy=0;
 function _syncPodeRender(){ const a=document.activeElement; return !_mediaUploadBusy&&!(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||'')); }
@@ -1244,7 +1244,18 @@ function applyRemoteProfile(u){
   _syncHold();   // segura escritas de efeito colateral do re-render (anti-loop)
   if(activeTab && _syncPodeRender()){ try{ go(activeTab); }catch(e){} }
 }
-async function save(k){ await Store.set(k, S[cameMap(k)]); }
+async function save(k){
+  await Store.set(k, S[cameMap(k)]);
+  if(k==='rotina:alarmes'||k==='config') sincronizarAlarmesNativos();
+}
+function sincronizarAlarmesNativos(){
+  try{
+    if(!window.RedzoneNative?.syncAlarms)return;
+    const tryHard=!!S?.config?.tryHard;
+    window.RedzoneNative.syncAlarms(JSON.stringify((Array.isArray(S?.alarmes)?S.alarmes:[]).map(a=>({...a,tryHard}))));
+  }catch(e){}
+}
+window.addEventListener('redzone-native-ready',()=>setTimeout(sincronizarAlarmesNativos,500));
 function cameMap(k){ return ({'xp:bonus':'xpBonus','treino:tpl':'treinoTemplate','treino:weeks':'treinoWeeks','treino:logs':'treinoLogs','treino:recordes':'recordes','estudo:materias':'materias','estudo:semana':'estudoSemana','estudo:logs':'estudoLogs','alim:semana':'alimSemana','alim:pesos':'pesos','alim:agua':'agua','alim:hist':'alimHist','rotina':'rotina','rotina:hist':'rotinaHist','rotina:plano':'rotinaPlano','rotina:dias':'rotinaDias','rotina:alarmes':'alarmes','config':'config','datas':'datas','recordacoes':'recordacoes','chat:emojiRecentes':'emojiRecentes'})[k]; }
 
 /* XP total do usuário = soma de logs + bônus, menos punições. Recalcula. */
@@ -3288,6 +3299,7 @@ function criarSomAlarme(tipo,intensidade=100){
 }
 function renderAlarmes(){
   const box=$('#alarmList');if(!box)return;const lista=Array.isArray(S.alarmes)?S.alarmes:[];
+  sincronizarAlarmesNativos();
   box.innerHTML=lista.length?lista.slice().sort((a,b)=>String(a.hora).localeCompare(String(b.hora))).map(a=>`<div class="alarm-card"><button class="alarm-switch ${a.ativo!==false?'on':''}" data-alarm-toggle="${a.id}" aria-label="${a.ativo!==false?'Desativar':'Ativar'} alarme"></button><div data-alarm-edit="${a.id}" style="cursor:pointer;min-width:0"><div class="alarm-time">${esc(a.hora||'00:00')}</div><b>${esc(a.nome||'Alarme')}</b><div class="alarm-days">${(a.dias||[]).length===7||(a.dias||[]).length===0?'Todos os dias':(a.dias||[]).map(d=>ALARM_DIAS[d]).join(' · ')}<br>${a.som==='custom'?'Som personalizado':a.som==='grave'?'Sirene grave':a.som==='rapida'?'Sirene rápida':'Sirene original'} · ${Math.max(20,Math.min(100,Number(a.intensidade)||({normal:55,alto:82,maximo:100}[a.volume]||100)))}%</div></div><button class="pencil" data-alarm-del="${a.id}" aria-label="Excluir alarme">🗑️</button></div>`).join(''):'<div class="alarm-empty"><b>Nenhum alarme criado</b><span>Toque em “Novo alarme” para montar seu primeiro despertar.</span></div>';
   lista.forEach(a=>{const el=box.querySelector(`[data-alarm-edit="${CSS.escape(String(a.id))}"] .alarm-days`);if(!el)return;const dias=(a.dias||[]).length===7||(a.dias||[]).length===0?'Todos os dias':(a.dias||[]).map(d=>ALARM_DIAS[d]).join(' · '),volume=Math.max(20,Math.min(100,Number(a.intensidade)||({normal:55,alto:82,maximo:100}[a.volume]||100)));el.innerHTML=`${esc(dias)}<br>${esc(ALARM_SONS[a.som]||ALARM_SONS.original)} · ${volume}%`;});
   $$('[data-alarm-toggle]',box).forEach(b=>b.onclick=async()=>{const a=lista.find(x=>x.id===b.dataset.alarmToggle);if(a){a.ativo=a.ativo===false;await save('rotina:alarmes');renderAlarmes();}});$$('[data-alarm-edit]',box).forEach(b=>b.onclick=()=>alarmeSheet(b.dataset.alarmEdit));$$('[data-alarm-del]',box).forEach(b=>b.onclick=async()=>{S.alarmes=lista.filter(x=>x.id!==b.dataset.alarmDel);await save('rotina:alarmes');renderAlarmes();});
@@ -3307,7 +3319,7 @@ function alarmeSheet(id){
   $('#alCustomPick').onclick=e=>{e.preventDefault();$('#alCustomFile').click()};
   $('#alCustomFile').onchange=async e=>{const f=e.target.files?.[0];if(!f)return;const pick=$('#alCustomPick');pick.disabled=true;pick.textContent='Enviando…';try{const up=await uploadMedia(f);customUrl=up.url;customNome=f.name;$('#alCustomName').textContent=f.name;$('#sheet [name="alSom"][value="custom"]').checked=true;pick.textContent='Trocar áudio'}catch(err){$('#alErr').textContent='Não foi possível enviar esse áudio.';pick.textContent='＋ Escolher'}finally{pick.disabled=false}};
   $('#alInt').oninput=e=>$('#alIntVal').textContent=e.target.value+'%';
-  $('#alSalvar').onclick=async()=>{stopPreview();const nome=$('#alNome').value.trim(),hora=$('#alHora').value,dias=$$('#sheet [data-al-dia]:checked').map(x=>+x.dataset.alDia),som=$('#sheet [name="alSom"]:checked')?.value||'original',intensidade=+$('#alInt').value;if(!nome||!/^([01]\d|2[0-3]):[0-5]\d$/.test(hora))return $('#alErr').textContent='Preencha o nome e o horário corretamente.';if(!dias.length)return $('#alErr').textContent='Escolha pelo menos um dia.';if(som==='custom'&&!customUrl)return $('#alErr').textContent='Escolha seu áudio personalizado.';Object.assign(a,{nome,hora,dias,som,intensidade,customUrl,customNome,ativo:a.ativo!==false,lastFired:null});delete a.volume;if(!id)(S.alarmes||(S.alarmes=[])).push(a);const push=await subscribePush({solicitar:true});await save('rotina:alarmes');closeSheet();renderAlarmes();renderStatusPushAlarmes();toast(push?.ok?'Alarme salvo e notificações externas prontas.':'Alarme salvo. Autorize as notificações para ele avisar com o aplicativo fechado.');};
+  $('#alSalvar').onclick=async()=>{stopPreview();const nome=$('#alNome').value.trim(),hora=$('#alHora').value,dias=$$('#sheet [data-al-dia]:checked').map(x=>+x.dataset.alDia),som=$('#sheet [name="alSom"]:checked')?.value||'original',intensidade=+$('#alInt').value;if(!nome||!/^([01]\d|2[0-3]):[0-5]\d$/.test(hora))return $('#alErr').textContent='Preencha o nome e o horário corretamente.';if(!dias.length)return $('#alErr').textContent='Escolha pelo menos um dia.';if(som==='custom'&&!customUrl)return $('#alErr').textContent='Escolha seu áudio personalizado.';Object.assign(a,{nome,hora,dias,som,intensidade,customUrl,customNome,ativo:a.ativo!==false,lastFired:null});delete a.volume;if(!id)(S.alarmes||(S.alarmes=[])).push(a);const push=await subscribePush({solicitar:true});await save('rotina:alarmes');try{window.RedzoneNative?.requestExactAlarmPermission?.()}catch(e){}closeSheet();renderAlarmes();renderStatusPushAlarmes();toast(push?.ok?'Alarme salvo e notificações externas prontas.':'Alarme salvo. Autorize as notificações para ele avisar com o aplicativo fechado.');};
 }
 function alarmOccurrence(a){return `${todayISO()}:${a.hora}`;}
 async function dispararAlarme(a){if(_alarmActive)return;_alarmActive=a;a.lastFired=alarmOccurrence(a);save('rotina:alarmes');const chave=alarmOccurrence(a)+':'+a.id,tentativas=_alarmSnoozes.get(chave)||0,tryHard=!!S.config.tryHard;$('#alarmClock').textContent=a.hora;$('#alarmTitle').textContent=a.nome||'ALARME';$('#alarmHelp').textContent=tryHard?'MODO TRY HARD: sem adiamento. Cumpra e desligue.':'O alarme continuará tocando até você desligar.';const adiar=$('#alarmSnooze');adiar.hidden=tryHard||tentativas>=3;adiar.textContent=`ADIAR 5 MINUTOS (${tentativas}/3)`;$('#alarmOverlay').classList.add('show');try{const intensidade=Math.max(20,Math.min(100,Number(a.intensidade)||({normal:55,alto:82,maximo:100}[a.volume]||100)));_alarmAudio=criarSomAlarme(a.som,intensidade)||new Audio(a.som==='custom'&&a.customUrl?a.customUrl:'siren.mp3');if(_alarmAudio instanceof Audio){_alarmAudio.loop=true;_alarmAudio.playbackRate=a.som==='grave'?.78:a.som==='rapida'?1.22:1;_alarmAudio.preservesPitch=false;_alarmAudio.volume=intensidade/100}await _alarmAudio.play();if(tryHard)tocarTodosSonsTryHard();}catch(e){toast('Toque em DESLIGAR para confirmar o alarme.');}if(navigator.vibrate)_alarmVib=setInterval(()=>navigator.vibrate([900,200,900]),2200);try{_alarmWake=await navigator.wakeLock?.request('screen');}catch(e){}}
