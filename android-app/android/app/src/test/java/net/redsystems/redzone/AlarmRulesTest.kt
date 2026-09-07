@@ -20,4 +20,8 @@ class AlarmRulesTest {
         assertFalse(AlarmRules.shouldUpdate(7, 7))
         assertFalse(AlarmRules.shouldUpdate(6, 7))
     }
+
+    @Test fun alarmHasFiniteSafetyLimit() {
+        assertTrue(AlarmService.MAX_RING_MS in 60_000L..600_000L)
+    }
 }

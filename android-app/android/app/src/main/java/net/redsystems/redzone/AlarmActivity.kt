@@ -27,8 +27,9 @@ class AlarmActivity : ComponentActivity() {
         if(AlarmRules.canSnooze(tryHard,snoozes)) root.addView(Button(this).apply { text="ADIAR 5 MINUTOS (${snoozes}/${AlarmRules.MAX_SNOOZES})"; backgroundTintList=ColorStateList.valueOf(Color.parseColor(palette.second)); setTextColor(Color.WHITE); setOnClickListener{snooze()} },LinearLayout.LayoutParams(-1,-2).apply{bottomMargin=20})
         root.addView(Button(this).apply { text="DESLIGAR ALARME"; backgroundTintList=ColorStateList.valueOf(Color.parseColor(palette.third)); setTextColor(if(isLight(palette.third))Color.BLACK else Color.WHITE); setOnClickListener{dismiss()} },LinearLayout.LayoutParams(-1,-2)); setContentView(root)
     }
-    private fun dismiss(){startService(Intent(this,AlarmService::class.java).setAction("STOP"));finishAndRemoveTask()}
-    private fun snooze(){startService(Intent(this,AlarmService::class.java).setAction("STOP"));AlarmScheduler.scheduleAt(this,alarm,System.currentTimeMillis()+5*60_000,snoozes+1);finishAndRemoveTask()}
+    private fun shutdownAlarm(){sendBroadcast(Intent(this,AlarmControlReceiver::class.java).setAction(AlarmService.ACTION_STOP));stopService(Intent(this,AlarmService::class.java))}
+    private fun dismiss(){shutdownAlarm();finishAndRemoveTask()}
+    private fun snooze(){shutdownAlarm();AlarmScheduler.scheduleAt(this,alarm,System.currentTimeMillis()+5*60_000,snoozes+1);finishAndRemoveTask()}
     private fun themePalette(id:String):Triple<String,String,String> = when(id){
         "menininha","sakura","lavanda","pessego","menta","perola","claro"->Triple("#17181b","#9467bd","#ffffff")
         "marinho","cobalto","gelo"->Triple("#030812","#347fd6","#70b7ff")

@@ -7,6 +7,7 @@ import android.widget.Button
 import androidx.test.core.app.ActivityScenario
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.core.content.ContextCompat
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -36,5 +37,32 @@ class AlarmActivityTest {
     @Test fun thirdSnoozeAndTryHardCannotSnooze() {
         assertFalse(buttonTexts(false,3).any { it.startsWith("ADIAR") })
         assertFalse(buttonTexts(true,0).any { it.startsWith("ADIAR") })
+    }
+
+    @Test fun notificationStopActionAlwaysStopsAlarmService() {
+        val context=ApplicationProvider.getApplicationContext<Context>()
+        val alarm="""{"id":"stop-audit","hora":"10:10","nome":"Teste de parada","tryHard":false,"tema":"red"}"""
+        ContextCompat.startForegroundService(context,Intent(context,AlarmService::class.java).putExtra("alarm",alarm))
+        Thread.sleep(1_000)
+        assertTrue(AlarmRuntimeState.active)
+        context.sendBroadcast(Intent(context,AlarmControlReceiver::class.java).setAction(AlarmService.ACTION_STOP))
+        Thread.sleep(500)
+        assertFalse(AlarmRuntimeState.active)
+    }
+
+    @Test fun screenStopButtonInterruptsCustomAudioPreparation() {
+        val context=ApplicationProvider.getApplicationContext<Context>()
+        val alarm="""{"id":"screen-stop","hora":"10:10","nome":"Parada imediata","som":"custom","customUrl":"https://redsystems.ddns.net/rotina/nonexistent-audit.mp3","tryHard":false,"tema":"red"}"""
+        ContextCompat.startForegroundService(context,Intent(context,AlarmService::class.java).putExtra("alarm",alarm))
+        Thread.sleep(200)
+        assertTrue(AlarmRuntimeState.active)
+        val intent=Intent(context,AlarmActivity::class.java).putExtra("alarm",alarm).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        ActivityScenario.launch<AlarmActivity>(intent).use { scenario -> scenario.onActivity { activity ->
+            val root=activity.findViewById<ViewGroup>(android.R.id.content)
+            fun find(group:ViewGroup):Button?=(0 until group.childCount).firstNotNullOfOrNull { i -> when(val child=group.getChildAt(i)){is Button->child.takeIf{it.text=="DESLIGAR ALARME"};is ViewGroup->find(child);else->null} }
+            assertTrue(find(root)?.performClick()==true)
+        } }
+        Thread.sleep(300)
+        assertFalse(AlarmRuntimeState.active)
     }
 }
