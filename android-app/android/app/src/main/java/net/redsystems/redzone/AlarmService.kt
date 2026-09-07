@@ -11,6 +11,7 @@ import android.os.Build
 import android.os.IBinder
 import android.os.VibrationEffect
 import android.os.Vibrator
+import android.os.VibratorManager
 import android.provider.Settings
 import androidx.core.app.NotificationCompat
 import org.json.JSONObject
@@ -35,7 +36,8 @@ class AlarmService : Service() {
                 isLooping=true; val volume=(alarm.optInt("intensidade",100).coerceIn(20,100)/100f); setVolume(volume,volume); prepare(); start()
             }
         }
-        vibrator = getSystemService(VIBRATOR_SERVICE) as Vibrator; val pattern = longArrayOf(0,900,180,900,180)
+        vibrator = if (Build.VERSION.SDK_INT >= 31) getSystemService(VibratorManager::class.java).defaultVibrator else @Suppress("DEPRECATION") getSystemService(VIBRATOR_SERVICE) as Vibrator
+        val pattern = longArrayOf(0,900,180,900,180)
         if (Build.VERSION.SDK_INT >= 26) vibrator?.vibrate(VibrationEffect.createWaveform(pattern,0)) else @Suppress("DEPRECATION") vibrator?.vibrate(pattern,0)
         runCatching { startActivity(full) }; return START_STICKY
     }

@@ -4,11 +4,11 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no, interactive-widget=resizes-content">
 <meta name="theme-color" content="#0a0a0d">
-<link rel="manifest" href="manifest.json?v=139">
-<link rel="icon" href="favicon.ico?v=139" sizes="any">
-<link rel="icon" type="image/png" sizes="32x32" href="favicon-rz.png?v=139">
-<link rel="shortcut icon" href="favicon.ico?v=139">
-<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png?v=139">
+<link rel="manifest" href="manifest.json?v=160">
+<link rel="icon" href="favicon.ico?v=160" sizes="any">
+<link rel="icon" type="image/png" sizes="32x32" href="favicon-rz.png?v=160">
+<link rel="shortcut icon" href="favicon.ico?v=160">
+<link rel="apple-touch-icon" sizes="192x192" href="icon-192.png?v=160">
 <title>REDZONE</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -628,7 +628,8 @@ input::placeholder,textarea::placeholder{color:var(--text-dim)!important;opacity
 /* Celular: navegação sempre na base, ao alcance do polegar. */
 @media (max-width:899px){
   #app{padding-bottom:calc(86px + env(safe-area-inset-bottom))}
-  .nav{top:auto;left:0;right:0;bottom:0;width:100%;max-width:none;height:calc(72px + env(safe-area-inset-bottom));padding:7px 5px env(safe-area-inset-bottom);transform:none!important;border:0;border-top:1px solid var(--line);background:color-mix(in srgb,var(--bg) 91%,transparent);backdrop-filter:blur(22px);box-shadow:0 -8px 30px rgba(0,0,0,.3);overflow-x:auto;overflow-y:hidden}
+  .nav{top:auto;left:0;right:0;bottom:0;width:100%;max-width:none;height:calc(72px + env(safe-area-inset-bottom));padding:7px 5px env(safe-area-inset-bottom);transform:none!important;border:0;border-top:1px solid var(--line);background:color-mix(in srgb,var(--bg) 91%,transparent);backdrop-filter:blur(22px);box-shadow:0 -8px 30px rgba(0,0,0,.3);overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-ms-overflow-style:none}
+  .nav::-webkit-scrollbar{display:none;width:0;height:0}
   .nav-inner{min-width:max-content;height:100%;padding:0;display:flex;flex-direction:row;gap:2px;align-items:stretch}
   .nav-inner::before{display:none}.nav button{width:72px;min-width:72px;height:58px;flex-direction:column;justify-content:center;gap:3px;padding:5px 3px;font-size:9.5px;text-align:center;border-radius:13px}.nav button svg{width:23px;height:23px}
   .navbd,.hamb{display:none!important}#toast{bottom:calc(92px + env(safe-area-inset-bottom))}
@@ -859,7 +860,7 @@ setInterval(()=>{ if(authToken&&offQueue().length&&navigator.onLine) flushQueue(
 
 /* id único DESTE aparelho/aba — usado pra não ecoar de volta a própria escrita no sync ao vivo */
 const CLIENT_ID = (Math.random().toString(36).slice(2)+'-'+Date.now().toString(36));
-const APP_BUILD = 'redzone-v159';
+const APP_BUILD = 'redzone-v160';
 // evita re-render que rouba o foco enquanto a pessoa digita (o dado já foi aplicado em S de qualquer forma)
 let _mediaUploadBusy=0;
 function _syncPodeRender(){ const a=document.activeElement; return !_mediaUploadBusy&&!(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||'')); }
@@ -3842,7 +3843,7 @@ async function renderBatalha(){
   $('#scr-batalha').innerHTML=`
     <div class="topbar"><div style="display:flex;align-items:center;gap:10px"><button class="hamb" onclick="openDrawer()">☰</button>${backBtnHTML()}<div class="brand">BATALHA</div></div>
       <div style="display:flex;align-items:center;gap:10px">
-        <button class="icobtn" id="dmBtn">${svgIcon('i-dm')}${dmBadge}</button>
+        <button class="icobtn" id="dmBtn" aria-label="Mensagens">${svgIcon('i-dm')}${dmBadge}</button>
         <button class="icobtn" id="sinoBtn">${svgIcon('i-sino')}${badge}</button>${homeClockHTML()}
       </div></div>
     ${storiesHTML()}

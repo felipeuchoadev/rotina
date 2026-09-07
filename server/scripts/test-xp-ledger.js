@@ -1,30 +1,25 @@
 import assert from 'node:assert/strict';
-import { calcularExtratoXp } from '../src/lib/xp-ledger.js';
+import { calcularEventosXp } from '../src/lib/xp-ledger.js';
 
-const hoje = '2026-09-02';
-const base = {
-  'estudo:materias':[{ id:'m1', conteudos:[{ id:'c1', nome:'Acentuação' }] }],
-  'estudo:logs':[{ materia:'Português', materiaId:'m1', dateISO:hoje, ativoMs:15_000, conteudos:['c1','c1'] }],
-};
-const curto = calcularExtratoXp(base, { metaAgua:2500 }, hoje);
-assert.equal(curto.total, 40, 'conteúdo concluído vale 40 XP mesmo numa sessão com menos de um minuto');
-assert.equal(curto.ganhos, 40);
-assert.equal(curto.itens.length, 1);
-assert.match(curto.itens[0].txt, /Acentuação/);
+const dia='2026-09-02';
+const rotinaAntes={ [dia]:[{id:'r1',nome:'Ler',hora:'08:00',done:false}] };
+const rotinaFeita={ [dia]:[{id:'r1',nome:'Ler',hora:'08:00',done:true,updatedAt:1_788_342_400_000}] };
+const ganhoRotina=calcularEventosXp('rotina:dias',rotinaAntes,rotinaFeita);
+assert.equal(ganhoRotina.length,1);
+assert.equal(ganhoRotina[0].pontos,10);
+assert.match(ganhoRotina[0].descricao,/Ler \(08:00\)/);
+const perdaRotina=calcularEventosXp('rotina:dias',rotinaFeita,rotinaAntes);
+assert.equal(perdaRotina[0].pontos,-10);
 
-const completo = calcularExtratoXp({
-  ...base,
-  'treino:logs':[{ nome:'Corrida', dateISO:hoje, ativoMs:120_000 }],
-  'estudo:logs':[{ materia:'Português', materiaId:'m1', dateISO:hoje, ativoMs:60_000, conteudos:['c1'] }],
-  'alim:agua':{ [hoje]:2500 },
-  'rotina:dias':{ '2026-09-01':[{ nome:'Arrumar a casa', done:false }], [hoje]:[{ nome:'Ler', done:true }] },
-}, { metaAgua:2500 }, hoje);
-assert.equal(completo.ganhos, 69);
-assert.equal(completo.perdas, -10);
-assert.equal(completo.total, 59);
-assert.equal(completo.itens.reduce((s, i) => s + i.xp, 0), 59);
+const estudo=calcularEventosXp('estudo:logs',[],[{materia:'Português',ativoMs:120_000,conteudos:['c1','c1']}]);
+assert.deepEqual(estudo.map(x=>x.pontos),[4,40], 'tempo e conteúdo devem gerar lançamentos separados e sem duplicar conteúdo');
+const treino=calcularEventosXp('treino:logs',[],[{nome:'Corrida',ativoMs:120_000}]);
+assert.deepEqual(treino.map(x=>x.pontos),[2]);
+assert.equal(calcularEventosXp('treino:logs',[],[{nome:'Curto',ativoMs:59_999}]).length,0);
 
-const futuro = calcularExtratoXp({ 'estudo:logs':[{ dateISO:'2026-09-03', ativoMs:60_000, conteudos:['c1'] }] }, {}, hoje);
-assert.equal(futuro.total, 0, 'lançamento futuro não pode gerar XP');
+const aguaAntes={ [dia]:2499 }, aguaMeta={ [dia]:2500 };
+assert.equal(calcularEventosXp('alim:agua',aguaAntes,aguaMeta,{metaAgua:2500})[0].pontos,15);
+assert.equal(calcularEventosXp('alim:agua',aguaMeta,aguaAntes,{metaAgua:2500})[0].pontos,-15);
+assert.equal(calcularEventosXp('alim:agua',aguaMeta,{[dia]:3000},{metaAgua:2500}).length,0);
 
 console.log('XP_LEDGER_TEST=OK');

@@ -13,7 +13,7 @@ assert.match(html,/function carregarAdminResumo/);
 assert.match(html,/Atualizado diretamente do servidor/);
 assert.match(html,/cache:'no-store'/);
 assert.match(html,/function renderStatusPushAlarmes/);
-assert.match(html,/redzone-v156/);
+assert.match(html,/const APP_BUILD = 'redzone-v\d+'/);
 assert.match(html,/data-materia-drag/);
 assert.match(html,/data-rec-full/);
 assert.doesNotMatch(html,/max-height:180px/);

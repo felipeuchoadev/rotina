@@ -24,7 +24,7 @@ class AlarmActivity : ComponentActivity() {
         val palette=themePalette(alarm.optString("tema","red")); val root=LinearLayout(this).apply { orientation=LinearLayout.VERTICAL; gravity=Gravity.CENTER; setPadding(42,42,42,42); setBackgroundColor(Color.parseColor(palette.first)) }
         root.addView(TextView(this).apply { text=alarm.optString("hora","ALARME"); textSize=62f; gravity=Gravity.CENTER; setTextColor(Color.WHITE) })
         root.addView(TextView(this).apply { text=alarm.optString("nome","Despertar"); textSize=30f; gravity=Gravity.CENTER; setTextColor(Color.WHITE); setPadding(0,20,0,50) })
-        if(!tryHard&&snoozes<3) root.addView(Button(this).apply { text="ADIAR 5 MINUTOS (${snoozes}/3)"; backgroundTintList=ColorStateList.valueOf(Color.parseColor(palette.second)); setTextColor(Color.WHITE); setOnClickListener{snooze()} },LinearLayout.LayoutParams(-1,-2).apply{bottomMargin=20})
+        if(AlarmRules.canSnooze(tryHard,snoozes)) root.addView(Button(this).apply { text="ADIAR 5 MINUTOS (${snoozes}/${AlarmRules.MAX_SNOOZES})"; backgroundTintList=ColorStateList.valueOf(Color.parseColor(palette.second)); setTextColor(Color.WHITE); setOnClickListener{snooze()} },LinearLayout.LayoutParams(-1,-2).apply{bottomMargin=20})
         root.addView(Button(this).apply { text="DESLIGAR ALARME"; backgroundTintList=ColorStateList.valueOf(Color.parseColor(palette.third)); setTextColor(if(isLight(palette.third))Color.BLACK else Color.WHITE); setOnClickListener{dismiss()} },LinearLayout.LayoutParams(-1,-2)); setContentView(root)
     }
     private fun dismiss(){startService(Intent(this,AlarmService::class.java).setAction("STOP"));finishAndRemoveTask()}

@@ -26,6 +26,11 @@ function eventos(chave,anterior,atual,perfil){
   return out;
 }
 
+// Exportação pura para manter as regras de pontuação testáveis sem tocar no banco.
+export function calcularEventosXp(chave,anterior,atual,perfil={}){
+  return eventos(chave,anterior,atual,perfil);
+}
+
 export async function registrarMudancaXp(usuarioId,chave,anterior,atual){
   await garantirExtratoXp(usuarioId);const perfil=await prisma.usuario.findUnique({where:{id:usuarioId},select:{metaAgua:true}});
   for(const e of eventos(chave,anterior,atual,perfil))await prisma.xpLancamento.create({data:{usuarioId,...e}}).catch(err=>{if(err?.code!=='P2002')throw err;});

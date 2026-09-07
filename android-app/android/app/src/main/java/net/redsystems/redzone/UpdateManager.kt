@@ -11,6 +11,7 @@ import android.os.Environment
 import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.core.content.FileProvider
+import androidx.core.content.ContextCompat
 import org.json.JSONObject
 import java.io.File
 import java.net.HttpURLConnection
@@ -31,7 +32,7 @@ object UpdateManager {
                 connection.connectTimeout = 8_000; connection.readTimeout = 8_000; connection.useCaches = false
                 val data = connection.inputStream.bufferedReader().use { JSONObject(it.readText()) }
                 val code = data.optInt("versionCode"); val apk = data.optString("apk")
-                if (code > BuildConfig.VERSION_CODE && Uri.parse(apk).let { it.scheme == "https" && it.host == APK_HOST })
+                if (AlarmRules.shouldUpdate(code, BuildConfig.VERSION_CODE) && Uri.parse(apk).let { it.scheme == "https" && it.host == APK_HOST })
                     activity.runOnUiThread { download(activity, code, apk) }
             } catch (_: Exception) { } finally { checking = false }
         }.start()
@@ -67,7 +68,7 @@ object UpdateManager {
             }
         }
         val filter = IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)
-        if (Build.VERSION.SDK_INT >= 33) activity.registerReceiver(receiver, filter, Context.RECEIVER_NOT_EXPORTED) else @Suppress("DEPRECATION") activity.registerReceiver(receiver, filter)
+        ContextCompat.registerReceiver(activity, receiver, filter, ContextCompat.RECEIVER_NOT_EXPORTED)
     }
     private fun install(activity:ComponentActivity,file:File){
         val uri=FileProvider.getUriForFile(activity,"${activity.packageName}.updates",file)
