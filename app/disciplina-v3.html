@@ -863,7 +863,7 @@ setInterval(()=>{ if(authToken&&offQueue().length&&navigator.onLine) flushQueue(
 
 /* id único DESTE aparelho/aba — usado pra não ecoar de volta a própria escrita no sync ao vivo */
 const CLIENT_ID = (Math.random().toString(36).slice(2)+'-'+Date.now().toString(36));
-const APP_BUILD = 'redzone-v164';
+const APP_BUILD = 'redzone-v165';
 // evita re-render que rouba o foco enquanto a pessoa digita (o dado já foi aplicado em S de qualquer forma)
 let _mediaUploadBusy=0;
 function _syncPodeRender(){ const a=document.activeElement; return !_mediaUploadBusy&&!(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||'')); }
@@ -2939,14 +2939,11 @@ function editMateriaSheet(mid){
     const falhar=(mensagem)=>{_sheetSaveIntent=false;salvarRascunhoSheet();toast(mensagem);return false};
     const nome=$('#matNome').value.trim(); if(!nome) return falhar('Nome da matéria?');
     if(S.materias.some(x=>String(x.id)!==String(mid)&&chaveMateria(x.nome)===chaveMateria(nome)))return falhar('Essa matéria já existe. Abra o bloco existente e adicione os conteúdos nela.');
-    const antigos=conteudosMateria(m), gruposPorNome=new Map(), grupos=[], conteudos=[];
+    const antigos=conteudosMateria(m), grupos=[], conteudos=[];
     for(const grupoEl of $$('.materia-grupo-editor',gruposBox)){
       const nomeGrupo=$('.materia-grupo-top input',grupoEl).value.trim(); if(!nomeGrupo)return falhar('Dê um nome para cada conteúdo principal.');
-      const chaveG=chaveGrupo(nomeGrupo), grupoExistente=gruposPorNome.get(chaveG);
-      // Pastas homônimas podem surgir numa edição longa (inclusive por toque duplo).
-      // Elas representam o mesmo conteúdo principal: una sem descartar nenhum item.
-      const grupoId=grupoExistente?.id||grupoEl.dataset.gid;
-      if(!grupoExistente){const novoGrupo={id:grupoId,nome:nomeGrupo};gruposPorNome.set(chaveG,novoGrupo);grupos.push(novoGrupo);}
+      // Nomes iguais são válidos: cada pasta mantém sua identidade, posição e itens.
+      const grupoId=grupoEl.dataset.gid; grupos.push({id:grupoId,nome:nomeGrupo});
       const itens=Array.from($('.materia-editor-list',grupoEl).children),nomesPorId=new Map(itens.map(item=>[String(item.dataset.cid),$('textarea',item).value.replace(/\r\n?/g,'\n').trim()]));
       for(const item of itens){
         const texto=$('textarea',item).value.replace(/\r\n?/g,'\n').trim(); if(!texto)continue;
