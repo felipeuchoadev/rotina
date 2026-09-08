@@ -863,7 +863,7 @@ setInterval(()=>{ if(authToken&&offQueue().length&&navigator.onLine) flushQueue(
 
 /* id único DESTE aparelho/aba — usado pra não ecoar de volta a própria escrita no sync ao vivo */
 const CLIENT_ID = (Math.random().toString(36).slice(2)+'-'+Date.now().toString(36));
-const APP_BUILD = 'redzone-v161';
+const APP_BUILD = 'redzone-v162';
 // evita re-render que rouba o foco enquanto a pessoa digita (o dado já foi aplicado em S de qualquer forma)
 let _mediaUploadBusy=0;
 function _syncPodeRender(){ const a=document.activeElement; return !_mediaUploadBusy&&!(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||'')); }
@@ -2909,23 +2909,32 @@ function editMateriaSheet(mid){
   gruposMateria(m).forEach(g=>addGrupo(g));
   if(!gruposMateria(m).length)addGrupo(null,false);
   $('#matSave').onclick=()=>{
-    const nome=$('#matNome').value.trim(); if(!nome) return toast('Nome da matéria?');
-    if(S.materias.some(x=>String(x.id)!==String(mid)&&chaveMateria(x.nome)===chaveMateria(nome)))return toast('Essa matéria já existe. Abra o bloco existente e adicione os conteúdos nela.');
-    const antigos=conteudosMateria(m), nomesGrupo=new Set(), grupos=[], conteudos=[];
+    // Preserve a edição inteira antes de validar. Assim, até uma validação recusada
+    // ou um fechamento acidental continua recuperável pelo rascunho automático.
+    _sheetDraftDirty=true; _sheetSaveIntent=false; salvarRascunhoSheet();
+    const falhar=(mensagem)=>{_sheetSaveIntent=false;salvarRascunhoSheet();toast(mensagem);return false};
+    const nome=$('#matNome').value.trim(); if(!nome) return falhar('Nome da matéria?');
+    if(S.materias.some(x=>String(x.id)!==String(mid)&&chaveMateria(x.nome)===chaveMateria(nome)))return falhar('Essa matéria já existe. Abra o bloco existente e adicione os conteúdos nela.');
+    const antigos=conteudosMateria(m), gruposPorNome=new Map(), vistosPorGrupo=new Map(), grupos=[], conteudos=[];
     for(const grupoEl of $$('.materia-grupo-editor',gruposBox)){
-      const nomeGrupo=$('.materia-grupo-top input',grupoEl).value.trim(); if(!nomeGrupo)return toast('Dê um nome para cada conteúdo principal.');
-      const chaveG=chaveGrupo(nomeGrupo); if(nomesGrupo.has(chaveG))return toast('Esse conteúdo principal está repetido.'); nomesGrupo.add(chaveG);
-      const grupoId=grupoEl.dataset.gid, vistos=new Set(),itens=Array.from($('.materia-editor-list',grupoEl).children),nomesPorId=new Map(itens.map(item=>[String(item.dataset.cid),$('textarea',item).value.replace(/\r\n?/g,'\n').trim()])); grupos.push({id:grupoId,nome:nomeGrupo});
+      const nomeGrupo=$('.materia-grupo-top input',grupoEl).value.trim(); if(!nomeGrupo)return falhar('Dê um nome para cada conteúdo principal.');
+      const chaveG=chaveGrupo(nomeGrupo), grupoExistente=gruposPorNome.get(chaveG);
+      // Pastas homônimas podem surgir numa edição longa (inclusive por toque duplo).
+      // Elas representam o mesmo conteúdo principal: una sem descartar nenhum item.
+      const grupoId=grupoExistente?.id||grupoEl.dataset.gid;
+      if(!grupoExistente){const novoGrupo={id:grupoId,nome:nomeGrupo};gruposPorNome.set(chaveG,novoGrupo);grupos.push(novoGrupo);}
+      const vistos=vistosPorGrupo.get(grupoId)||new Set(); vistosPorGrupo.set(grupoId,vistos);
+      const itens=Array.from($('.materia-editor-list',grupoEl).children),nomesPorId=new Map(itens.map(item=>[String(item.dataset.cid),$('textarea',item).value.replace(/\r\n?/g,'\n').trim()]));
       for(const item of itens){
         const texto=$('textarea',item).value.replace(/\r\n?/g,'\n').trim(); if(!texto)continue;
-        const parentId=item.dataset.parentId||''; if(parentId&&!nomesPorId.get(String(parentId)))return toast('Preencha o assunto acima antes de salvar o subassunto.');
-        const chave=`${parentId}::${chaveConteudo(texto)}`; if(vistos.has(chave))return toast(`Assunto repetido em ${nomeGrupo}.`); vistos.add(chave);
+        const parentId=item.dataset.parentId||''; if(parentId&&!nomesPorId.get(String(parentId)))return falhar('Preencha o assunto acima antes de salvar o subassunto.');
+        const chave=`${parentId}::${chaveConteudo(texto)}`; if(vistos.has(chave))return falhar(`Assunto repetido em ${nomeGrupo}. Nada do que você escreveu foi perdido.`); vistos.add(chave);
         const old=antigos.find(c=>String(c.id)===String(item.dataset.cid)),base=old?{...old,nome:texto,grupoId}:{id:item.dataset.cid,nome:texto,grupoId,done:false}; if(parentId)base.parentId=parentId;else delete base.parentId; conteudos.push(base);
       }
     }
     if(mid){ m.nome=nome; m.grupos=grupos; m.conteudos=conteudos; prepararEstruturaMateria(m); }
     else { const nova={id:m.id,nome,grupos,conteudos}; prepararEstruturaMateria(nova); S.materias.push(nova); }
-    save('estudo:materias'); closeSheet(); renderMaterias(); renderEstudoDia(); renderPrevisaoEstudo(); renderRelatorio('estRelatorio','estudo');
+    save('estudo:materias'); _sheetSaveIntent=true; closeSheet(); renderMaterias(); renderEstudoDia(); renderPrevisaoEstudo(); renderRelatorio('estRelatorio','estudo');
   };
 }
 function posEstudo(sess){
