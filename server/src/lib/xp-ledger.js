@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
 import { prisma } from './db.js';
+import { rankOf } from './xp.js';
 
 const hash=v=>crypto.createHash('sha256').update(JSON.stringify(v)).digest('hex').slice(0,24);
 const arr=v=>Array.isArray(v)?v:[];
@@ -9,6 +10,30 @@ export async function garantirExtratoXp(usuarioId){
   if(await prisma.xpLancamento.findFirst({where:{usuarioId},select:{id:true}}))return;
   const u=await prisma.usuario.findUnique({where:{id:usuarioId},select:{xp:true}});if(!u)return;
   await prisma.xpLancamento.create({data:{usuarioId,eventoId:'saldo-inicial-v1',tipo:'ajustes',descricao:'Saldo preservado antes do extrato fiel',pontos:u.xp}}).catch(e=>{if(e?.code!=='P2002')throw e;});
+}
+
+const isoBrasilia=d=>new Intl.DateTimeFormat('en-CA',{timeZone:'America/Sao_Paulo',year:'numeric',month:'2-digit',day:'2-digit'}).format(d);
+const diaAnterior=iso=>{const d=new Date(`${iso}T12:00:00-03:00`);d.setDate(d.getDate()-1);return isoBrasilia(d)};
+const diaSeguinte=iso=>{const d=new Date(`${iso}T12:00:00-03:00`);d.setDate(d.getDate()+1);return isoBrasilia(d)};
+export function penalidadeInatividadePorPatente(xp){return ({recruta:70,soldado:100,cabo:150,'3sgt':250})[rankOf(Math.max(0,Number(xp)||0)).id]||70;}
+
+// Materializa cada dia sem ganho real em uma única linha imutável. A data de
+// início evita cobrar períodos anteriores à entrada pública desta regra.
+export async function aplicarPenalidadesInatividade(usuarioId,agora=new Date()){
+  await garantirExtratoXp(usuarioId);
+  const usuario=await prisma.usuario.findUnique({where:{id:usuarioId},select:{xp:true,criadoEm:true,isAdmin:true,bloqueado:true}});
+  if(!usuario||usuario.isAdmin||usuario.bloqueado)return Number(usuario?.xp||0);
+  const hoje=isoBrasilia(agora),ontem=diaAnterior(hoje),inicioRegra=new Date('2026-09-05T00:00:00-03:00');
+  let dia=isoBrasilia(usuario.criadoEm>inicioRegra?usuario.criadoEm:inicioRegra);
+  const rows=await prisma.xpLancamento.findMany({where:{usuarioId,ocorridoEm:{gte:new Date(`${dia}T00:00:00-03:00`)}},select:{eventoId:true,pontos:true,ocorridoEm:true},orderBy:{ocorridoEm:'asc'}});
+  const ganhos=new Set(rows.filter(r=>r.pontos>0&&r.eventoId!=='saldo-inicial-v1').map(r=>isoBrasilia(r.ocorridoEm)));
+  const cobrados=new Set(rows.filter(r=>r.eventoId.startsWith('inatividade:')).map(r=>r.eventoId.slice(11)));
+  let saldo=Number((await prisma.xpLancamento.aggregate({where:{usuarioId},_sum:{pontos:true}}))._sum.pontos||0);
+  while(dia<=ontem){
+    if(!ganhos.has(dia)&&!cobrados.has(dia)&&saldo>0){const pontos=-Math.min(saldo,penalidadeInatividadePorPatente(saldo));await prisma.xpLancamento.create({data:{usuarioId,eventoId:`inatividade:${dia}`,tipo:'perdas',descricao:`Dia sem nenhuma atividade registrada (${dia.split('-').reverse().join('/')})`,pontos,ocorridoEm:new Date(`${dia}T23:59:59-03:00`)}}).catch(e=>{if(e?.code!=='P2002')throw e;});saldo+=pontos;}
+    dia=diaSeguinte(dia);
+  }
+  saldo=Math.max(0,Number((await prisma.xpLancamento.aggregate({where:{usuarioId},_sum:{pontos:true}}))._sum.pontos||0));if(saldo!==usuario.xp)await prisma.usuario.update({where:{id:usuarioId},data:{xp:saldo}});return saldo;
 }
 
 function eventos(chave,anterior,atual,perfil){
@@ -38,6 +63,6 @@ export async function registrarMudancaXp(usuarioId,chave,anterior,atual){
 }
 
 export async function obterExtratoXp(usuarioId){
-  await garantirExtratoXp(usuarioId);const [u,rows]=await Promise.all([prisma.usuario.findUnique({where:{id:usuarioId},select:{xp:true}}),prisma.xpLancamento.findMany({where:{usuarioId},orderBy:[{ocorridoEm:'desc'},{id:'desc'}],take:1000})]);
+  await aplicarPenalidadesInatividade(usuarioId);const [u,rows]=await Promise.all([prisma.usuario.findUnique({where:{id:usuarioId},select:{xp:true}}),prisma.xpLancamento.findMany({where:{usuarioId},orderBy:[{ocorridoEm:'desc'},{id:'desc'}],take:1000})]);
   const itens=rows.map(r=>({id:String(r.id),tipo:r.tipo,dateISO:r.ocorridoEm.toISOString().slice(0,10),at:r.ocorridoEm.getTime(),criadoEm:r.criadoEm.getTime(),xp:r.pontos,txt:r.descricao})),ganhos=itens.filter(i=>i.xp>0).reduce((s,i)=>s+i.xp,0),perdas=itens.filter(i=>i.xp<0).reduce((s,i)=>s+i.xp,0);return{total:Number(u?.xp||0),ganhos,perdas,itens};
 }

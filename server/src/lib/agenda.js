@@ -4,6 +4,7 @@
 import { prisma } from './db.js';
 import { enviarPush } from './push.js';
 import { emitToUser } from '../realtime.js';
+import { aplicarPenalidadesInatividade } from './xp-ledger.js';
 
 function brasiliaAgora() {
   return new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
@@ -114,6 +115,7 @@ export async function rodarAgenda() {
   }
   return { enviados };
 }
+export async function rodarPenalidadesXp(){const usuarios=await prisma.usuario.findMany({where:{isAdmin:false,bloqueado:false},select:{id:true}});for(const u of usuarios)await aplicarPenalidadesInatividade(u.id);return{usuarios:usuarios.length};}
 
 // Lembretes da rotina são calculados no servidor: continuam chegando quando a
 // página/PWA está fechada. O KV torna cada disparo idempotente por tarefa e slot.
@@ -147,6 +149,14 @@ export async function rodarLembretesRotina() {
   return {enviados};
 }
 
+export async function rodarLembretesFinanceiros(){
+  const agora=brasiliaAgora(),hoje=new Date(agora);hoje.setHours(0,0,0,0);const iso=isoDe(hoje),mes=iso.slice(0,7);
+  const estados=await prisma.userState.findMany({where:{chave:{in:['financas:dados','config']},usuario:{isAdmin:false,bloqueado:false}}}).catch(()=>[]),porUsuario=new Map();
+  for(const row of estados){const x=porUsuario.get(row.usuarioId)||{};x[row.chave]=row.valor;porUsuario.set(row.usuarioId,x)}
+  let enviados=0;for(const [usuarioId,estado] of porUsuario){const contas=Array.isArray(estado['financas:dados']?.contas)?estado['financas:dados'].contas:[];for(const conta of contas){if(conta?.pago||conta?.mes!==mes)continue;const ultimo=new Date(agora.getFullYear(),agora.getMonth()+1,0).getDate(),vencimento=new Date(agora.getFullYear(),agora.getMonth(),Math.min(ultimo,Math.max(1,Number(conta.vencimento)||1)));vencimento.setHours(0,0,0,0);const faltam=Math.round((vencimento-hoje)/86400000),antecedencia=Math.max(0,Number(conta.lembrete)||0);if(faltam<0||faltam>antecedencia)continue;const id=String(conta.id||conta.nome||'conta').replace(/[^a-zA-Z0-9_-]/g,'').slice(0,60),dedupe=`financas:${iso}:${usuarioId}:${id}`;if(await jaEnviado(dedupe))continue;const nome=String(conta.nome||'Conta').slice(0,120),body=faltam===0?`${nome} vence hoje. Marque como paga quando concluir.`:`${nome} vence em ${faltam} dia(s).`;const notificacao=await prisma.notificacao.create({data:{usuarioId,tipo:'aviso',texto:`💳 ${body}`}}).catch(()=>null);if(notificacao)emitToUser(usuarioId,'notif:nova',notificacao);if(estado.config?.notif===true)await enviarPush(usuarioId,{title:'REDZONE Finanças',body,tag:dedupe,url:'/rotina/#tab=financas',requireInteraction:faltam===0});await marcarEnviado(dedupe);enviados++}}
+  return{enviados};
+}
+
 // Alarmes persistentes: o servidor envia o chamado mesmo sem uma aba aberta.
 // Ao abrir o REDZONE, o toque contínuo assume até a pessoa pressionar DESLIGAR.
 export async function rodarAlarmes() {
@@ -175,12 +185,13 @@ export async function rodarAlarmes() {
 export function iniciarAgenda() {
   const agendarMeiaNoite=()=>{
     const agora=brasiliaAgora(),proxima=new Date(agora);proxima.setDate(proxima.getDate()+1);proxima.setHours(0,0,0,0);
-    setTimeout(async()=>{await rodarAgenda().catch((e)=>console.error('agenda:',e));agendarMeiaNoite();},Math.max(1000,proxima-agora));
+    setTimeout(async()=>{await Promise.all([rodarAgenda().catch((e)=>console.error('agenda:',e)),rodarPenalidadesXp().catch((e)=>console.error('xp diário:',e))]);agendarMeiaNoite();},Math.max(1000,proxima-agora));
   };
   agendarMeiaNoite();
   // Acorda no servidor; não depende da aba aberta nem do aparelho desbloqueado.
   const tick=()=>Promise.all([
     rodarLembretesRotina().catch(e=>console.error('lembretes rotina:',e)),
+    rodarLembretesFinanceiros().catch(e=>console.error('lembretes financeiros:',e)),
     rodarAlarmes().catch(e=>console.error('alarmes:',e)),
   ]);
   setTimeout(tick,3000);setInterval(tick,30000);

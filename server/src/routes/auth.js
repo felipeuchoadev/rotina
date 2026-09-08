@@ -4,6 +4,7 @@ import crypto from 'node:crypto';
 import { prisma } from '../lib/db.js';
 import { hashSenha, conferirSenha, assinarToken, exigirAuth } from '../lib/auth.js';
 import { rankOf } from '../lib/xp.js';
+import { aplicarPenalidadesInatividade } from '../lib/xp-ledger.js';
 import { enviarEmail, mailAtivo } from '../lib/mail.js';
 import { validarEmailPadrao } from '../lib/email.js';
 
@@ -198,6 +199,7 @@ authRouter.delete('/conta', exigirAuth, async (req, res) => {
 
 // Dados do usuário logado + patente
 authRouter.get('/me', exigirAuth, async (req, res) => {
+  await aplicarPenalidadesInatividade(req.userId);
   const usuario = await prisma.usuario.findUnique({ where: { id: req.userId } });
   if (!usuario) return res.status(404).json({ erro: 'Usuário não encontrado.' });
   res.json({ usuario: publico(usuario), xp: usuario.xp, patente: rankOf(usuario.xp).id });

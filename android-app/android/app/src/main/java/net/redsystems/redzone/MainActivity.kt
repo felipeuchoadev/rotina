@@ -31,8 +31,10 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.OnBackPressedCallback
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.Insets
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 
 class MainActivity : ComponentActivity() {
     private lateinit var webView: WebView
@@ -47,11 +49,15 @@ class MainActivity : ComponentActivity() {
         val request = pendingWebPermission; pendingWebPermission = null
         if (request != null && grants.values.all { it }) request.grant(request.resources) else request?.deny()
     }
+    private val initialPermissions = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { grants ->
+        val payload = grants.entries.joinToString(",") { "\"${it.key.substringAfterLast('.')}\":${it.value}" }
+        webView.post { webView.evaluateJavascript("window.redzoneNativePermissionsResult?.({$payload})", null) }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.statusBarColor = Color.rgb(9, 10, 14); window.navigationBarColor = Color.rgb(16, 17, 22)
-        createContent(); configureWebView(); askNotificationPermission(); loadRequestedUrl(intent)
+        createContent(); configureWebView(); loadRequestedUrl(intent)
         UpdateManager.check(this)
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() { if (webView.canGoBack()) webView.goBack() else finish() }
@@ -67,6 +73,12 @@ class MainActivity : ComponentActivity() {
             setOnClickListener { loadRequestedUrl(intent) }
         }
         root.addView(webView, FrameLayout.LayoutParams(-1, -1)); root.addView(offline, FrameLayout.LayoutParams(-1, -1)); setContentView(root)
+        ViewCompat.setOnApplyWindowInsetsListener(root) { _, insets ->
+            val bars: Insets = insets.getInsets(WindowInsetsCompat.Type.statusBars())
+            webView.setPadding(0, bars.top, 0, 0)
+            offline.setPadding(0, bars.top, 0, 0)
+            insets
+        }
     }
 
     @Suppress("SetJavaScriptEnabled")
@@ -129,11 +141,16 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) { super.onNewIntent(intent); setIntent(intent); loadRequestedUrl(intent) }
     override fun onResume() { super.onResume(); if (::webView.isInitialized) UpdateManager.check(this) }
     override fun onDestroy() { pendingFiles?.onReceiveValue(null); webView.destroy(); super.onDestroy() }
-    private fun askNotificationPermission() {
-        if (Build.VERSION.SDK_INT >= 33 && ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)
-            ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), 900)
-    }
     inner class NativeBridge {
+        @JavascriptInterface fun requestInitialPermissions() {
+            runOnUiThread {
+                val wanted = mutableListOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO)
+                if (Build.VERSION.SDK_INT >= 33) wanted += Manifest.permission.POST_NOTIFICATIONS
+                val missing = wanted.filter { ContextCompat.checkSelfPermission(this@MainActivity, it) != PackageManager.PERMISSION_GRANTED }
+                if (missing.isEmpty()) webView.evaluateJavascript("window.redzoneNativePermissionsResult?.({camera:true,microphone:true,notifications:true})", null)
+                else initialPermissions.launch(missing.toTypedArray())
+            }
+        }
         @JavascriptInterface fun syncAlarms(json: String) { runCatching { AlarmScheduler.sync(this@MainActivity, json) } }
         @JavascriptInterface fun requestExactAlarmPermission() {
             if (Build.VERSION.SDK_INT >= 31 && !(getSystemService(ALARM_SERVICE) as AlarmManager).canScheduleExactAlarms())
