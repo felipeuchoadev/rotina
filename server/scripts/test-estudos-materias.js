@@ -68,5 +68,9 @@ assert.match(html, /renderizarSyncPendente/, 'Uma sincronização adiada por cam
 assert.match(html, /item\.classList\.toggle\('is-sub',nivel>0\)/, 'O editor móvel deve identificar visualmente cada subassunto');
 assert.match(html, /`SUB \$\{nivel\}`/, 'O nível do subassunto deve permanecer visível no celular');
 assert.match(html, /const duplicadasCorrigidas=false/, 'Abrir Estudos nunca pode consolidar ou reorganizar estruturas automaticamente');
+assert.match(html, /function snapshotMateriaEstrutura\(\)/, 'O rascunho deve guardar a árvore completa, não apenas textos soltos');
+assert.match(html, /materiaEstrutura:snapshotMateriaEstrutura\(\)/, 'A hierarquia precisa ser persistida junto ao rascunho automático');
+assert.match(html, /item\.parentId\|\|''/, 'A recuperação deve restaurar o vínculo de cada subassunto com seu pai');
+assert.match(html, /new MutationObserver\(registrar\)/, 'Adicionar ou remover nós deve atualizar o rascunho mesmo sem digitação posterior');
 
 console.log('ESTUDOS_MATERIAS_TEST=OK');
