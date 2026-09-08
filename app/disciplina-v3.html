@@ -863,7 +863,7 @@ setInterval(()=>{ if(authToken&&offQueue().length&&navigator.onLine) flushQueue(
 
 /* id único DESTE aparelho/aba — usado pra não ecoar de volta a própria escrita no sync ao vivo */
 const CLIENT_ID = (Math.random().toString(36).slice(2)+'-'+Date.now().toString(36));
-const APP_BUILD = 'redzone-v162';
+const APP_BUILD = 'redzone-v163';
 // evita re-render que rouba o foco enquanto a pessoa digita (o dado já foi aplicado em S de qualquer forma)
 let _mediaUploadBusy=0;
 function _syncPodeRender(){ const a=document.activeElement; return !_mediaUploadBusy&&!(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||'')); }
@@ -2908,6 +2908,30 @@ function editMateriaSheet(mid){
   };
   gruposMateria(m).forEach(g=>addGrupo(g));
   if(!gruposMateria(m).length)addGrupo(null,false);
+  // Rascunhos criados por versões anteriores guardavam todos os valores, mas
+  // não recriavam linhas/pastas adicionadas durante uma edição ainda não salva.
+  // Reponha primeiro a mesma quantidade de controles; ativarRascunhoSheet()
+  // restaura os valores logo depois, mantendo integralmente uma edição extensa.
+  try{
+    const chaveLegada=userStorageKey(`rascunho:${activeTab}:${mid?'Editar':'Nova'} matéria`);
+    const legado=JSON.parse(localStorage.getItem(chaveLegada)||'null');
+    const campos=Array.isArray(legado?.fields)?legado.fields:[];
+    const blocos=[]; let atual=null;
+    campos.slice(1).forEach(c=>{
+      const tipo=String(c.type||'').toLowerCase();
+      if(tipo==='textarea'){if(atual)atual.itens.push(c);return;}
+      if(tipo==='text'||tipo==='search'||tipo==='input'){atual={titulo:c,itens:[]};blocos.push(atual);}
+    });
+    blocos.forEach((bloco,indice)=>{
+      let grupoEl=$$('.materia-grupo-editor',gruposBox)[indice];
+      if(!grupoEl){addGrupo(null,false);grupoEl=$$('.materia-grupo-editor',gruposBox)[indice];}
+      const lista=$('.materia-editor-list',grupoEl);
+      while(lista.children.length<bloco.itens.length)addConteudo(grupoEl,null,false);
+      while(lista.children.length>bloco.itens.length)lista.lastElementChild?.remove();
+      atualizarNumeros(grupoEl);
+    });
+    while($$('.materia-grupo-editor',gruposBox).length>blocos.length&&blocos.length){$$('.materia-grupo-editor',gruposBox).at(-1)?.remove();}
+  }catch(e){}
   $('#matSave').onclick=()=>{
     // Preserve a edição inteira antes de validar. Assim, até uma validação recusada
     // ou um fechamento acidental continua recuperável pelo rascunho automático.

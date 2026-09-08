@@ -59,5 +59,6 @@ assert.match(html, /folhasConteudo\(m,sess\.grupoId\)/);
 assert.doesNotMatch(html, /nomesGrupo\.has\(chaveG\).*Esse conteúdo principal está repetido/, 'Pastas internas homônimas não podem bloquear nem apagar uma edição longa');
 assert.match(html, /gruposPorNome\.get\(chaveG\)/, 'Pastas internas homônimas devem ser unidas no salvamento');
 assert.match(html, /_sheetDraftDirty=true; _sheetSaveIntent=false; salvarRascunhoSheet\(\)/, 'A edição completa deve virar rascunho antes de qualquer validação');
+assert.match(html, /while\(lista\.children\.length<bloco\.itens\.length\)addConteudo/, 'O editor deve recriar todas as linhas de um rascunho legado antes de restaurar valores');
 
 console.log('ESTUDOS_MATERIAS_TEST=OK');
