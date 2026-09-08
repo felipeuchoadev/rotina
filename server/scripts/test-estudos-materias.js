@@ -62,5 +62,8 @@ assert.match(html, /Nomes iguais são válidos/, 'Cada pasta repetida deve mante
 assert.match(html, /_sheetDraftDirty=true; _sheetSaveIntent=false; salvarRascunhoSheet\(\)/, 'A edição completa deve virar rascunho antes de qualquer validação');
 assert.match(html, /while\(lista\.children\.length<bloco\.itens\.length\)addConteudo/, 'O editor deve recriar todas as linhas de um rascunho legado antes de restaurar valores');
 assert.doesNotMatch(html, /Assunto repetido em/, 'Assuntos com o mesmo texto devem ser aceitos exatamente como digitados');
+assert.doesNotMatch(html, /Há um subassunto repetido/, 'Subassuntos repetidos também devem ser aceitos quando intencionais');
+assert.match(html, /await save\('estudo:materias'\)/, 'O modal só pode fechar depois que os subassuntos forem gravados');
+assert.match(html, /renderizarSyncPendente/, 'Uma sincronização adiada por campo focado deve renderizar assim que possível');
 
 console.log('ESTUDOS_MATERIAS_TEST=OK');

@@ -863,10 +863,12 @@ setInterval(()=>{ if(authToken&&offQueue().length&&navigator.onLine) flushQueue(
 
 /* id único DESTE aparelho/aba — usado pra não ecoar de volta a própria escrita no sync ao vivo */
 const CLIENT_ID = (Math.random().toString(36).slice(2)+'-'+Date.now().toString(36));
-const APP_BUILD = 'redzone-v165';
+const APP_BUILD = 'redzone-v166';
 // evita re-render que rouba o foco enquanto a pessoa digita (o dado já foi aplicado em S de qualquer forma)
 let _mediaUploadBusy=0;
 function _syncPodeRender(){ const a=document.activeElement; return !_mediaUploadBusy&&!(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||'')); }
+let _syncRenderPendente=false;
+function renderizarSyncPendente(){if(!_syncRenderPendente||!activeTab||!_syncPodeRender())return;_syncRenderPendente=false;try{go(activeTab)}catch(e){}}
 // ANTI-LOOP: ao aplicar uma mudança que VEIO do servidor, um re-render pode disparar escritas de
 // efeito colateral (reportXP/saveProfile/save) que voltariam a emitir e criariam ping-pong entre
 // aparelhos. Durante uma janela curta após aplicar o remoto, NÃO reescrevemos no servidor.
@@ -903,6 +905,7 @@ function applyRemoteState(chave, valor, versao=0){
   try{ const k=userStorageKey('cache:st'), c=JSON.parse(localStorage.getItem(k)||'{}'); c[chave]=valor; localStorage.setItem(k, JSON.stringify(c)); }catch{}
   _syncHold();   // segura escritas de efeito colateral do re-render (anti-loop)
   if(activeTab && _syncPodeRender()){ try{ go(activeTab); }catch(e){} }
+  else _syncRenderPendente=true;
 }
 function mergeRotinaDiasLocal(atual,remoto){
   if(!atual||!remoto||typeof atual!=='object'||typeof remoto!=='object') return remoto;
@@ -922,7 +925,8 @@ function ajustarViewportTeclado(){
 if(window.visualViewport){ visualViewport.addEventListener('resize',ajustarViewportTeclado); visualViewport.addEventListener('scroll',ajustarViewportTeclado); }
 window.addEventListener('resize',ajustarViewportTeclado); setTimeout(ajustarViewportTeclado,0);
 document.addEventListener('focusin',e=>{ if($('#overlay')?.classList.contains('show')&&/^(INPUT|TEXTAREA)$/.test(e.target?.tagName||'')) $('#sheet')?.classList.add('keyboard-fit'); });
-document.addEventListener('focusout',()=>setTimeout(()=>{ if(!$('#sheet')?.contains(document.activeElement)) $('#sheet')?.classList.remove('keyboard-fit'); },120));
+document.addEventListener('focusout',()=>setTimeout(()=>{ if(!$('#sheet')?.contains(document.activeElement)) $('#sheet')?.classList.remove('keyboard-fit');renderizarSyncPendente(); },120));
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')setTimeout(renderizarSyncPendente,80)});
 document.addEventListener('click',e=>{
   const painel=$('#emojiPanel'), anexos=$('#chatAttachPanel');
   if(e.target.closest('#chatEmoji')){ e.preventDefault(); const abrir=!painel?.classList.contains('open');anexos?.classList.remove('open');painel?.classList.toggle('open',abrir);if(abrir&&matchMedia('(pointer:coarse)').matches)$('#chatTxt')?.blur();return; }
@@ -2868,7 +2872,7 @@ function adicionarSubtopicoSheet(mid,parentId){
   const box=$('#subtopicosNovos');
   const add=()=>{const item=document.createElement('div');item.className='materia-editor-item';item.innerHTML=`<div class="materia-editor-row"><textarea rows="2" maxlength="500" placeholder="Nome do subassunto"></textarea><button type="button" class="materia-editor-remove" aria-label="Remover">🗑️</button></div>`;const ta=$('textarea',item);ta.oninput=()=>autoGrow(ta);$('.materia-editor-remove',item).onclick=()=>item.remove();box.appendChild(item);ta.focus({preventScroll:true});};
   add(); $('#addOutroSub').onclick=add;
-  $('#saveSubtopicos').onclick=()=>{const nomes=$$('#subtopicosNovos textarea').map(x=>x.value.replace(/\r\n?/g,'\n').trim()).filter(Boolean),vistos=new Set();if(!nomes.length)return toast('Escreva pelo menos um subassunto.');for(const n of nomes){const k=chaveConteudo(n);if(vistos.has(k)||filhosConteudo(m,pai.id).some(x=>chaveConteudo(x.nome)===k))return toast('Há um subassunto repetido dentro deste assunto.');vistos.add(k);}nomes.forEach(nome=>m.conteudos.push({id:uid(),nome,grupoId:pai.grupoId,parentId:pai.id,done:false}));save('estudo:materias');estudoConteudosAbertos.add(String(pai.id));estudoMateriasAbertas.add(String(m.id));estudoGruposAbertos.add(String(pai.grupoId));closeSheet();renderMaterias();renderEstudoDia();};
+  $('#saveSubtopicos').onclick=async()=>{const nomes=$$('#subtopicosNovos textarea').map(x=>x.value.replace(/\r\n?/g,'\n').trim()).filter(Boolean);if(!nomes.length)return toast('Escreva pelo menos um subassunto.');const btn=$('#saveSubtopicos');btn.disabled=true;nomes.forEach(nome=>m.conteudos.push({id:uid(),nome,grupoId:pai.grupoId,parentId:pai.id,done:false}));prepararEstruturaMateria(m);await save('estudo:materias');estudoConteudosAbertos.add(String(pai.id));estudoMateriasAbertas.add(String(m.id));estudoGruposAbertos.add(String(pai.grupoId));_sheetSaveIntent=true;closeSheet();renderMaterias();renderEstudoDia();toast(`${nomes.length} subassunto${nomes.length===1?'':'s'} salvo${nomes.length===1?'':'s'} e sincronizado${nomes.length===1?'':'s'}.`);};
 }
 function editMateriaSheet(mid){
   const m = mid ? S.materias.find(x=>String(x.id)===String(mid)) : {id:uid(),nome:'',grupos:[],conteudos:[]};
