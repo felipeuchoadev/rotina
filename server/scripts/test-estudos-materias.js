@@ -65,5 +65,8 @@ assert.doesNotMatch(html, /Assunto repetido em/, 'Assuntos com o mesmo texto dev
 assert.doesNotMatch(html, /Há um subassunto repetido/, 'Subassuntos repetidos também devem ser aceitos quando intencionais');
 assert.match(html, /await save\('estudo:materias'\)/, 'O modal só pode fechar depois que os subassuntos forem gravados');
 assert.match(html, /renderizarSyncPendente/, 'Uma sincronização adiada por campo focado deve renderizar assim que possível');
+assert.match(html, /item\.classList\.toggle\('is-sub',nivel>0\)/, 'O editor móvel deve identificar visualmente cada subassunto');
+assert.match(html, /`SUB \$\{nivel\}`/, 'O nível do subassunto deve permanecer visível no celular');
+assert.match(html, /const duplicadasCorrigidas=false/, 'Abrir Estudos nunca pode consolidar ou reorganizar estruturas automaticamente');
 
 console.log('ESTUDOS_MATERIAS_TEST=OK');

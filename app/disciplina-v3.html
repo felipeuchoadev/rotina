@@ -209,6 +209,8 @@ button.rowitem{width:100%;text-align:left;font:inherit}
 .btn.danger-outline{background:transparent!important;border-color:rgba(255,90,90,.55);color:var(--danger);box-shadow:none}
 .materia-editor-list{display:grid;gap:10px;margin:10px 0 12px}
 .materia-editor-item{display:grid;gap:8px;padding:11px;border:1px solid var(--line);border-radius:16px;background:var(--surface2)}
+.materia-editor-item.is-sub{position:relative;border-left:3px solid color-mix(in srgb,var(--accent) 72%,transparent);background:color-mix(in srgb,var(--accent) 5%,var(--surface2))}
+.materia-editor-item.is-sub:before{content:'';position:absolute;left:-15px;top:-11px;width:13px;height:31px;border-left:2px solid color-mix(in srgb,var(--accent) 42%,var(--line));border-bottom:2px solid color-mix(in srgb,var(--accent) 42%,var(--line));border-radius:0 0 0 8px;pointer-events:none}
 .materia-editor-row{display:flex;align-items:flex-start;gap:9px;min-width:0}
 .materia-editor-num{display:grid;place-items:center;flex:0 0 30px;height:30px;border-radius:10px;background:color-mix(in srgb,var(--accent) 16%,transparent);color:var(--accent2);font-weight:800;font-size:13px}
 .materia-editor-item textarea{flex:1;min-width:0;min-height:52px;height:auto;max-height:none;resize:none;border:1px solid var(--line);border-radius:12px;background:var(--surface);color:var(--text);padding:12px;font:inherit;line-height:1.4;overflow:hidden;scrollbar-width:none}
@@ -264,7 +266,7 @@ button.rowitem{width:100%;text-align:left;font:inherit}
 .materia-grupo-editor .materia-editor-list{margin:10px 0}
 .materia-grupo-actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.materia-grupo-actions .btn{min-width:0;white-space:normal}
 @media(max-width:390px){.materia-grupo-actions{grid-template-columns:1fr}}
-@media(max-width:390px){.study-tree-head{padding:13px}.study-tree-content{padding-left:17px}.study-tree-node-row{padding-right:7px}.study-tree-pct{min-width:41px;padding-inline:5px}.materia-editor-num{display:none}.materia-editor-item{padding:9px}.materia-grupo-editor{padding:9px}}
+@media(max-width:390px){.study-tree-head{padding:13px}.study-tree-content{padding-left:17px}.study-tree-node-row{padding-right:7px}.study-tree-pct{min-width:41px;padding-inline:5px}.materia-editor-num{display:grid;flex-basis:34px;font-size:10px}.materia-editor-item{padding:9px}.materia-editor-item.is-sub{margin-left:18px!important}.materia-grupo-editor{padding:9px}}
 .profile-bio{margin:12px 2px;color:var(--text);line-height:1.5;white-space:pre-wrap;overflow-wrap:anywhere}
 .pencil{opacity:.8; font-size:16px; padding:6px 9px; border-radius:10px; background:rgba(255,255,255,.05); border:1px solid var(--line);}
 
@@ -863,7 +865,7 @@ setInterval(()=>{ if(authToken&&offQueue().length&&navigator.onLine) flushQueue(
 
 /* id único DESTE aparelho/aba — usado pra não ecoar de volta a própria escrita no sync ao vivo */
 const CLIENT_ID = (Math.random().toString(36).slice(2)+'-'+Date.now().toString(36));
-const APP_BUILD = 'redzone-v166';
+const APP_BUILD = 'redzone-v167';
 // evita re-render que rouba o foco enquanto a pessoa digita (o dado já foi aplicado em S de qualquer forma)
 let _mediaUploadBusy=0;
 function _syncPodeRender(){ const a=document.activeElement; return !_mediaUploadBusy&&!(a && /^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName||'')); }
@@ -2725,7 +2727,8 @@ function consolidarMateriasDuplicadas(){
 }
 function renderEstudos(){
   estudoDiaSel=hojeDia();
-  const duplicadasCorrigidas=consolidarMateriasDuplicadas();
+  // Duplicidades podem ser intencionais; nunca reorganize a estrutura ao abrir a tela.
+  const duplicadasCorrigidas=false;
   const edit=S.config.editMode;
   $('#scr-estudos').innerHTML = `
     ${topbar('ESTUDOS')}
@@ -2887,7 +2890,7 @@ function editMateriaSheet(mid){
   const gruposBox=$('#matGrupos');
   const atualizarNumeros=(grupoEl)=>{
     const itens=Array.from($('.materia-editor-list',grupoEl).children); let raiz=0;
-    itens.forEach(item=>{const nivel=Number(item.dataset.nivel||0);if(!nivel)raiz++;$('.materia-editor-num',item).textContent=nivel?`↳${nivel}`:String(raiz);});
+    itens.forEach(item=>{const nivel=Number(item.dataset.nivel||0);item.classList.toggle('is-sub',nivel>0);item.setAttribute('aria-label',nivel?`Subassunto nível ${nivel}`:`Assunto ${raiz+1}`);if(!nivel)raiz++;$('.materia-editor-num',item).textContent=nivel?`SUB ${nivel}`:String(raiz);});
     const vazio=$('.grupo-sem-conteudo',grupoEl); if(vazio)vazio.style.display=itens.length?'none':'block';
   };
   const addConteudo=(grupoEl,conteudo=null,focar=false,nivel=0,parentId='')=>{
